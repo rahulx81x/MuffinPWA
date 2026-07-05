@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Finance Dashboard</title>
+    <link rel="icon" type="image/png" href="./icons/icon_192.png">
+    <link rel="shortcut icon" type="image/png" href="./icons/icon_192.png">
+    <link rel="apple-touch-icon" href="./icons/icon_192.png">
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar" content="#2563eb">
+    <meta name="apple-mobile-web-app-title" content="My Finances">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Finance dashboard that reads your Google Sheet and works offline as a mobile app.">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        html.dark { color-scheme: dark; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-4 md:p-8 transition-colors duration-200">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 flex justify-between items-center flex-wrap gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 dark:text-white">My Finances</h1>
+                <p class="text-slate-500 dark:text-slate-400">Income, expenses & savings — synced from your Google Sheet</p>
+            </div>
+            <div class="flex gap-3 items-center flex-wrap">
+                <button onclick="loadData()" class="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition shadow-md">
+                    ↻ Refresh
+                </button>
+                <button id="installBtn" class="hidden bg-green-600 dark:bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition shadow-md">
+                    ⬇ Install App
+                </button>
+                <button onclick="toggleDarkMode()" class="bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-white px-4 py-2 rounded-lg hover:bg-slate-400 dark:hover:bg-slate-600 transition shadow-md" title="Toggle dark mode">
+                    🌙 Dark Mode
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Navigation Tabs -->
+        <div class="mb-8 flex gap-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+            <button onclick="switchDashboard('overview')" id="tab-overview" class="px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 transition">
+                📊 Overview
+            </button>
+            <button onclick="switchDashboard('monthly')" id="tab-monthly" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                📅 Monthly
+            </button>
+            <button onclick="switchDashboard('yearly')" id="tab-yearly" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                📈 Yearly
+            </button>
+            <button onclick="switchDashboard('planning')" id="tab-planning" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                🧮 Current Month
+            </button>
+        </div>
+
+        <div id="status-msg" class="hidden mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm"></div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overview-content">
+
+        <div class="mb-4 flex justify-end">
+            <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300">
+                <input id="mask-toggle" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="toggleMaskValues()">
+                <span>Mask values</span>
+            </label>
+        </div>
+
+        <!-- Starting point context -->
+        <div class="mb-6 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex flex-wrap items-center gap-x-8 gap-y-2">
+            <div>
+                <span class="text-xs font-semibold text-indigo-400 dark:text-indigo-300 uppercase">Starting Investment</span>
+                <span class="ml-2 font-bold text-indigo-700 dark:text-indigo-300" id="initial-investment">₹0</span>
+            </div>
+            <div>
+                <span class="text-xs font-semibold text-indigo-400 dark:text-indigo-300 uppercase">Starting Liquid Balance</span>
+                <span class="ml-2 font-bold text-indigo-700 dark:text-indigo-300" id="initial-liquid">₹0</span>
+            </div>
+            <div>
+                <span class="text-xs font-semibold text-indigo-400 dark:text-indigo-300 uppercase">Starting Net Worth</span>
+                <span class="ml-2 font-bold text-indigo-700 dark:text-indigo-300" id="initial-net-worth">₹0</span>
+            </div>
+            <p class="text-xs text-indigo-400 dark:text-indigo-300 w-full sm:w-auto sm:ml-auto">Set in config.js — balances held before tracking began. Included in totals below.</p>
+        </div>
+
+        <!-- Top-level KPIs -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Total Income</h3>
+                <p class="text-2xl font-bold mt-2 text-green-600 dark:text-green-400" id="total-income">₹0</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Total Spends</h3>
+                <p class="text-2xl font-bold mt-2 text-red-600 dark:text-red-400" id="total-expenses">₹0</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Total Investment</h3>
+                <p class="text-2xl font-bold mt-2 text-purple-600 dark:text-purple-400" id="total-investment">₹0</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">incl. <span id="initial-investment-inline">₹0</span> starting</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Income − Spends</h3>
+                <p class="text-2xl font-bold mt-2" id="income-minus-spends">₹0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Savings (Liquid)</h3>
+                <p class="text-2xl font-bold mt-2" id="liquid-savings">₹0</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">incl. <span id="initial-liquid-inline">₹0</span> starting</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Investment %</h3>
+                <p class="text-2xl font-bold mt-2 text-purple-600 dark:text-purple-400" id="investment-pct">0%</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Liquid Savings %</h3>
+                <p class="text-2xl font-bold mt-2 text-teal-600 dark:text-teal-400" id="liquid-savings-pct">0%</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Investment + Liquid %</h3>
+                <p class="text-2xl font-bold mt-2 text-blue-600 dark:text-blue-400" id="total-savings-pct">0%</p>
+            </div>
+        </div>
+
+        <!-- Net worth KPIs -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Growth Since Start</h3>
+                <p class="text-2xl font-bold mt-2" id="net-worth-growth">₹0</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Growth Since Start %</h3>
+                <p class="text-2xl font-bold mt-2" id="net-worth-growth-pct">0%</p>
+            </div>
+            <div class="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 p-5 rounded-xl shadow-sm text-white">
+                <h3 class="text-xs font-semibold text-blue-100 uppercase">Net Worth Today</h3>
+                <p class="text-2xl font-bold mt-2" id="net-worth">₹0</p>
+            </div>
+        </div>
+
+        <!-- Net worth composition & extra KPIs -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Investment Share of Net Worth</h3>
+                <p class="text-2xl font-bold mt-2 text-purple-600 dark:text-purple-400" id="investment-share-pct">0%</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" id="investment-share-total">₹0 total</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Liquid Share of Net Worth</h3>
+                <p class="text-2xl font-bold mt-2 text-teal-600 dark:text-teal-400" id="liquid-share-pct">0%</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" id="liquid-share-total">₹0 total</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Avg Monthly Net Savings</h3>
+                <p class="text-2xl font-bold mt-2" id="avg-monthly-savings">₹0</p>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Months Tracked</h3>
+                <p class="text-2xl font-bold mt-2 text-slate-700 dark:text-slate-300" id="months-tracked">0</p>
+            </div>
+        </div>
+
+        <!-- Monthly KPI table -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8 overflow-x-auto">
+            <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Monthly KPIs</h3>
+            <table class="w-full text-sm min-w-[640px]">
+                <thead>
+                    <tr class="text-left text-xs uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700">
+                        <th class="py-2 pr-4">Month</th>
+                        <th class="py-2 pr-4">Income</th>
+                        <th class="py-2 pr-4">Spends</th>
+                        <th class="py-2 pr-4">Investment</th>
+                        <th class="py-2 pr-4">Income−Spends</th>
+                        <th class="py-2 pr-4">Liquid Savings</th>
+                        <th class="py-2 pr-4">Inv. %</th>
+                        <th class="py-2 pr-4">Liquid %</th>
+                        <th class="py-2 pr-4">Total Savings %</th>
+                    </tr>
+                </thead>
+                <tbody id="monthly-kpi-body" class="text-slate-700 dark:text-slate-300"></tbody>
+            </table>
+        </div>
+
+        <!-- Net worth growth -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8">
+            <h3 class="text-lg font-bold mb-1 text-slate-900 dark:text-white">Net Worth Over Time</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Starts from your initial investment & liquid balance, then accumulates tracked cash flow each month</p>
+            <canvas id="netWorthChart" height="80"></canvas>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 gap-6 mb-8">
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Income, Expenses, Investment & Liquid Savings (Monthly)</h3>
+                <canvas id="revenueChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 mb-8">
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Spending by Category</h3>
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Transactions -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto">
+            <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Recent Transactions</h3>
+            <table class="w-full text-sm min-w-[640px]">
+                <thead>
+                    <tr class="text-left text-xs uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700">
+                        <th class="py-2 pr-4">Date</th>
+                        <th class="py-2 pr-4">Category</th>
+                        <th class="py-2 pr-4">Type</th>
+                        <th class="py-2 pr-4">Amount</th>
+                        <th class="py-2 pr-4">Comment</th>
+                    </tr>
+                </thead>
+                <tbody id="transactions-body" class="text-slate-700 dark:text-slate-300"></tbody>
+            </table>
+        </div>
+
+        <p class="text-center text-xs text-slate-400 dark:text-slate-500 mt-8">
+            Data is read live from your Google Sheet. Update the sheet to update this dashboard.
+        </p>
+        </div>
+
+        <!-- PLANNING TAB -->
+        <div id="planning-content" class="hidden">
+            <div class="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">Current Month Financial Planner</h2>
+                <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">This tab uses your live sheet data plus quick-add web-only transactions for monthly planning. Nothing here is pushed to your Google Sheet.</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Income</h3>
+                    <p class="text-2xl font-bold mt-2 text-green-600 dark:text-green-400" id="planner-income">₹0</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Expenses</h3>
+                    <p class="text-2xl font-bold mt-2 text-red-600 dark:text-red-400" id="planner-expenses">₹0</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Investment</h3>
+                    <p class="text-2xl font-bold mt-2 text-purple-600 dark:text-purple-400" id="planner-investment">₹0</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Income − Expenses</h3>
+                    <p class="text-2xl font-bold mt-2 text-blue-600 dark:text-blue-400" id="planner-net">₹0</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Liquid Savings</h3>
+                    <p class="text-2xl font-bold mt-2 text-teal-600 dark:text-teal-400" id="planner-liquid">₹0</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Investment %</h3>
+                    <p class="text-2xl font-bold mt-2 text-purple-600 dark:text-purple-400" id="planner-investment-pct">0%</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Liquid Savings %</h3>
+                    <p class="text-2xl font-bold mt-2 text-teal-600 dark:text-teal-400" id="planner-liquid-pct">0%</p>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Total Saved</h3>
+                    <p class="text-2xl font-bold mt-2 text-emerald-600 dark:text-emerald-400" id="planner-total-saved">₹0</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-6">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Quick Add Planning Transaction</h3>
+                        <button type="button" onclick="clearPlannerTransactions()" class="text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400">Clear all</button>
+                    </div>
+                    <form id="planner-form" class="grid gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Date</label>
+                                <input name="date" type="date" required class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Type</label>
+                                <select name="type" required class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white">
+                                    <option value="income">Income</option>
+                                    <option value="expense">Expense</option>
+                                    <option value="investment">Investment</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
+                                <input name="category" type="text" placeholder="e.g. Salary" required class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Amount</label>
+                                <input name="amount" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Comment</label>
+                            <input name="comment" type="text" placeholder="Optional note" class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white">
+                        </div>
+                        <button type="submit" class="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 font-semibold shadow-sm">Add to current month plan</button>
+                    </form>
+                    <div id="planner-transactions-list" class="mt-6 space-y-2"></div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Current Month Breakdown</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-xs uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700">
+                                    <th class="py-2 pr-4">Category</th>
+                                    <th class="py-2 pr-4">Amount</th>
+                                    <th class="py-2 pr-4">Share</th>
+                                </tr>
+                            </thead>
+                            <tbody id="planner-breakdown-body" class="text-slate-700 dark:text-slate-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MONTHLY TAB -->
+        <div id="monthly-content" class="hidden">
+            <div class="mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800">
+                <div class="flex flex-wrap gap-4 items-end">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Year</label>
+                        <select id="monthly-year" onchange="updateMonthlyDashboard()" class="px-4 py-2 rounded-lg bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
+                            <option value="">Choose Year...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Month</label>
+                        <select id="monthly-month" onchange="updateMonthlyDashboard()" class="px-4 py-2 rounded-lg bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
+                            <option value="">Choose Month...</option>
+                            <option value="01">January</option>
+                            <option value="02">February</option>
+                            <option value="03">March</option>
+                            <option value="04">April</option>
+                            <option value="05">May</option>
+                            <option value="06">June</option>
+                            <option value="07">July</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly KPIs -->
+            <div id="monthly-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- Monthly Table -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8 overflow-x-auto">
+                <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Month Details</h3>
+                <div id="monthly-details" class="text-slate-700 dark:text-slate-300">
+                    Select a month to view details
+                </div>
+            </div>
+        </div>
+
+        <!-- YEARLY TAB -->
+        <div id="yearly-content" class="hidden">
+            <div class="mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800">
+                <div class="flex flex-wrap gap-4 items-end">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Year</label>
+                        <select id="yearly-year" onchange="updateYearlyDashboard()" class="px-4 py-2 rounded-lg bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white">
+                            <option value="">Choose Year...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Yearly KPIs -->
+            <div id="yearly-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- Yearly Table -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8 overflow-x-auto">
+                <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Year Details</h3>
+                <div id="yearly-details" class="text-slate-700 dark:text-slate-300">
+                    Select a year to view details
+                </div>
+            </div>
+
+            <!-- Yearly Chart -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8">
+                <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Yearly Trend</h3>
+                <canvas id="yearlyChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="./config.js?v=4"></script>
+    <script src="./app.js?v=4"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registered!'))
+                    .catch(err => console.error('Service Worker failed.', err));
+            });
+        }
+    </script>
+</body>
+</html>
