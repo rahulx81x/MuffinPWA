@@ -17,47 +17,97 @@
     <meta name="description" content="Finance dashboard that reads your Google Sheet and works offline as a mobile app.">
 
     <!-- Tailwind CSS -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        html.dark { color-scheme: dark; }
+        :root {
+            color-scheme: light;
+            --page-bg: #f8fafc;
+            --panel-bg: #ffffff;
+            --panel-alt: #f8fafc;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        html.dark {
+            color-scheme: dark;
+            --page-bg: #020617;
+            --panel-bg: #111827;
+            --panel-alt: #0f172a;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            background-color: var(--page-bg);
+        }
+
+        body {
+            color: var(--text);
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        body.min-h-screen {
+            min-height: 100vh;
+        }
+
+        body .bg-slate-50 { background-color: var(--page-bg) !important; }
+        body .bg-slate-900 { background-color: var(--panel-alt) !important; }
+        body .bg-white, body .bg-slate-800 { background-color: var(--panel-bg) !important; }
+        body .text-slate-900, body .text-slate-800, body .text-slate-700, body .text-slate-600, body .text-slate-500, body .text-slate-400, body .text-slate-300, body .text-slate-200, body .text-slate-100 { color: var(--text) !important; }
+        body .text-slate-400, body .text-slate-500 { color: var(--text-muted) !important; }
+        body .border-slate-100, body .border-slate-200, body .border-slate-300, body .border-slate-700 { border-color: var(--border) !important; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-4 md:p-8 transition-colors duration-200">
-    <div class="max-w-6xl mx-auto">
-        <header class="mb-8 flex justify-between items-center flex-wrap gap-4">
-            <div>
+<body class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-3 sm:p-4 md:p-8 transition-colors duration-200">
+    <div class="max-w-6xl mx-auto min-h-screen">
+        <header class="mb-8 flex items-start justify-between gap-4">
+            <div class="min-w-0">
                 <h1 class="text-3xl font-bold text-slate-900 dark:text-white">My Finances</h1>
                 <p class="text-slate-500 dark:text-slate-400">Income, expenses & savings — synced from your Google Sheet</p>
             </div>
-            <div class="flex gap-3 items-center flex-wrap">
-                <button onclick="loadData()" class="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition shadow-md">
-                    ↻ Refresh
-                </button>
-                <button id="installBtn" class="hidden bg-green-600 dark:bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition shadow-md">
-                    ⬇ Install App
-                </button>
-                <button onclick="toggleDarkMode()" class="bg-slate-300 dark:bg-slate-700 text-slate-900 dark:text-white px-4 py-2 rounded-lg hover:bg-slate-400 dark:hover:bg-slate-600 transition shadow-md" title="Toggle dark mode">
-                    🌙 Dark Mode
+            <div class="flex shrink-0 items-center">
+                <button id="theme-toggle" onclick="toggleDarkMode()" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" title="Toggle dark mode" aria-label="Toggle dark mode">
+                    <span id="theme-toggle-icon">🌙</span>
                 </button>
             </div>
         </header>
 
-        <!-- Dashboard Navigation Tabs -->
-        <div class="mb-8 flex gap-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
-            <button onclick="switchDashboard('overview')" id="tab-overview" class="px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 transition">
-                📊 Overview
-            </button>
-            <button onclick="switchDashboard('monthly')" id="tab-monthly" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
-                📅 Monthly
-            </button>
-            <button onclick="switchDashboard('yearly')" id="tab-yearly" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
-                📈 Yearly
-            </button>
-            <button onclick="switchDashboard('planning')" id="tab-planning" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
-                🧮 Current Month
-            </button>
+        <!-- Dashboard Navigation -->
+        <div class="mb-8">
+            <div class="hidden md:flex gap-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <button onclick="switchDashboard('overview')" id="tab-overview" class="px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 transition">
+                    📊 Overview
+                </button>
+                <button onclick="switchDashboard('monthly')" id="tab-monthly" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                    📅 Monthly
+                </button>
+                <button onclick="switchDashboard('yearly')" id="tab-yearly" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                    📈 Yearly
+                </button>
+                <button onclick="switchDashboard('planning')" id="tab-planning" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                    🧮 Current Month
+                </button>
+            </div>
+            <label class="md:hidden block">
+                <span class="sr-only">Choose dashboard view</span>
+                <select id="mobile-dashboard-select" onchange="switchDashboard(this.value)" class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
+                    <option value="overview">📊 Overview</option>
+                    <option value="monthly">📅 Monthly</option>
+                    <option value="yearly">📈 Yearly</option>
+                    <option value="planning">🧮 Current Month</option>
+                </select>
+            </label>
         </div>
 
         <div id="status-msg" class="hidden mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm"></div>
@@ -65,7 +115,7 @@
         <!-- OVERVIEW TAB -->
         <div id="overview-content">
 
-        <div class="mb-4 flex justify-end">
+        <div class="mb-4 flex justify-start sm:justify-end">
             <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300">
                 <input id="mask-toggle" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="toggleMaskValues()">
                 <span>Mask values</span>
@@ -90,7 +140,7 @@
         </div>
 
         <!-- Top-level KPIs -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
             <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
                 <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Total Income</h3>
                 <p class="text-2xl font-bold mt-2 text-green-600 dark:text-green-400" id="total-income">₹0</p>
@@ -110,7 +160,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
             <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
                 <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Savings (Liquid)</h3>
                 <p class="text-2xl font-bold mt-2" id="liquid-savings">₹0</p>
@@ -131,7 +181,7 @@
         </div>
 
         <!-- Net worth KPIs -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-4">
             <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
                 <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Growth Since Start</h3>
                 <p class="text-2xl font-bold mt-2" id="net-worth-growth">₹0</p>
@@ -147,7 +197,7 @@
         </div>
 
         <!-- Net worth composition & extra KPIs -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
             <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
                 <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Investment Share of Net Worth</h3>
                 <p class="text-2xl font-bold mt-2 text-purple-600 dark:text-purple-400" id="investment-share-pct">0%</p>
@@ -169,7 +219,7 @@
         </div>
 
         <!-- Monthly KPI table -->
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8 overflow-x-auto">
+        <div class="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8 overflow-x-auto">
             <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Monthly KPIs</h3>
             <table class="w-full text-sm min-w-[640px]">
                 <thead>
@@ -189,27 +239,36 @@
             </table>
         </div>
 
-        <!-- Net worth growth -->
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8">
-            <h3 class="text-lg font-bold mb-1 text-slate-900 dark:text-white">Net Worth Over Time</h3>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Starts from your initial investment & liquid balance, then accumulates tracked cash flow each month</p>
-            <canvas id="netWorthChart" height="80"></canvas>
-        </div>
+        <!-- Charts & Insights -->
+        <section class="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40 p-4 sm:p-6">
+            <button type="button" onclick="toggleChartsSection()" class="flex w-full items-center justify-between gap-3 text-left">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Charts & Insights</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Track growth and spending patterns in a dedicated view.</p>
+                </div>
+                <span id="charts-section-toggle" class="rounded-full bg-white dark:bg-slate-800 px-3 py-1 text-sm font-semibold text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700">Show</span>
+            </button>
 
-        <!-- Charts -->
-        <div class="grid grid-cols-1 gap-6 mb-8">
-            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Income, Expenses, Investment & Liquid Savings (Monthly)</h3>
-                <canvas id="revenueChart" height="100"></canvas>
-            </div>
-        </div>
+            <div id="charts-section-content" class="hidden mt-5">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                        <h4 class="text-lg font-bold mb-1 text-slate-900 dark:text-white">Net Worth Over Time</h4>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Starts from your initial balances and grows with each tracked month</p>
+                        <canvas id="netWorthChart" height="80"></canvas>
+                    </div>
 
-        <div class="grid grid-cols-1 gap-6 mb-8">
-            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Spending by Category</h3>
-                <canvas id="expenseChart"></canvas>
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                        <h4 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Income, Expenses, Investment & Liquid Savings (Monthly)</h4>
+                        <canvas id="revenueChart" height="100"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h4 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Spending by Category</h4>
+                    <canvas id="expenseChart"></canvas>
+                </div>
             </div>
-        </div>
+        </section>
 
         <!-- Transactions -->
         <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto">
@@ -240,7 +299,7 @@
                 <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">This tab uses your live sheet data plus quick-add web-only transactions for monthly planning. Nothing here is pushed to your Google Sheet.</p>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
                     <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Income</h3>
                     <p class="text-2xl font-bold mt-2 text-green-600 dark:text-green-400" id="planner-income">₹0</p>
@@ -259,7 +318,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
                     <h3 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Liquid Savings</h3>
                     <p class="text-2xl font-bold mt-2 text-teal-600 dark:text-teal-400" id="planner-liquid">₹0</p>
@@ -368,7 +427,7 @@
             </div>
 
             <!-- Monthly KPIs -->
-            <div id="monthly-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div id="monthly-kpis" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
                 <!-- Populated by JS -->
             </div>
 
@@ -395,7 +454,7 @@
             </div>
 
             <!-- Yearly KPIs -->
-            <div id="yearly-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div id="yearly-kpis" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
                 <!-- Populated by JS -->
             </div>
 
