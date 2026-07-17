@@ -600,10 +600,23 @@ function initMaskMode() {
 // ============================================================
 // DARK MODE
 // ============================================================
+function updateThemeToggleButton() {
+    const button = document.getElementById('theme-toggle');
+    const icon = document.getElementById('theme-toggle-icon');
+    if (!button || !icon) return;
+
+    const isDark = document.documentElement.classList.contains('dark');
+    icon.textContent = isDark ? '☀️' : '🌙';
+    button.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+}
+
 function toggleDarkMode() {
     const html = document.documentElement;
+    const body = document.body;
     const isDark = html.classList.toggle('dark');
+    body.classList.toggle('dark', isDark);
     localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+    updateThemeToggleButton();
     // Redraw charts if visible
     if (trendChartInstance) trendChartInstance.resize();
     if (expenseChartInstance) expenseChartInstance.resize();
@@ -611,10 +624,35 @@ function toggleDarkMode() {
     if (yearlyChartInstance) yearlyChartInstance.resize();
 }
 
+function toggleChartsSection() {
+    const content = document.getElementById('charts-section-content');
+    const toggle = document.getElementById('charts-section-toggle');
+    if (!content || !toggle) return;
+
+    const isHidden = content.classList.toggle('hidden');
+    toggle.textContent = isHidden ? 'Show' : 'Hide';
+
+    if (!isHidden) {
+        if (trendChartInstance) trendChartInstance.resize();
+        if (expenseChartInstance) expenseChartInstance.resize();
+        if (netWorthChartInstance) netWorthChartInstance.resize();
+    }
+}
+
 // Load dark mode preference
 function initDarkMode() {
     const isDark = localStorage.getItem('darkMode') === 'true';
-    if (isDark) document.documentElement.classList.add('dark');
+    const html = document.documentElement;
+    const body = document.body;
+
+    if (isDark) {
+        html.classList.add('dark');
+        body.classList.add('dark');
+    } else {
+        html.classList.remove('dark');
+        body.classList.remove('dark');
+    }
+    updateThemeToggleButton();
 }
 
 // ============================================================
@@ -623,29 +661,29 @@ function initDarkMode() {
 function switchDashboard(tab) {
     activeDashboard = tab;
 
-    // Hide all
-    document.getElementById('overview-content').classList.add('hidden');
-    document.getElementById('monthly-content').classList.add('hidden');
-    document.getElementById('yearly-content').classList.add('hidden');
-    document.getElementById('planning-content').classList.add('hidden');
-    
-    // Remove active state from all tabs
-    document.getElementById('tab-overview').classList.remove('border-blue-600', 'text-blue-600', 'dark:text-blue-400');
-    document.getElementById('tab-monthly').classList.remove('border-blue-600', 'text-blue-600', 'dark:text-blue-400');
-    document.getElementById('tab-yearly').classList.remove('border-blue-600', 'text-blue-600', 'dark:text-blue-400');
-    document.getElementById('tab-planning').classList.remove('border-blue-600', 'text-blue-600', 'dark:text-blue-400');
-    
-    document.getElementById('tab-overview').classList.add('border-transparent', 'text-slate-600', 'dark:text-slate-400');
-    document.getElementById('tab-monthly').classList.add('border-transparent', 'text-slate-600', 'dark:text-slate-400');
-    document.getElementById('tab-yearly').classList.add('border-transparent', 'text-slate-600', 'dark:text-slate-400');
-    document.getElementById('tab-planning').classList.add('border-transparent', 'text-slate-600', 'dark:text-slate-400');
-    
-    // Show selected and set active
-    const tabEl = document.getElementById(`tab-${tab}`);
-    tabEl.classList.remove('border-transparent', 'text-slate-600', 'dark:text-slate-400');
-    tabEl.classList.add('border-blue-600', 'text-blue-600', 'dark:text-blue-400');
-    document.getElementById(`${tab}-content`).classList.remove('hidden');
-    
+    const sections = ['overview', 'monthly', 'yearly', 'planning'];
+    sections.forEach((name) => {
+        const section = document.getElementById(`${name}-content`);
+        if (section) section.classList.toggle('hidden', name !== tab);
+    });
+
+    sections.forEach((name) => {
+        const tabEl = document.getElementById(`tab-${name}`);
+        if (!tabEl) return;
+
+        tabEl.classList.toggle('border-blue-600', name === tab);
+        tabEl.classList.toggle('text-blue-600', name === tab);
+        tabEl.classList.toggle('dark:text-blue-400', name === tab);
+        tabEl.classList.toggle('border-transparent', name !== tab);
+        tabEl.classList.toggle('text-slate-600', name !== tab);
+        tabEl.classList.toggle('dark:text-slate-400', name !== tab);
+    });
+
+    const mobileSelect = document.getElementById('mobile-dashboard-select');
+    if (mobileSelect) {
+        mobileSelect.value = tab;
+    }
+
     if (tab === 'overview') {
         render();
     }
