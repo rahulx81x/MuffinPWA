@@ -1,8 +1,16 @@
 // Fetch data from your published Google Sheet (CSV)
 let allTransactions = [];
+let incomeTransactions = [];
+let expenseTransactions = [];
+let investmentTransactions = [];
 let plannerTransactions = [];
 let maskValuesOn = false;
 let activeDashboard = 'overview';
+let transactionFilters = {
+    startDate: null,
+    endDate: null,
+    type: 'all'
+};
 
 function isOverviewMasked() {
     return activeDashboard === 'overview' && maskValuesOn;
@@ -30,35 +38,42 @@ async function loadData() {
     try {
         const response = await fetch('/.netlify/functions/fetch-sheet');
         if (!response.ok) throw new Error('Could not reach sheet');
-        const csvText = await response.text();
 
-        const rows = csvText.trim().split('\n');
-        allTransactions = [];
+        const contentType = response.headers.get('content-type') || '';
+        const payload = contentType.includes('application/json')
+            ? await response.json()
+            : { combinedCsv: await response.text() };
 
-        for (let i = 1; i < rows.length; i++) {
-            const cols = parseCsvLine(rows[i]);
-            if (cols.length < 4) continue;
+        const combinedCsv = payload.combinedCsv || payload.sheetCsv || '';
+        const incomeCsv = payload.incomeCsv || payload.income_csv || '';
+        const expenseCsv = payload.expenseCsv || payload.expense_csv || '';
+        const investmentCsv = payload.investmentCsv || payload.investment_csv || '';
 
-            const date = parseDate(cols[0]);
-            const category = (cols[1] || '').trim();
-            const amount = parseFloat(cols[2]);
-            const type = (cols[3] || '').trim().toLowerCase();
-            const comment = (cols[4] || '').trim();
+        incomeTransactions = [];
+        expenseTransactions = [];
+        investmentTransactions = [];
 
-            if (isNaN(amount) || isNaN(date.getTime())) continue;
-            if (!['income', 'expense', 'investment'].includes(type)) continue;
-
-            allTransactions.push({ date, category, amount, type, comment });
+        if (combinedCsv) {
+            parseCombinedCsv(combinedCsv, incomeTransactions, expenseTransactions, investmentTransactions);
+        } else {
+            if (incomeCsv) parseSheetCsv(incomeCsv, 'income', incomeTransactions);
+            if (expenseCsv) parseSheetCsv(expenseCsv, 'expense', expenseTransactions);
+            if (investmentCsv) parseSheetCsv(investmentCsv, 'investment', investmentTransactions);
         }
 
+        allTransactions = [...incomeTransactions, ...expenseTransactions, ...investmentTransactions];
         allTransactions.sort((a, b) => a.date - b.date);
+
+        if (!allTransactions.length) {
+            throw new Error('No valid sheet rows were found. Check your sheet template.');
+        }
 
         render();
         statusEl.classList.add('hidden');
 
     } catch (err) {
         console.error('Error loading sheet data', err);
-        statusEl.innerText = "Couldn't load your sheet. Check if csv published, environment variable is set, and try again.";
+        statusEl.innerText = "Couldn't load your sheet. Ensure the sheet URLs are configured correctly and try again.";
         statusEl.classList.remove('hidden');
     }
 }
@@ -111,6 +126,55 @@ function parseCsvLine(line) {
     }
     result.push(cur);
     return result;
+}
+
+function parseSheetCsv(csvText, sheetType, targetArray) {
+    const rows = csvText.trim().split('\n').filter(Boolean);
+    for (let i = 1; i < rows.length; i++) {
+        const cols = parseCsvLine(rows[i]);
+        if (cols.length < 3) continue;
+
+        const date = parseDate(cols[0]);
+        const category = (cols[1] || '').trim();
+        const amount = parseFloat(cols[2]);
+        let comment = '';
+        let investmentType = '';
+
+        if (sheetType === 'investment') {
+            investmentType = (cols[3] || '').trim();
+            comment = (cols[4] || '').trim();
+        } else {
+            comment = (cols[3] || '').trim();
+        }
+
+        if (isNaN(amount) || isNaN(date.getTime())) continue;
+
+        targetArray.push({ date, category, amount, type: sheetType, comment, investmentType });
+    }
+}
+
+function parseCombinedCsv(csvText, incomeArray, expenseArray, investmentArray) {
+    const rows = csvText.trim().split('\n').filter(Boolean);
+    for (let i = 1; i < rows.length; i++) {
+        const cols = parseCsvLine(rows[i]);
+        if (cols.length < 4) continue;
+
+        const date = parseDate(cols[0]);
+        const category = (cols[1] || '').trim();
+        const amount = parseFloat(cols[2]);
+        const type = (cols[3] || '').trim().toLowerCase();
+        const comment = (cols[4] || '').trim();
+
+        if (isNaN(amount) || isNaN(date.getTime())) continue;
+        if (!['income', 'expense', 'investment'].includes(type)) continue;
+
+        const investmentType = type === 'investment' ? category : '';
+        const item = { date, category, amount, type, comment, investmentType };
+
+        if (type === 'income') incomeArray.push(item);
+        else if (type === 'expense') expenseArray.push(item);
+        else investmentArray.push(item);
+    }
 }
 
 function pct(part, whole) {
@@ -310,10 +374,10 @@ function render() {
     const monthly = buildMonthlyKPIs(allTransactions);
 
     // Overall tracked totals (from your Google Sheet)
-    const totalIncome = allTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const totalSpends = allTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-    const trackedInvestment = allTransactions.filter(t => t.type === 'investment').reduce((s, t) => s + t.amount, 0);
-    
+    const totalIncome = incomeTransactions.reduce((s, t) => s + t.amount, 0);
+    const totalSpends = expenseTransactions.reduce((s, t) => s + t.amount, 0);
+    const trackedInvestment = investmentTransactions.reduce((s, t) => s + t.amount, 0);
+
     // Add initial balances (safeguarded in case they are missing from config.js)
     const initInv = typeof INITIAL_INVESTMENT !== 'undefined' ? INITIAL_INVESTMENT : 171000;
     const initLiq = typeof INITIAL_LIQUID_BALANCE !== 'undefined' ? INITIAL_LIQUID_BALANCE : 54957;
@@ -331,9 +395,9 @@ function render() {
 
     setText('total-income', getDisplayCurrency(totalIncome));
     setText('total-expenses', getDisplayCurrency(totalSpends));
-    setText('total-investment', getDisplayCurrency(totalInvestment)); // Now includes initial
+    setText('total-investment', getDisplayCurrency(totalInvestment));
     setText('income-minus-spends', getDisplayCurrency(incomeMinusSpends));
-    setText('liquid-savings', getDisplayCurrency(liquidSavings)); // Now includes initial
+    setText('liquid-savings', getDisplayCurrency(liquidSavings));
     setText('investment-pct', investmentPct.toFixed(1) + '%');
     setText('liquid-savings-pct', liquidSavingsPct.toFixed(1) + '%');
     setText('total-savings-pct', totalSavingsPct.toFixed(1) + '%');
@@ -387,41 +451,114 @@ function render() {
         liquidEl.className = 'text-2xl font-bold mt-2 ' + (liquidSavings >= 0 ? 'text-teal-600' : 'text-red-600');
     }
 
-    // Overall expense-by-category (for the spending doughnut)
-    const expensesByCategory = {};
-    allTransactions.filter(t => t.type === 'expense').forEach(t => {
-        expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + t.amount;
+    const expenseBreakdown = {};
+    expenseTransactions.forEach(t => {
+        expenseBreakdown[t.category] = (expenseBreakdown[t.category] || 0) + t.amount;
     });
 
-    // Cumulative net worth over time, starting from initial balances
-    let runningInv = initInv;
-    let runningLiq = initLiq;
-    const netWorthSeries = monthly.map(m => {
-        runningInv += m.investment;
-        runningLiq += m.liquidSavings;
-        return runningInv + runningLiq;
+    const investmentTypeBreakdown = {};
+    investmentTransactions.forEach(t => {
+        const key = t.investmentType || t.category || 'Uncategorized';
+        investmentTypeBreakdown[key] = (investmentTypeBreakdown[key] || 0) + t.amount;
     });
 
-    // We pass the new totalInvestment and liquidSavings so the Doughnut chart reflects total wealth
-    initCharts(monthly, expensesByCategory, totalInvestment, liquidSavings, netWorthSeries, initInv + initLiq);
+    const historySeries = buildHistorySeries(monthly, initInv, initLiq);
+
+    initCharts(monthly, expenseBreakdown, totalInvestment, liquidSavings, historySeries, initInv + initLiq, investmentTypeBreakdown);
+    renderOverviewSections(totalIncome, totalSpends, trackedInvestment, incomeTransactions, expenseTransactions, investmentTransactions, investmentTypeBreakdown);
     renderMonthlyTable(monthly);
     renderTransactionsTable(allTransactions);
+    renderHistoryTable(historySeries);
     renderPlannerDashboard();
+}
+
+function renderTransactionsTable(transactions) {
+    const tbody = document.getElementById('transactions-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const filteredTransactions = applyTransactionFilters(transactions);
+
+    const typeStyles = {
+        income: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+        expense: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+        investment: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+    };
+
+    filteredTransactions.slice().reverse().slice(0, 50).forEach(t => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300';
+        const dateStr = t.date.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+        const typeLabel = t.type.charAt(0).toUpperCase() + t.type.slice(1);
+        tr.innerHTML = `
+            <td class="py-2 pr-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">${dateStr}</td>
+            <td class="py-2 pr-4">${t.category || '—'}</td>
+            <td class="py-2 pr-4"><span class="px-2 py-0.5 rounded-full text-xs font-medium ${typeStyles[t.type] || ''}">${typeLabel}</span></td>
+            <td class="py-2 pr-4 font-medium">${getDisplayCurrency(t.amount)}</td>
+            <td class="py-2 pr-4 text-slate-500 dark:text-slate-400">${t.comment || ''}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function applyTransactionFilters(transactions) {
+    return transactions.filter(t => {
+        if (transactionFilters.type !== 'all' && t.type !== transactionFilters.type) {
+            return false;
+        }
+        if (transactionFilters.startDate) {
+            const start = new Date(transactionFilters.startDate);
+            if (t.date < start) return false;
+        }
+        if (transactionFilters.endDate) {
+            const end = new Date(transactionFilters.endDate);
+            end.setHours(23, 59, 59, 999);
+            if (t.date > end) return false;
+        }
+        return true;
+    });
+}
+
+function setupTransactionFilters() {
+    const startInput = document.getElementById('transactions-filter-start');
+    const endInput = document.getElementById('transactions-filter-end');
+    const typeSelect = document.getElementById('transactions-filter-type');
+
+    if (startInput) {
+        startInput.addEventListener('change', () => {
+            transactionFilters.startDate = startInput.value || null;
+            renderTransactionsTable(allTransactions);
+        });
+    }
+    if (endInput) {
+        endInput.addEventListener('change', () => {
+            transactionFilters.endDate = endInput.value || null;
+            renderTransactionsTable(allTransactions);
+        });
+    }
+    if (typeSelect) {
+        typeSelect.addEventListener('change', () => {
+            transactionFilters.type = typeSelect.value || 'all';
+            renderTransactionsTable(allTransactions);
+        });
+    }
 }
 function setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.innerText = text;
 }
 
-let trendChartInstance, expenseChartInstance, netWorthChartInstance;
+let trendChartInstance, expenseChartInstance, netWorthChartInstance, investmentChartInstance, historyChartInstance;
 
-function initCharts(monthly, expData, totalInvestment, liquidSavings, netWorthSeries, startingNetWorth) {
+function initCharts(monthly, expData, totalInvestment, liquidSavings, historySeries, startingNetWorth, investmentTypeBreakdown) {
     const labels = monthly.map(m => m.label);
     const currencyFormatter = (value) => isOverviewMasked() ? '••••' : formatCurrency(value);
 
     if (trendChartInstance) trendChartInstance.destroy();
     if (expenseChartInstance) expenseChartInstance.destroy();
     if (netWorthChartInstance) netWorthChartInstance.destroy();
+    if (investmentChartInstance) investmentChartInstance.destroy();
+    if (historyChartInstance) historyChartInstance.destroy();
 
     // Net worth over time (starts at the initial balance, before the first tracked month)
     const netWorthCtx = document.getElementById('netWorthChart');
@@ -432,7 +569,7 @@ function initCharts(monthly, expData, totalInvestment, liquidSavings, netWorthSe
                 labels: ['Start', ...labels],
                 datasets: [{
                     label: 'Net Worth',
-                    data: [startingNetWorth, ...(netWorthSeries || [])],
+                    data: [startingNetWorth, ...(historySeries || []).map(item => item.closingInvestment + item.closingLiquid)],
                     borderColor: '#4f46e5',
                     backgroundColor: 'rgba(79, 70, 229, 0.08)',
                     borderWidth: 3, tension: 0.35, fill: true, pointRadius: 3
@@ -522,6 +659,162 @@ function initCharts(monthly, expData, totalInvestment, liquidSavings, netWorthSe
         }
     });
 
+    const investCtx = document.getElementById('investmentChart');
+    if (investCtx) {
+        investmentChartInstance = new Chart(investCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(investmentTypeBreakdown),
+                datasets: [{
+                    data: Object.values(investmentTypeBreakdown),
+                    backgroundColor: ['#8b5cf6', '#3b82f6', '#14b8a6', '#f97316', '#0ea5e9', '#c084fc', '#fb7185'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${currencyFormatter(ctx.parsed)}` } }
+                }
+            }
+        });
+    }
+
+    const historyCtx = document.getElementById('historyChart');
+    if (historyCtx) {
+        historyChartInstance = new Chart(historyCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: historySeries.map(item => item.label),
+                datasets: [
+                    {
+                        label: 'Closing Investment',
+                        data: historySeries.map(item => item.closingInvestment),
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                        borderWidth: 3,
+                        tension: 0.35,
+                        fill: true
+                    },
+                    {
+                        label: 'Closing Liquid',
+                        data: historySeries.map(item => item.closingLiquid),
+                        borderColor: '#14b8a6',
+                        backgroundColor: 'rgba(20, 184, 166, 0.12)',
+                        borderWidth: 3,
+                        tension: 0.35,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${currencyFormatter(ctx.parsed.y)}` } }
+                },
+                scales: {
+                    y: { ticks: { callback: (v) => currencyFormatter(v) } }
+                }
+            }
+        });
+    }
+}
+
+function renderOverviewSections(totalIncome, totalSpends, trackedInvestment, incomeItems, expenseItems, investmentItems, investmentTypeBreakdown) {
+    const incomeByCategory = {};
+    incomeItems.forEach(t => {
+        incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + t.amount;
+    });
+
+    const expenseByCategory = {};
+    expenseItems.forEach(t => {
+        expenseByCategory[t.category] = (expenseByCategory[t.category] || 0) + t.amount;
+    });
+
+    const topIncome = Object.entries(incomeByCategory)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([category, amount]) => `<div class="flex justify-between text-sm py-1"><span>${category}</span><span>${getDisplayCurrency(amount)}</span></div>`)
+        .join('') || '<div class="text-sm text-slate-500 dark:text-slate-400">No income categories yet.</div>';
+
+    const topExpenses = Object.entries(expenseByCategory)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([category, amount]) => `<div class="flex justify-between text-sm py-1"><span>${category}</span><span>${getDisplayCurrency(amount)}</span></div>`)
+        .join('') || '<div class="text-sm text-slate-500 dark:text-slate-400">No expense categories yet.</div>';
+
+    const topInvestments = Object.entries(investmentTypeBreakdown)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([category, amount]) => `<div class="flex justify-between text-sm py-1"><span>${category}</span><span>${getDisplayCurrency(amount)}</span></div>`)
+        .join('') || '<div class="text-sm text-slate-500 dark:text-slate-400">No investments yet.</div>';
+
+    const incomeHtml = `
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+            <h3 class="text-lg font-bold mb-3 text-slate-900 dark:text-white">Income</h3>
+            <p class="text-3xl font-bold text-green-600 dark:text-green-400 mb-4">${getDisplayCurrency(totalIncome)}</p>
+            <div class="space-y-1">${topIncome}</div>
+        </div>
+    `;
+
+    const expenseHtml = `
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+            <h3 class="text-lg font-bold mb-3 text-slate-900 dark:text-white">Expenses</h3>
+            <p class="text-3xl font-bold text-red-600 dark:text-red-400 mb-4">${getDisplayCurrency(totalSpends)}</p>
+            <div class="space-y-1">${topExpenses}</div>
+        </div>
+    `;
+
+    const investmentHtml = `
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+            <h3 class="text-lg font-bold mb-3 text-slate-900 dark:text-white">Investments</h3>
+            <p class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-4">${getDisplayCurrency(trackedInvestment)}</p>
+            <div class="space-y-1">${topInvestments}</div>
+        </div>
+    `;
+
+    const incomeSection = document.getElementById('income-summary-body');
+    const expenseSection = document.getElementById('expense-summary-body');
+    const investmentSection = document.getElementById('investment-summary-body');
+
+    if (incomeSection) incomeSection.innerHTML = incomeHtml;
+    if (expenseSection) expenseSection.innerHTML = expenseHtml;
+    if (investmentSection) investmentSection.innerHTML = investmentHtml;
+}
+
+function buildHistorySeries(monthly, initInv, initLiq) {
+    let runningInv = initInv;
+    let runningLiq = initLiq;
+    return monthly.map(m => {
+        runningInv += m.investment;
+        runningLiq += m.liquidSavings;
+        return {
+            key: m.key,
+            label: m.label,
+            closingInvestment: runningInv,
+            closingLiquid: runningLiq
+        };
+    });
+}
+
+function renderHistoryTable(historySeries) {
+    const tbody = document.getElementById('history-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    historySeries.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300';
+        tr.innerHTML = `
+            <td class="py-2 pr-4 font-medium">${item.label}</td>
+            <td class="py-2 pr-4 text-purple-600 dark:text-purple-400">${getDisplayCurrency(item.closingInvestment)}</td>
+            <td class="py-2 pr-4 text-teal-600 dark:text-teal-400">${getDisplayCurrency(item.closingLiquid)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 function renderMonthlyTable(monthly) {
@@ -552,13 +845,15 @@ function renderTransactionsTable(transactions) {
     if (!tbody) return;
     tbody.innerHTML = '';
 
+    const filteredTransactions = applyTransactionFilters(transactions);
+
     const typeStyles = {
-        income: 'bg-green-100 text-green-700',
-        expense: 'bg-red-100 text-red-700',
-        investment: 'bg-purple-100 text-purple-700'
+        income: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+        expense: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+        investment: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
     };
 
-    transactions.slice().reverse().slice(0, 50).forEach(t => {
+    filteredTransactions.slice().reverse().slice(0, 50).forEach(t => {
         const tr = document.createElement('tr');
         tr.className = 'border-b border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-300';
         const dateStr = t.date.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -578,11 +873,9 @@ function renderTransactionsTable(transactions) {
 // MASK TOGGLE
 // ============================================================
 function toggleMaskValues() {
-    const toggle = document.getElementById('mask-toggle');
-    if (!toggle) return;
-
-    maskValuesOn = toggle.checked;
+    maskValuesOn = !maskValuesOn;
     localStorage.setItem('maskValues', maskValuesOn ? 'true' : 'false');
+    updateMaskToggleButtons();
 
     if (activeDashboard === 'overview' || !document.getElementById('overview-content').classList.contains('hidden')) {
         render();
@@ -590,11 +883,28 @@ function toggleMaskValues() {
 }
 
 function initMaskMode() {
-    const toggle = document.getElementById('mask-toggle');
-    if (!toggle) return;
-
     maskValuesOn = localStorage.getItem('maskValues') === 'true';
-    toggle.checked = maskValuesOn;
+    updateMaskToggleButtons();
+}
+
+function updateMaskToggleButtons() {
+    const topButton = document.getElementById('mask-toggle-button');
+    const topIcon = document.getElementById('mask-toggle-icon');
+
+    const icon = maskValuesOn ? '🙈' : '👁️';
+    const pressed = maskValuesOn ? 'true' : 'false';
+
+    if (topButton) {
+        topButton.setAttribute('aria-pressed', pressed);
+        topButton.classList.toggle('bg-surface-strong', maskValuesOn);
+        topButton.classList.toggle('dark:bg-surface-strong', maskValuesOn);
+        topButton.classList.toggle('bg-surface', !maskValuesOn);
+        topButton.classList.toggle('dark:bg-surface-muted', !maskValuesOn);
+        topButton.classList.toggle('text-text', maskValuesOn);
+        topButton.classList.toggle('text-text-secondary', !maskValuesOn);
+    }
+
+    if (topIcon) topIcon.textContent = icon;
 }
 
 // ============================================================
@@ -612,15 +922,15 @@ function updateThemeToggleButton() {
 
 function toggleDarkMode() {
     const html = document.documentElement;
-    const body = document.body;
     const isDark = html.classList.toggle('dark');
-    body.classList.toggle('dark', isDark);
     localStorage.setItem('darkMode', isDark ? 'true' : 'false');
     updateThemeToggleButton();
     // Redraw charts if visible
     if (trendChartInstance) trendChartInstance.resize();
     if (expenseChartInstance) expenseChartInstance.resize();
     if (netWorthChartInstance) netWorthChartInstance.resize();
+    if (investmentChartInstance) investmentChartInstance.resize();
+    if (historyChartInstance) historyChartInstance.resize();
     if (yearlyChartInstance) yearlyChartInstance.resize();
 }
 
@@ -636,21 +946,22 @@ function toggleChartsSection() {
         if (trendChartInstance) trendChartInstance.resize();
         if (expenseChartInstance) expenseChartInstance.resize();
         if (netWorthChartInstance) netWorthChartInstance.resize();
+        if (investmentChartInstance) investmentChartInstance.resize();
+        if (historyChartInstance) historyChartInstance.resize();
     }
 }
 
 // Load dark mode preference
 function initDarkMode() {
-    const isDark = localStorage.getItem('darkMode') === 'true';
+    const storedPref = localStorage.getItem('darkMode');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const useDark = storedPref === 'true' || (storedPref === null && prefersDark);
     const html = document.documentElement;
-    const body = document.body;
 
-    if (isDark) {
+    if (useDark) {
         html.classList.add('dark');
-        body.classList.add('dark');
     } else {
         html.classList.remove('dark');
-        body.classList.remove('dark');
     }
     updateThemeToggleButton();
 }
@@ -661,22 +972,30 @@ function initDarkMode() {
 function switchDashboard(tab) {
     activeDashboard = tab;
 
-    const sections = ['overview', 'monthly', 'yearly', 'planning'];
+    const sections = ['overview', 'monthly', 'yearly', 'history', 'planning'];
     sections.forEach((name) => {
         const section = document.getElementById(`${name}-content`);
-        if (section) section.classList.toggle('hidden', name !== tab);
+        if (!section) return;
+        const show = name === tab;
+        section.classList.toggle('hidden', !show);
+        section.style.display = show ? '' : 'none';
     });
 
     sections.forEach((name) => {
         const tabEl = document.getElementById(`tab-${name}`);
         if (!tabEl) return;
 
-        tabEl.classList.toggle('border-blue-600', name === tab);
-        tabEl.classList.toggle('text-blue-600', name === tab);
-        tabEl.classList.toggle('dark:text-blue-400', name === tab);
-        tabEl.classList.toggle('border-transparent', name !== tab);
-        tabEl.classList.toggle('text-slate-600', name !== tab);
-        tabEl.classList.toggle('dark:text-slate-400', name !== tab);
+        const isActive = name === tab;
+        tabEl.classList.toggle('border-blue-600', isActive);
+        tabEl.classList.toggle('text-blue-600', isActive);
+        tabEl.classList.toggle('dark:text-blue-400', isActive);
+        tabEl.classList.toggle('border-transparent', !isActive);
+        tabEl.classList.toggle('text-slate-600', !isActive);
+        tabEl.classList.toggle('dark:text-slate-400', !isActive);
+        tabEl.classList.toggle('bg-surface', !isActive);
+        tabEl.classList.toggle('dark:bg-surface-muted', !isActive);
+        tabEl.classList.toggle('bg-white', isActive);
+        tabEl.classList.toggle('dark:bg-slate-800', isActive);
     });
 
     const mobileSelect = document.getElementById('mobile-dashboard-select');
@@ -1037,6 +1356,7 @@ function initApp() {
     initDarkMode();
     loadPlannerTransactions();
     initPlannerForm();
+    setupTransactionFilters();
     loadData();
     setupInstallPrompt();
 }
@@ -1067,5 +1387,8 @@ function setupInstallPrompt() {
     });
 }
 
-initApp();
-loadData();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}

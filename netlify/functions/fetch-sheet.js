@@ -22,18 +22,58 @@ exports.handler = async function (event) {
     };
   }
 
-  const sheetUrl = process.env.SECRET_GOOGLE_SHEETS_URL;
+  const incomeSheetUrl = process.env.SECRET_GOOGLE_SHEETS_URL_INCOME;
+  const expenseSheetUrl = process.env.SECRET_GOOGLE_SHEETS_URL_EXPENSE;
+  const investmentSheetUrl = process.env.SECRET_GOOGLE_SHEETS_URL_INVESTMENT;
+  const combinedSheetUrl = process.env.SECRET_GOOGLE_SHEETS_URL;
 
-  if (!sheetUrl || sheetUrl.includes('PASTE_YOUR')) {
+  const usingSeparateSheets = incomeSheetUrl && expenseSheetUrl && investmentSheetUrl;
+  const usingCombinedSheet = combinedSheetUrl;
+
+  if (!usingSeparateSheets && !usingCombinedSheet) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Google Sheet URL is not configured on the server.' })
+      body: JSON.stringify({ error: 'Google Sheet URL(s) are not configured on the server.' })
     };
   }
 
   try {
-    const response = await fetch(sheetUrl);
+    if (usingSeparateSheets) {
+      const [incomeRes, expenseRes, investmentRes] = await Promise.all([
+        fetch(incomeSheetUrl),
+        fetch(expenseSheetUrl),
+        fetch(investmentSheetUrl)
+      ]);
+
+      if (!incomeRes.ok || !expenseRes.ok || !investmentRes.ok) {
+        return {
+          statusCode: 502,
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ error: 'Could not fetch one or more Google Sheet endpoints.' })
+        };
+      }
+
+      const [incomeCsv, expenseCsv, investmentCsv] = await Promise.all([
+        incomeRes.text(),
+        expenseRes.text(),
+        investmentRes.text()
+      ]);
+
+      return {
+        statusCode: 200,
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json; charset=utf-8'
+        },
+        body: JSON.stringify({ incomeCsv, expenseCsv, investmentCsv })
+      };
+    }
+
+    const response = await fetch(combinedSheetUrl);
     const csvText = await response.text();
 
     if (!response.ok) {

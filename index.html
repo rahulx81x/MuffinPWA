@@ -18,8 +18,54 @@
 
     <!-- Tailwind CSS -->
     <script>
+        (function() {
+            const storedPref = localStorage.getItem('darkMode');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const useDark = storedPref === 'true' || (storedPref === null && prefersDark);
+            if (useDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+    <script>
         tailwind.config = {
-            darkMode: 'class'
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        canvas: 'var(--color-canvas)',
+                        'canvas-alt': 'var(--color-canvas-alt)',
+                        surface: 'var(--color-surface)',
+                        'surface-strong': 'var(--color-surface-strong)',
+                        'surface-muted': 'var(--color-surface-muted)',
+                        text: {
+                            DEFAULT: 'var(--color-text)',
+                            secondary: 'var(--color-text-secondary)',
+                            muted: 'var(--color-text-muted)'
+                        },
+                        primary: {
+                            DEFAULT: 'var(--color-primary)',
+                            muted: 'var(--color-primary-muted)'
+                        },
+                        success: {
+                            DEFAULT: 'var(--color-success)',
+                            muted: 'var(--color-success-muted)'
+                        },
+                        destructive: {
+                            DEFAULT: 'var(--color-destructive)',
+                            muted: 'var(--color-destructive-muted)'
+                        },
+                        warning: {
+                            DEFAULT: 'var(--color-warning)',
+                            muted: 'var(--color-warning-muted)'
+                        },
+                        border: 'var(--color-border)',
+                        divider: 'var(--color-divider)'
+                    }
+                }
+            }
         };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -28,32 +74,58 @@
     <style>
         :root {
             color-scheme: light;
-            --page-bg: #f8fafc;
-            --panel-bg: #ffffff;
-            --panel-alt: #f8fafc;
-            --text: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
+            --color-canvas: #f8fafc;
+            --color-canvas-alt: #ffffff;
+            --color-surface: #eef2ff;
+            --color-surface-strong: #ffffff;
+            --color-surface-muted: #e2e8f0;
+            --color-text: #0f172a;
+            --color-text-secondary: #475569;
+            --color-text-muted: #64748b;
+            --color-primary: #172554;
+            --color-primary-muted: #1e3a8a;
+            --color-success: #047857;
+            --color-success-muted: #10b981;
+            --color-destructive: #b91c1c;
+            --color-destructive-muted: #ef4444;
+            --color-warning: #b45309;
+            --color-warning-muted: #f59e0b;
+            --color-border: #cbd5e1;
+            --color-divider: #e2e8f0;
+            --color-muted: #94a3b8;
         }
 
         html.dark {
             color-scheme: dark;
-            --page-bg: #020617;
-            --panel-bg: #111827;
-            --panel-alt: #0f172a;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
+            --color-canvas: #071018;
+            --color-canvas-alt: #0f172a;
+            --color-surface: #111827;
+            --color-surface-strong: #1e293b;
+            --color-surface-muted: #111f38;
+            --color-text: #f8fafc;
+            --color-text-secondary: #cbd5e1;
+            --color-text-muted: #94a3b8;
+            --color-primary: #3b82f6;
+            --color-primary-muted: #60a5fa;
+            --color-success: #22c55e;
+            --color-success-muted: #4ade80;
+            --color-destructive: #fb7185;
+            --color-destructive-muted: #fda4af;
+            --color-warning: #f59e0b;
+            --color-warning-muted: #fbbf24;
+            --color-border: #334155;
+            --color-divider: #475569;
+            --color-muted: #94a3b8;
         }
 
         html, body {
             margin: 0;
             min-height: 100%;
-            background-color: var(--page-bg);
+            background-color: var(--color-canvas);
         }
 
         body {
-            color: var(--text);
+            color: var(--color-text);
             transition: background-color 0.2s ease, color 0.2s ease;
         }
 
@@ -61,23 +133,40 @@
             min-height: 100vh;
         }
 
-        body .bg-slate-50 { background-color: var(--page-bg) !important; }
-        body .bg-slate-900 { background-color: var(--panel-alt) !important; }
-        body .bg-white, body .bg-slate-800 { background-color: var(--panel-bg) !important; }
-        body .text-slate-900, body .text-slate-800, body .text-slate-700, body .text-slate-600, body .text-slate-500, body .text-slate-400, body .text-slate-300, body .text-slate-200, body .text-slate-100 { color: var(--text) !important; }
-        body .text-slate-400, body .text-slate-500 { color: var(--text-muted) !important; }
-        body .border-slate-100, body .border-slate-200, body .border-slate-300, body .border-slate-700 { border-color: var(--border) !important; }
+        .bg-slate-50 { background-color: var(--color-canvas) !important; }
+        .dark .dark\:bg-slate-900 { background-color: var(--color-canvas) !important; }
+        .bg-white { background-color: var(--color-surface) !important; }
+        .dark .dark\:bg-slate-800 { background-color: var(--color-surface-strong) !important; }
+        .text-slate-900 { color: var(--color-text) !important; }
+        .dark .dark\:text-white { color: var(--color-text) !important; }
+        .text-slate-700, .text-slate-600 { color: var(--color-text-secondary) !important; }
+        .dark .dark\:text-slate-300, .dark .dark\:text-slate-200 { color: var(--color-text-secondary) !important; }
+        .text-slate-500, .dark .dark\:text-slate-400 { color: var(--color-text-muted) !important; }
+        .border-slate-100, .border-slate-200, .border-slate-300 { border-color: var(--color-border) !important; }
+        .dark .dark\:border-slate-700, .dark .dark\:border-slate-600 { border-color: var(--color-divider) !important; }
+        .bg-slate-50\/70 { background-color: rgba(248, 250, 252, 0.7) !important; }
+        .dark .dark\:bg-slate-900\/40 { background-color: rgba(15, 23, 42, 0.4) !important; }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 </head>
-<body class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 p-3 sm:p-4 md:p-8 transition-colors duration-200">
+<body class="min-h-screen bg-canvas text-text p-3 sm:p-4 md:p-8 transition-colors duration-200">
     <div class="max-w-6xl mx-auto min-h-screen">
         <header class="mb-8 flex items-start justify-between gap-4">
             <div class="min-w-0">
-                <h1 class="text-3xl font-bold text-slate-900 dark:text-white">My Finances</h1>
-                <p class="text-slate-500 dark:text-slate-400">Income, expenses & savings — synced from your Google Sheet</p>
+                <h1 class="text-3xl font-bold text-text">My Finances</h1>
+                <p class="text-text-secondary">Income, expenses & savings — synced from your Google Sheet</p>
             </div>
-            <div class="flex shrink-0 items-center">
-                <button id="theme-toggle" onclick="toggleDarkMode()" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" title="Toggle dark mode" aria-label="Toggle dark mode">
+            <div class="flex shrink-0 items-center gap-2">
+                <button id="mask-toggle-button" onclick="toggleMaskValues();" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-text-secondary shadow-sm transition hover:bg-surface-strong dark:border-divider dark:bg-surface-muted dark:text-text-secondary dark:hover:bg-surface-strong" title="Mask values" aria-label="Toggle mask values" aria-pressed="false">
+                    <span id="mask-toggle-icon">👁️</span>
+                </button>
+                <button id="theme-toggle" onclick="toggleDarkMode()" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-text-secondary shadow-sm transition hover:bg-surface-strong dark:border-divider dark:bg-surface-muted dark:text-text-secondary dark:hover:bg-surface-strong" title="Toggle dark mode" aria-label="Toggle dark mode">
                     <span id="theme-toggle-icon">🌙</span>
                 </button>
             </div>
@@ -85,29 +174,28 @@
 
         <!-- Dashboard Navigation -->
         <div class="mb-8">
-            <div class="hidden md:flex gap-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
-                <button onclick="switchDashboard('overview')" id="tab-overview" class="px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 transition">
-                    📊 Overview
+            <div class="flex gap-2 overflow-x-auto border-b border-slate-200 dark:border-slate-700 pb-2 hide-scrollbar">
+                <button type="button" onclick="switchDashboard('overview')" id="tab-overview" class="flex-shrink-0 flex h-full min-w-[72px] flex-col items-center justify-center gap-1 rounded-t-xl border-b-2 border-blue-600 bg-surface px-3 py-3 text-center text-xs font-semibold text-blue-600 dark:bg-surface-muted dark:text-blue-400 transition">
+                    <span class="text-lg">📊</span>
+                    <span class="leading-4 normal-case">Overview</span>
                 </button>
-                <button onclick="switchDashboard('monthly')" id="tab-monthly" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
-                    📅 Monthly
+                <button type="button" onclick="switchDashboard('monthly')" id="tab-monthly" class="flex-shrink-0 flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-t-xl border-b-2 border-transparent bg-surface px-3 py-3 text-center text-[11px] font-semibold text-slate-600 dark:bg-surface-muted dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                    <span class="text-lg">📅</span>
+                    <span class="leading-4 normal-case">Monthly</span>
                 </button>
-                <button onclick="switchDashboard('yearly')" id="tab-yearly" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
-                    📈 Yearly
+                <button type="button" onclick="switchDashboard('yearly')" id="tab-yearly" class="flex-shrink-0 flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-t-xl border-b-2 border-transparent bg-surface px-3 py-3 text-center text-[11px] font-semibold text-slate-600 dark:bg-surface-muted dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                    <span class="text-lg">📈</span>
+                    <span class="leading-4 normal-case">Yearly</span>
                 </button>
-                <button onclick="switchDashboard('planning')" id="tab-planning" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
-                    🧮 Current Month
+                <button type="button" onclick="switchDashboard('history')" id="tab-history" class="flex-shrink-0 flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-t-xl border-b-2 border-transparent bg-surface px-3 py-3 text-center text-[11px] font-semibold text-slate-600 dark:bg-surface-muted dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                    <span class="text-lg">🕒</span>
+                    <span class="leading-4 normal-case">History</span>
+                </button>
+                <button type="button" onclick="switchDashboard('planning')" id="tab-planning" class="flex-shrink-0 flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-t-xl border-b-2 border-transparent bg-surface px-3 py-3 text-center text-[11px] font-semibold text-slate-600 dark:bg-surface-muted dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                    <span class="text-lg">🧮</span>
+                    <span class="leading-4 normal-case">Current Month</span>
                 </button>
             </div>
-            <label class="md:hidden block">
-                <span class="sr-only">Choose dashboard view</span>
-                <select id="mobile-dashboard-select" onchange="switchDashboard(this.value)" class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
-                    <option value="overview">📊 Overview</option>
-                    <option value="monthly">📅 Monthly</option>
-                    <option value="yearly">📈 Yearly</option>
-                    <option value="planning">🧮 Current Month</option>
-                </select>
-            </label>
         </div>
 
         <div id="status-msg" class="hidden mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm"></div>
@@ -115,28 +203,22 @@
         <!-- OVERVIEW TAB -->
         <div id="overview-content">
 
-        <div class="mb-4 flex justify-start sm:justify-end">
-            <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300">
-                <input id="mask-toggle" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="toggleMaskValues()">
-                <span>Mask values</span>
-            </label>
-        </div>
 
         <!-- Starting point context -->
-        <div class="mb-6 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 flex flex-wrap items-center gap-x-8 gap-y-2">
+        <div class="mb-6 p-4 rounded-xl bg-surface dark:bg-surface-muted border border-border dark:border-divider flex flex-wrap items-center gap-x-8 gap-y-2">
             <div>
-                <span class="text-xs font-semibold text-indigo-400 dark:text-indigo-300 uppercase">Starting Investment</span>
-                <span class="ml-2 font-bold text-indigo-700 dark:text-indigo-300" id="initial-investment">₹0</span>
+                <span class="text-xs font-semibold text-text-secondary uppercase">Starting Investment</span>
+                <span class="ml-2 font-bold text-text" id="initial-investment">₹0</span>
             </div>
             <div>
-                <span class="text-xs font-semibold text-indigo-400 dark:text-indigo-300 uppercase">Starting Liquid Balance</span>
-                <span class="ml-2 font-bold text-indigo-700 dark:text-indigo-300" id="initial-liquid">₹0</span>
+                <span class="text-xs font-semibold text-text-secondary uppercase">Starting Liquid Balance</span>
+                <span class="ml-2 font-bold text-text" id="initial-liquid">₹0</span>
             </div>
             <div>
-                <span class="text-xs font-semibold text-indigo-400 dark:text-indigo-300 uppercase">Starting Net Worth</span>
-                <span class="ml-2 font-bold text-indigo-700 dark:text-indigo-300" id="initial-net-worth">₹0</span>
+                <span class="text-xs font-semibold text-text-secondary uppercase">Starting Net Worth</span>
+                <span class="ml-2 font-bold text-text" id="initial-net-worth">₹0</span>
             </div>
-            <p class="text-xs text-indigo-400 dark:text-indigo-300 w-full sm:w-auto sm:ml-auto">Set in config.js — balances held before tracking began. Included in totals below.</p>
+            <p class="text-xs text-text-secondary w-full sm:w-auto sm:ml-auto">Set in config.js — balances held before tracking began. Included in totals below.</p>
         </div>
 
         <!-- Top-level KPIs -->
@@ -239,6 +321,13 @@
             </table>
         </div>
 
+        <!-- Sheet summaries -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+            <div id="income-summary-body"></div>
+            <div id="expense-summary-body"></div>
+            <div id="investment-summary-body"></div>
+        </div>
+
         <!-- Charts & Insights -->
         <section class="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40 p-4 sm:p-6">
             <button type="button" onclick="toggleChartsSection()" class="flex w-full items-center justify-between gap-3 text-left">
@@ -263,17 +352,43 @@
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
-                    <h4 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Spending by Category</h4>
-                    <canvas id="expenseChart"></canvas>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                        <h4 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Spending by Category</h4>
+                        <canvas id="expenseChart" height="240"></canvas>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                        <h4 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Investments by Type</h4>
+                        <canvas id="investmentChart" height="240"></canvas>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- Transactions -->
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+            <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label for="transactions-filter-start" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Start date</label>
+                    <input id="transactions-filter-start" type="date" class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white" />
+                </div>
+                <div>
+                    <label for="transactions-filter-end" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">End date</label>
+                    <input id="transactions-filter-end" type="date" class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white" />
+                </div>
+                <div class="lg:col-span-2">
+                    <label for="transactions-filter-type" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Type</label>
+                    <select id="transactions-filter-type" class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-slate-900 dark:text-white">
+                        <option value="all">All types</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                        <option value="investment">Investment</option>
+                    </select>
+                </div>
+            </div>
             <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Recent Transactions</h3>
-            <table class="w-full text-sm min-w-[640px]">
+            <div class="max-h-[420px] overflow-y-auto">
+                <table class="w-full text-sm min-w-[640px]">
                 <thead>
                     <tr class="text-left text-xs uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700">
                         <th class="py-2 pr-4">Date</th>
@@ -470,6 +585,33 @@
             <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8">
                 <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Yearly Trend</h3>
                 <canvas id="yearlyChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- HISTORY TAB -->
+        <div id="history-content" class="hidden">
+            <div class="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-700">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">Closing Balance History</h2>
+                <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">Track the closing investment and liquid balances across months.</p>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 mb-8">
+                <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Closing Balances Over Time</h3>
+                <canvas id="historyChart" height="100"></canvas>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-x-auto">
+                <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-white">Monthly Closing Balance History</h3>
+                <table class="w-full text-sm min-w-[520px]">
+                    <thead>
+                        <tr class="text-left text-xs uppercase text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-700">
+                            <th class="py-2 pr-4">Month</th>
+                            <th class="py-2 pr-4">Closing Investment</th>
+                            <th class="py-2 pr-4">Closing Liquid</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="text-slate-700 dark:text-slate-300"></tbody>
+                </table>
             </div>
         </div>
     </div>
