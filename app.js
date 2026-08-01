@@ -65,16 +65,21 @@ async function loadData() {
         allTransactions.sort((a, b) => a.date - b.date);
 
         if (!allTransactions.length) {
-            throw new Error('No valid sheet rows were found. Check your sheet template.');
+            console.warn('No valid sheet rows were found. Showing overview using the configured starting balances.');
         }
 
         render();
-        statusEl.classList.add('hidden');
+        if (statusEl) statusEl.classList.add('hidden');
+    showSection('overview');
 
     } catch (err) {
         console.error('Error loading sheet data', err);
-        statusEl.innerText = "Couldn't load your sheet. Ensure the sheet URLs are configured correctly and try again.";
-        statusEl.classList.remove('hidden');
+        if (statusEl) {
+            statusEl.innerText = "Couldn't load your sheet. Showing the overview with your configured starting balances instead.";
+            statusEl.classList.remove('hidden');
+        }
+        showSection('overview');
+        render();
     }
 }
 
@@ -370,6 +375,38 @@ function initPlannerForm() {
     });
 }
 
+function getInitialInvestmentBreakdown() {
+    const regular = Number(typeof INITIAL_REGULAR_DEPOSITS !== 'undefined' ? INITIAL_REGULAR_DEPOSITS : 36000);
+    const fixed = Number(typeof INITIAL_FIXED_DEPOSITS !== 'undefined' ? INITIAL_FIXED_DEPOSITS : 80000);
+    const mutual = Number(typeof INITIAL_MUTUAL_FUNDS !== 'undefined' ? INITIAL_MUTUAL_FUNDS : 55000);
+    const legacy = Number(typeof INITIAL_INVESTMENT !== 'undefined' ? INITIAL_INVESTMENT : 171000);
+    const hasSpecificValues = [regular, fixed, mutual].some(value => value > 0);
+
+    return {
+        regular: hasSpecificValues ? regular : (legacy || 0),
+        fixed: hasSpecificValues ? fixed : 0,
+        mutual: hasSpecificValues ? mutual : 0,
+        total: hasSpecificValues ? regular + fixed + mutual : legacy
+    };
+}
+
+function buildInvestmentBreakdown(investmentTransactions, initialBreakdown) {
+    const breakdown = {};
+
+    if (initialBreakdown) {
+        if (initialBreakdown.regular) breakdown['Regular Deposits'] = initialBreakdown.regular;
+        if (initialBreakdown.fixed) breakdown['Fixed Deposits'] = initialBreakdown.fixed;
+        if (initialBreakdown.mutual) breakdown['Mutual Funds'] = initialBreakdown.mutual;
+    }
+
+    investmentTransactions.forEach(t => {
+        const key = (t.investmentType || t.category || 'Uncategorized').trim() || 'Uncategorized';
+        breakdown[key] = (breakdown[key] || 0) + t.amount;
+    });
+
+    return breakdown;
+}
+
 function render() {
     const monthly = buildMonthlyKPIs(allTransactions);
 
@@ -379,7 +416,8 @@ function render() {
     const trackedInvestment = investmentTransactions.reduce((s, t) => s + t.amount, 0);
 
     // Add initial balances (safeguarded in case they are missing from config.js)
-    const initInv = typeof INITIAL_INVESTMENT !== 'undefined' ? INITIAL_INVESTMENT : 171000;
+    const initialInvestmentBreakdown = getInitialInvestmentBreakdown();
+    const initInv = initialInvestmentBreakdown.total;
     const initLiq = typeof INITIAL_LIQUID_BALANCE !== 'undefined' ? INITIAL_LIQUID_BALANCE : 54957;
 
     // Total Wealth calculations
@@ -393,6 +431,13 @@ function render() {
     const liquidSavingsPct = pct(trackedLiquid, totalIncome);
     const totalSavingsPct = pct(trackedInvestment + trackedLiquid, totalIncome);
 
+    const currentMonthTransactions = getCurrentMonthTransactions(allTransactions);
+    const currentMonthIncome = currentMonthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const currentMonthSpends = currentMonthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const currentMonthInvestment = currentMonthTransactions.filter(t => t.type === 'investment').reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const currentMonthLiquid = currentMonthIncome - currentMonthSpends - currentMonthInvestment;
+    const currentMonthSavingsPct = pct(currentMonthInvestment + currentMonthLiquid, currentMonthIncome);
+
     setText('total-income', getDisplayCurrency(totalIncome));
     setText('total-expenses', getDisplayCurrency(totalSpends));
     setText('total-investment', getDisplayCurrency(totalInvestment));
@@ -401,6 +446,11 @@ function render() {
     setText('investment-pct', investmentPct.toFixed(1) + '%');
     setText('liquid-savings-pct', liquidSavingsPct.toFixed(1) + '%');
     setText('total-savings-pct', totalSavingsPct.toFixed(1) + '%');
+    setText('current-month-expense', getDisplayCurrency(currentMonthSpends));
+    setText('current-month-investment', getDisplayCurrency(currentMonthInvestment));
+    setText('current-month-savings-pct', currentMonthSavingsPct.toFixed(1) + '%');
+    setText('total-liquid', getDisplayCurrency(liquidSavings));
+    setText('total-investment-core', getDisplayCurrency(totalInvestment));
 
     // Starting balance context
     setText('initial-investment', getDisplayCurrency(initInv));
@@ -415,6 +465,7 @@ function render() {
     const netWorthGrowth = netWorthToday - startingNetWorth;
     const netWorthGrowthPct = pct(netWorthGrowth, Math.abs(startingNetWorth) || 1);
     setText('net-worth', getDisplayCurrency(netWorthToday));
+    setText('net-worth-core', getDisplayCurrency(netWorthToday));
     setText('net-worth-growth', getDisplaySignedCurrency(netWorthGrowth));
     setText('net-worth-growth-pct', (netWorthGrowth >= 0 ? '+' : '') + netWorthGrowthPct.toFixed(1) + '%');
 
@@ -456,17 +507,26 @@ function render() {
         expenseBreakdown[t.category] = (expenseBreakdown[t.category] || 0) + t.amount;
     });
 
-    const investmentTypeBreakdown = {};
-    investmentTransactions.forEach(t => {
-        const key = t.investmentType || t.category || 'Uncategorized';
-        investmentTypeBreakdown[key] = (investmentTypeBreakdown[key] || 0) + t.amount;
-    });
+    const investmentTypeBreakdown = buildInvestmentBreakdown(investmentTransactions, initialInvestmentBreakdown);
+    const investmentBreakupEl = document.getElementById('investment-breakup');
+    if (investmentBreakupEl) {
+        const breakupText = Object.entries(investmentTypeBreakdown)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([name, amount]) => `${name}: ${getDisplayCurrency(amount)}`)
+            .join(' • ');
+        investmentBreakupEl.innerText = breakupText || 'No investments yet';
+    }
 
     const historySeries = buildHistorySeries(monthly, initInv, initLiq);
+    const monthlyWithClosingLiquid = monthly.map((item, index) => ({
+        ...item,
+        closingLiquid: historySeries[index]?.closingLiquid ?? 0
+    }));
 
     initCharts(monthly, expenseBreakdown, totalInvestment, liquidSavings, historySeries, initInv + initLiq, investmentTypeBreakdown);
-    renderOverviewSections(totalIncome, totalSpends, trackedInvestment, incomeTransactions, expenseTransactions, investmentTransactions, investmentTypeBreakdown);
-    renderMonthlyTable(monthly);
+    renderOverviewSections(totalIncome, totalSpends, trackedInvestment, totalInvestment, incomeTransactions, expenseTransactions, investmentTransactions, investmentTypeBreakdown);
+    renderMonthlyTable(monthlyWithClosingLiquid);
     renderTransactionsTable(allTransactions);
     renderHistoryTable(historySeries);
     renderPlannerDashboard();
@@ -550,6 +610,47 @@ function setText(id, text) {
 
 let trendChartInstance, expenseChartInstance, netWorthChartInstance, investmentChartInstance, historyChartInstance;
 
+function showSection(sectionName) {
+    const normalized = sectionName || 'overview';
+    const panels = document.querySelectorAll('.section-panel');
+    if (panels.length) {
+        panels.forEach((panel) => {
+            panel.classList.toggle('hidden', panel.id !== `${normalized}-content`);
+        });
+    }
+
+    if (normalized === 'monthly') {
+        populateMonthlySelects();
+        updateMonthlyDashboard();
+    } else if (normalized === 'yearly') {
+        populateYearlySelects();
+        updateYearlyDashboard();
+    } else if (normalized === 'history') {
+        render();
+        if (historyChartInstance) historyChartInstance.resize();
+    } else if (normalized === 'overview') {
+        render();
+    }
+
+    if (normalized !== 'overview') {
+        if (trendChartInstance) trendChartInstance.resize();
+        if (expenseChartInstance) expenseChartInstance.resize();
+        if (netWorthChartInstance) netWorthChartInstance.resize();
+        if (investmentChartInstance) investmentChartInstance.resize();
+        if (historyChartInstance) historyChartInstance.resize();
+    }
+}
+
+function togglePlannerPanel() {
+    const panel = document.getElementById('planner-panel');
+    const button = document.getElementById('planner-toggle');
+    if (!panel || !button) return;
+    const isHidden = panel.classList.toggle('hidden');
+    button.textContent = isHidden ? 'Show planner' : 'Hide planner';
+    button.classList.toggle('bg-emerald-600', isHidden);
+    button.classList.toggle('bg-slate-600', !isHidden);
+}
+
 function initCharts(monthly, expData, totalInvestment, liquidSavings, historySeries, startingNetWorth, investmentTypeBreakdown) {
     const labels = monthly.map(m => m.label);
     const currencyFormatter = (value) => isOverviewMasked() ? '••••' : formatCurrency(value);
@@ -560,9 +661,8 @@ function initCharts(monthly, expData, totalInvestment, liquidSavings, historySer
     if (investmentChartInstance) investmentChartInstance.destroy();
     if (historyChartInstance) historyChartInstance.destroy();
 
-    // Net worth over time (starts at the initial balance, before the first tracked month)
     const netWorthCtx = document.getElementById('netWorthChart');
-    if (netWorthCtx) {
+    if (netWorthCtx && netWorthCtx.getContext) {
         netWorthChartInstance = new Chart(netWorthCtx.getContext('2d'), {
             type: 'line',
             data: {
@@ -586,81 +686,83 @@ function initCharts(monthly, expData, totalInvestment, liquidSavings, historySer
         });
     }
 
-    // Monthly trend: Income, Expenses, Investment, Liquid Savings
-    const trendCtx = document.getElementById('revenueChart').getContext('2d');
-    trendChartInstance = new Chart(trendCtx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'Income',
-                    data: monthly.map(m => m.income),
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.08)',
-                    borderWidth: 3, tension: 0.4, fill: true
-                },
-                {
-                    label: 'Expenses',
-                    data: monthly.map(m => m.spends),
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.06)',
-                    borderWidth: 3, tension: 0.4, fill: true
-                },
-                {
-                    label: 'Investment (Savings)',
-                    data: monthly.map(m => m.investment),
-                    borderColor: '#8b5cf6',
-                    backgroundColor: 'rgba(139, 92, 246, 0.06)',
-                    borderWidth: 3, tension: 0.4, fill: true
-                },
-                {
-                    label: 'Liquid Savings',
-                    data: monthly.map(m => m.liquidSavings),
-                    borderColor: '#14b8a6',
-                    backgroundColor: 'rgba(20, 184, 166, 0.06)',
-                    borderWidth: 3, tension: 0.4, fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: true, position: 'bottom' },
-                tooltip: {
-                    callbacks: {
-                        label: (ctx) => `${ctx.dataset.label}: ${currencyFormatter(ctx.parsed.y)}`
+    const trendCtx = document.getElementById('revenueChart');
+    if (trendCtx && trendCtx.getContext) {
+        trendChartInstance = new Chart(trendCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Income',
+                        data: monthly.map(m => m.income),
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                        borderWidth: 3, tension: 0.4, fill: true
+                    },
+                    {
+                        label: 'Expenses',
+                        data: monthly.map(m => m.spends),
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.06)',
+                        borderWidth: 3, tension: 0.4, fill: true
+                    },
+                    {
+                        label: 'Investment (Savings)',
+                        data: monthly.map(m => m.investment),
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.06)',
+                        borderWidth: 3, tension: 0.4, fill: true
+                    },
+                    {
+                        label: 'Liquid Savings',
+                        data: monthly.map(m => m.liquidSavings),
+                        borderColor: '#14b8a6',
+                        backgroundColor: 'rgba(20, 184, 166, 0.06)',
+                        borderWidth: 3, tension: 0.4, fill: true
                     }
-                }
+                ]
             },
-            scales: { y: { ticks: { callback: (v) => currencyFormatter(v) } } }
-        }
-    });
-
-    // Spending by category
-    const expCtx = document.getElementById('expenseChart').getContext('2d');
-    expenseChartInstance = new Chart(expCtx, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(expData),
-            datasets: [{
-                data: Object.values(expData),
-                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: '70%',
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${currencyFormatter(ctx.parsed)}` } }
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.dataset.label}: ${currencyFormatter(ctx.parsed.y)}`
+                        }
+                    }
+                },
+                scales: { y: { ticks: { callback: (v) => currencyFormatter(v) } } }
             }
-        }
-    });
+        });
+    }
+
+    const expCtx = document.getElementById('expenseChart');
+    if (expCtx && expCtx.getContext) {
+        expenseChartInstance = new Chart(expCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(expData),
+                datasets: [{
+                    data: Object.values(expData),
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '70%',
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${currencyFormatter(ctx.parsed)}` } }
+                }
+            }
+        });
+    }
 
     const investCtx = document.getElementById('investmentChart');
-    if (investCtx) {
+    if (investCtx && investCtx.getContext) {
         investmentChartInstance = new Chart(investCtx.getContext('2d'), {
             type: 'doughnut',
             data: {
@@ -683,7 +785,7 @@ function initCharts(monthly, expData, totalInvestment, liquidSavings, historySer
     }
 
     const historyCtx = document.getElementById('historyChart');
-    if (historyCtx) {
+    if (historyCtx && historyCtx.getContext) {
         historyChartInstance = new Chart(historyCtx.getContext('2d'), {
             type: 'line',
             data: {
@@ -723,7 +825,7 @@ function initCharts(monthly, expData, totalInvestment, liquidSavings, historySer
     }
 }
 
-function renderOverviewSections(totalIncome, totalSpends, trackedInvestment, incomeItems, expenseItems, investmentItems, investmentTypeBreakdown) {
+function renderOverviewSections(totalIncome, totalSpends, trackedInvestment, totalInvestmentValue, incomeItems, expenseItems, investmentItems, investmentTypeBreakdown) {
     const incomeByCategory = {};
     incomeItems.forEach(t => {
         incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + t.amount;
@@ -771,7 +873,7 @@ function renderOverviewSections(totalIncome, totalSpends, trackedInvestment, inc
     const investmentHtml = `
         <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
             <h3 class="text-lg font-bold mb-3 text-slate-900 dark:text-white">Investments</h3>
-            <p class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-4">${getDisplayCurrency(trackedInvestment)}</p>
+            <p class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-4">${getDisplayCurrency(totalInvestmentValue ?? trackedInvestment)}</p>
             <div class="space-y-1">${topInvestments}</div>
         </div>
     `;
@@ -832,6 +934,7 @@ function renderMonthlyTable(monthly) {
             <td class="py-2 pr-4 text-purple-600 dark:text-purple-400">${getDisplayCurrency(m.investment)}</td>
             <td class="py-2 pr-4 ${m.incomeMinusSpends >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}">${getDisplayCurrency(m.incomeMinusSpends)}</td>
             <td class="py-2 pr-4 ${m.liquidSavings >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-600 dark:text-red-400'}">${getDisplayCurrency(m.liquidSavings)}</td>
+            <td class="py-2 pr-4 text-teal-600 dark:text-teal-400">${getDisplayCurrency(m.closingLiquid ?? 0)}</td>
             <td class="py-2 pr-4">${m.investmentPct.toFixed(1)}%</td>
             <td class="py-2 pr-4">${m.liquidSavingsPct.toFixed(1)}%</td>
             <td class="py-2 pr-4 font-semibold">${m.totalSavingsPct.toFixed(1)}%</td>
@@ -934,21 +1037,14 @@ function toggleDarkMode() {
     if (yearlyChartInstance) yearlyChartInstance.resize();
 }
 
-function toggleChartsSection() {
-    const content = document.getElementById('charts-section-content');
-    const toggle = document.getElementById('charts-section-toggle');
-    if (!content || !toggle) return;
+function toggleOverviewDetails() {
+    const panel = document.getElementById('overview-more-details');
+    const button = document.getElementById('overview-more-details-toggle');
+    if (!panel || !button) return;
 
-    const isHidden = content.classList.toggle('hidden');
-    toggle.textContent = isHidden ? 'Show' : 'Hide';
-
-    if (!isHidden) {
-        if (trendChartInstance) trendChartInstance.resize();
-        if (expenseChartInstance) expenseChartInstance.resize();
-        if (netWorthChartInstance) netWorthChartInstance.resize();
-        if (investmentChartInstance) investmentChartInstance.resize();
-        if (historyChartInstance) historyChartInstance.resize();
-    }
+    const isHidden = panel.classList.toggle('hidden');
+    button.textContent = isHidden ? 'More details' : 'Less details';
+    button.setAttribute('aria-expanded', String(!isHidden));
 }
 
 // Load dark mode preference
@@ -970,47 +1066,9 @@ function initDarkMode() {
 // DASHBOARD NAVIGATION
 // ============================================================
 function switchDashboard(tab) {
-    activeDashboard = tab;
-
-    const sections = ['overview', 'monthly', 'yearly', 'history', 'planning'];
-    sections.forEach((name) => {
-        const section = document.getElementById(`${name}-content`);
-        if (!section) return;
-        const show = name === tab;
-        section.classList.toggle('hidden', !show);
-        section.style.display = show ? '' : 'none';
-    });
-
-    sections.forEach((name) => {
-        const tabEl = document.getElementById(`tab-${name}`);
-        if (!tabEl) return;
-
-        const isActive = name === tab;
-        tabEl.classList.toggle('border-blue-600', isActive);
-        tabEl.classList.toggle('text-blue-600', isActive);
-        tabEl.classList.toggle('dark:text-blue-400', isActive);
-        tabEl.classList.toggle('border-transparent', !isActive);
-        tabEl.classList.toggle('text-slate-600', !isActive);
-        tabEl.classList.toggle('dark:text-slate-400', !isActive);
-        tabEl.classList.toggle('bg-surface', !isActive);
-        tabEl.classList.toggle('dark:bg-surface-muted', !isActive);
-        tabEl.classList.toggle('bg-white', isActive);
-        tabEl.classList.toggle('dark:bg-slate-800', isActive);
-    });
-
-    const mobileSelect = document.getElementById('mobile-dashboard-select');
-    if (mobileSelect) {
-        mobileSelect.value = tab;
-    }
-
-    if (tab === 'overview') {
-        render();
-    }
-    if (tab === 'planning') {
-        renderPlannerDashboard();
-    }
-    if (tab === 'monthly') populateMonthlySelects();
-    if (tab === 'yearly') populateYearlySelects();
+    activeDashboard = 'overview';
+    showSection(tab);
+    render();
 }
 
 // ============================================================
