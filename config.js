@@ -7,7 +7,10 @@
 const SHEET_CSV_URL = '';
 
 // Add your starting balances here (before tracking started)
-const INITIAL_INVESTMENT = 171000;      // e.g., 500000
+const INITIAL_INVESTMENT = 171000;      // legacy single-bucket fallback
+const INITIAL_REGULAR_DEPOSITS = 36000;     // e.g., 50000
+const INITIAL_FIXED_DEPOSITS = 80000;       // e.g., 75000
+const INITIAL_MUTUAL_FUNDS = 55000;         // e.g., 46000
 const INITIAL_LIQUID_BALANCE = 54957;  // e.g., 50000
 
 // Currency formatting (Indian Rupee, lakh/crore grouping)
