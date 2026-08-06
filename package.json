@@ -1,5 +1,5 @@
 {
-  "name": "finance-app-pwa-inr",
+  "name": "muffin",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "google-auth-library": "^11.0.0",
+    "google-spreadsheet": "^5.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

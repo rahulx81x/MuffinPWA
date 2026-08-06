@@ -1,7 +1,8 @@
 import { FormEvent, useMemo, useState } from 'react';
+import { INITIAL_LIQUID_BALANCE } from '../config';
 import { useMask } from '../hooks/useMask';
 import { createId } from '../lib/parseSheet';
-import { currentMonthKey, monthKey } from '../lib/metrics';
+import { buildMonthlyKPIs, currentMonthKey, monthKey } from '../lib/metrics';
 import type { NewTransactionInput, Transaction, TransactionType } from '../types';
 
 interface PlannerViewProps {
@@ -53,6 +54,15 @@ export function PlannerView({
     .reduce((s, t) => s + t.amount, 0);
   const liquid = income - expenses - investment;
   const savingsPct = pct(investment + liquid, income);
+
+  const previousClose = useMemo(() => {
+    const monthly = buildMonthlyKPIs(sheetTransactions);
+    const prior = monthly.filter((m) => m.key < thisMonth);
+    return prior.length > 0
+      ? prior[prior.length - 1].closingLiquid
+      : INITIAL_LIQUID_BALANCE;
+  }, [sheetTransactions, thisMonth]);
+  const closingBalance = previousClose + liquid;
 
   const plannerThisMonth = plannerTransactions.filter(
     (t) => monthKey(t.date) === thisMonth
@@ -106,7 +116,11 @@ export function PlannerView({
           label="Savings %"
           value={`${savingsPct.toFixed(1)}%`}
           tone="text-emerald-600 dark:text-emerald-400"
-          className="col-span-2"
+        />
+        <Stat
+          label="Closing Balance"
+          value={formatCurrency(closingBalance)}
+          tone="text-teal-600 dark:text-teal-400"
         />
       </div>
 

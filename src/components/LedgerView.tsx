@@ -5,6 +5,9 @@ import type { Transaction, TransactionType } from '../types';
 
 interface LedgerViewProps {
   transactions: Transaction[];
+  onEdit: (tx: Transaction) => void;
+  onDelete: (tx: Transaction) => void;
+  mutating?: boolean;
 }
 
 type TypeFilter = 'all' | TransactionType;
@@ -56,7 +59,12 @@ function normalizeSearch(value: string): string {
   return value.trim().toLowerCase();
 }
 
-export function LedgerView({ transactions }: LedgerViewProps) {
+export function LedgerView({
+  transactions,
+  onEdit,
+  onDelete,
+  mutating = false,
+}: LedgerViewProps) {
   const { masked, formatCurrency } = useMask();
   const [query, setQuery] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -456,12 +464,66 @@ export function LedgerView({ transactions }: LedgerViewProps) {
                   <h3 className="min-w-0 flex-1 break-words text-[15px] font-bold leading-snug text-zinc-900 dark:text-zinc-50">
                     {tx.category || '—'}
                   </h3>
-                  <p
-                    className={`shrink-0 pt-0.5 text-right text-[15px] font-bold tabular-nums leading-snug ${amountClass(tx.type)}`}
-                  >
-                    {amountPrefix(tx.type, masked)}
-                    {formatCurrency(tx.amount)}
-                  </p>
+                  <div className="flex shrink-0 items-start gap-1.5">
+                    <p
+                      className={`pt-0.5 text-right text-[15px] font-bold tabular-nums leading-snug ${amountClass(tx.type)}`}
+                    >
+                      {amountPrefix(tx.type, masked)}
+                      {formatCurrency(tx.amount)}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(tx)}
+                      disabled={mutating || tx.tabName == null || tx.rowIndex == null}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition active:scale-95 hover:bg-zinc-100 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                      aria-label={`Edit ${tx.category || 'transaction'}`}
+                      title="Edit"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19.5 7.125 16.875 4.5"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(tx)}
+                      disabled={mutating || tx.tabName == null || tx.rowIndex == null}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-rose-500 transition active:scale-95 hover:bg-rose-50 disabled:opacity-40 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                      aria-label={`Delete ${tx.category || 'transaction'}`}
+                      title="Delete"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7h12Z"
+                        />
+                        <path strokeLinecap="round" d="M10 11v6M14 11v6" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-1.5 space-y-1.5">

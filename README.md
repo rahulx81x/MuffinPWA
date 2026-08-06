@@ -1,6 +1,6 @@
-# My Finance Dashboard PWA
+# Muffin
 
-A personal finance Progressive Web App that turns a Google Sheet into a live dashboard. Track income, expenses, and investments in familiar spreadsheet tabs; a Netlify-hosted React app fetches that data securely, computes savings and net-worth metrics, and presents them in a mobile-friendly UI you can install on your phone.
+A personal finance Progressive Web App (**Muffin**) that turns a Google Sheet into a live dashboard. Track income, expenses, and investments in familiar spreadsheet tabs; a Netlify-hosted React app fetches that data securely, computes savings and net-worth metrics, and presents them in a mobile-friendly UI you can install on your phone.
 
 ---
 
@@ -278,7 +278,7 @@ Recommended path: keep the code on GitHub so Netlify can rebuild automatically w
 #### Option B — Create a new repo and upload
 
 1. On GitHub, click **New repository**.
-2. Name it (e.g. `my-finance-dashboard`), leave it Private if you prefer, create it.
+2. Name it (e.g. `muffin`), leave it Private if you prefer, create it.
 3. Upload the project files (or use GitHub Desktop / `git` if you know how).
    - Include everything except secrets. Never upload files containing your published sheet URLs.
 
@@ -403,7 +403,7 @@ Runtime dependencies are intentionally small (`react`, `react-dom`). Charts/moda
 ### 3.2 Repository architecture
 
 ```text
-MyFinanceDashboardPWA/
+MuffinPWA/
 ├── src/
 │   ├── main.tsx              # React entry
 │   ├── App.tsx               # Shell: load sheet, tabs, planner, about modal

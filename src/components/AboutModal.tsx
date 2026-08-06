@@ -31,8 +31,11 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
               id="about-title"
               className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-50"
             >
-              Vibe Coded by Rahul Gouri, 2026
+              Muffin
             </h2>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              Vibe Coded by Rahul Gouri, 2026
+            </p>
           </div>
           <button
             type="button"

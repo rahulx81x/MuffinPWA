@@ -3,11 +3,16 @@ import type { AppTab } from '../types';
 interface FloatingNavProps {
   activeTab: AppTab;
   onTabChange: (tab: AppTab) => void;
+  onAdd?: () => void;
+  showAdd?: boolean;
 }
 
-const tabs: { id: AppTab; label: string }[] = [
+const leftTabs: { id: AppTab; label: string }[] = [
   { id: 'home', label: 'Home' },
   { id: 'planner', label: 'Planner' },
+];
+
+const rightTabs: { id: AppTab; label: string }[] = [
   { id: 'ledger', label: 'Ledger' },
   { id: 'monthly', label: 'Months' },
 ];
@@ -93,40 +98,94 @@ function TabIcon({ id, active }: { id: AppTab; active: boolean }) {
   );
 }
 
-export function FloatingNav({ activeTab, onTabChange }: FloatingNavProps) {
+function NavTab({
+  id,
+  label,
+  active,
+  onSelect,
+}: {
+  id: AppTab;
+  label: string;
+  active: boolean;
+  onSelect: (tab: AppTab) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(id)}
+      className={`flex min-h-11 min-w-[3.5rem] flex-col items-center justify-center gap-0.5 rounded-full px-2 py-1.5 transition duration-200 active:scale-95 ${
+        active
+          ? 'bg-slate-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-900'
+          : 'text-slate-500 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:bg-slate-800/80'
+      }`}
+      aria-current={active ? 'page' : undefined}
+    >
+      <TabIcon id={id} active={active} />
+      <span
+        className={`text-[10px] font-semibold ${
+          active
+            ? 'text-white dark:text-slate-900'
+            : 'text-slate-400 dark:text-slate-500'
+        }`}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+export function FloatingNav({
+  activeTab,
+  onTabChange,
+  onAdd,
+  showAdd = true,
+}: FloatingNavProps) {
   return (
     <nav
       className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center mb-safe px-3"
       aria-label="Primary"
     >
       <div className="pointer-events-auto flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-slate-200/70 bg-white/65 p-1.5 shadow-xl backdrop-blur-md [scrollbar-width:none] dark:border-slate-700/70 dark:bg-slate-950/65 [&::-webkit-scrollbar]:hidden">
-        {tabs.map((tab) => {
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onTabChange(tab.id)}
-              className={`flex min-h-11 min-w-[3.85rem] flex-col items-center justify-center gap-0.5 rounded-full px-2.5 py-1.5 transition duration-200 active:scale-95 ${
-                active
-                  ? 'bg-slate-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-900'
-                  : 'text-slate-500 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:bg-slate-800/80'
-              }`}
-              aria-current={active ? 'page' : undefined}
+        {leftTabs.map((tab) => (
+          <NavTab
+            key={tab.id}
+            id={tab.id}
+            label={tab.label}
+            active={activeTab === tab.id}
+            onSelect={onTabChange}
+          />
+        ))}
+
+        {showAdd && onAdd && (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="mx-0.5 inline-flex h-12 w-12 shrink-0 items-center justify-center self-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 text-white shadow-[0_8px_20px_-4px_rgba(16,185,129,0.55)] ring-4 ring-white/90 transition duration-200 active:scale-95 dark:from-emerald-500 dark:to-teal-400 dark:ring-slate-950/80 dark:shadow-[0_8px_22px_-4px_rgba(45,212,191,0.45)]"
+            aria-label="Add transaction"
+            title="Add transaction"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              aria-hidden="true"
             >
-              <TabIcon id={tab.id} active={active} />
-              <span
-                className={`text-[10px] font-semibold ${
-                  active
-                    ? 'text-white dark:text-slate-900'
-                    : 'text-slate-400 dark:text-slate-500'
-                }`}
-              >
-                {tab.label}
-              </span>
-            </button>
-          );
-        })}
+              <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+        )}
+
+        {rightTabs.map((tab) => (
+          <NavTab
+            key={tab.id}
+            id={tab.id}
+            label={tab.label}
+            active={activeTab === tab.id}
+            onSelect={onTabChange}
+          />
+        ))}
       </div>
     </nav>
   );

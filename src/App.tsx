@@ -3,12 +3,13 @@ import { AboutModal } from './components/AboutModal';
 import { FloatingNav } from './components/FloatingNav';
 import { HomeView } from './components/HomeView';
 import { LedgerView } from './components/LedgerView';
+import { ManageTransactionModal } from './components/ManageTransactionModal';
 import { MonthlyView } from './components/MonthlyView';
 import { PlannerView, toPlannerTransaction } from './components/PlannerView';
 import { useMask } from './hooks/useMask';
 import { useTheme } from './hooks/useTheme';
+import { deleteTransaction, getTransactions } from './lib/api';
 import { buildFinancialMetrics, EMPTY_METRICS } from './lib/metrics';
-import { fetchSheetTransactions } from './lib/parseSheet';
 import type {
   AppTab,
   FinancialMetrics,
@@ -47,12 +48,32 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [manageMode, setManageMode] = useState<'add' | 'edit'>('add');
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [mutating, setMutating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const ledgerTransactions = useMemo(
     () =>
       [...sheetTransactions].sort((a, b) => a.date.localeCompare(b.date)),
     [sheetTransactions]
   );
+
+  async function refreshTransactions() {
+    setError(null);
+    try {
+      const transactions = await getTransactions();
+      setSheetTransactions(transactions);
+    } catch (err) {
+      console.error('Error loading sheet data', err);
+      setError(
+        "Couldn't load your sheet. Showing overview with configured starting balances."
+      );
+      setSheetTransactions([]);
+      throw err;
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +83,7 @@ export default function App() {
       setError(null);
 
       try {
-        const transactions = await fetchSheetTransactions();
+        const transactions = await getTransactions();
         if (cancelled) return;
         setSheetTransactions(transactions);
       } catch (err) {
@@ -109,15 +130,61 @@ export default function App() {
     savePlannerTransactions([]);
   }
 
+  function openAddModal() {
+    setManageMode('add');
+    setEditingTx(null);
+    setManageOpen(true);
+  }
+
+  function openEditModal(tx: Transaction) {
+    setManageMode('edit');
+    setEditingTx(tx);
+    setManageOpen(true);
+  }
+
+  async function handleManageSuccess() {
+    setStatusMessage(null);
+    try {
+      await refreshTransactions();
+      setStatusMessage(
+        manageMode === 'add' ? 'Transaction added.' : 'Transaction updated.'
+      );
+    } catch {
+      setStatusMessage('Saved to sheet, but refresh failed. Pull to reload.');
+    }
+  }
+
+  async function handleDelete(tx: Transaction) {
+    if (tx.tabName == null || tx.rowIndex == null) return;
+    const label = tx.category || 'this transaction';
+    if (!window.confirm(`Delete ${label}?`)) return;
+
+    setMutating(true);
+    setStatusMessage(null);
+    setError(null);
+
+    try {
+      await deleteTransaction(tx.tabName, tx.rowIndex);
+      await refreshTransactions();
+      setStatusMessage('Transaction deleted.');
+    } catch (err) {
+      console.error('Failed to delete transaction', err);
+      setError(
+        err instanceof Error ? err.message : 'Could not delete transaction.'
+      );
+    } finally {
+      setMutating(false);
+    }
+  }
+
   return (
     <div className="min-h-dvh bg-zinc-100 text-zinc-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-50">
       <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-zinc-100/90 backdrop-blur-md safe-pt transition-colors duration-300 dark:border-zinc-800/80 dark:bg-zinc-950/90">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-1.5">
           <div className="min-w-0">
             <h1 className="font-display text-[1.15rem] font-extrabold leading-none tracking-[-0.04em] text-zinc-900 dark:text-zinc-50">
-              My{' '}
               <span className="bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent dark:from-emerald-400 dark:to-teal-300">
-                Finances
+                Muffin
               </span>
             </h1>
             <p className="mt-0.5 flex items-center gap-1 text-[9px] font-medium uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
@@ -268,14 +335,73 @@ export default function App() {
             onClear={handleClearPlanner}
           />
         ) : activeTab === 'ledger' ? (
-          <LedgerView transactions={ledgerTransactions} />
+          <LedgerView
+            transactions={ledgerTransactions}
+            onEdit={openEditModal}
+            onDelete={handleDelete}
+            mutating={mutating}
+          />
         ) : (
           <MonthlyView transactions={ledgerTransactions} />
         )}
       </main>
 
-      <FloatingNav activeTab={activeTab} onTabChange={setActiveTab} />
+      {statusMessage && (
+        <div
+          className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[calc(env(safe-area-inset-top,0px)+3.75rem)]"
+          role="status"
+          aria-live="polite"
+        >
+          <div
+            className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-emerald-200/90 bg-white/95 px-4 py-3 text-sm text-emerald-900 shadow-xl shadow-emerald-950/10 backdrop-blur-md dark:border-emerald-800/80 dark:bg-zinc-950/95 dark:text-emerald-100 dark:shadow-black/40"
+            style={{ animation: 'toastIn 180ms ease-out' }}
+          >
+            <p className="min-w-0 flex-1 leading-snug">{statusMessage}</p>
+            <button
+              type="button"
+              onClick={() => setStatusMessage(null)}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-emerald-700/80 transition active:scale-95 hover:bg-emerald-50 dark:text-emerald-200/90 dark:hover:bg-emerald-950/60"
+              aria-label="Dismiss notification"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 6l12 12M18 6 6 18"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <FloatingNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onAdd={openAddModal}
+        showAdd={!loading}
+      />
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <ManageTransactionModal
+        open={manageOpen}
+        mode={manageMode}
+        transaction={editingTx}
+        onClose={() => setManageOpen(false)}
+        onSuccess={handleManageSuccess}
+      />
+      <style>{`
+        @keyframes toastIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
