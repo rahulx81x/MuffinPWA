@@ -91,7 +91,16 @@ async function getDoc() {
     });
   }
 
-  const auth = new OAuth2Client(config.clientId, config.clientSecret);
+  // Use Node's built-in fetch so gaxios never loads node-fetch/fetch-blob.
+  // On Netlify, fetch-blob's ESM interop breaks with:
+  // "Class extends value #<Object> is not a constructor or null".
+  const auth = new OAuth2Client({
+    clientId: config.clientId,
+    clientSecret: config.clientSecret,
+    transporterOptions: {
+      fetchImplementation: globalThis.fetch.bind(globalThis),
+    },
+  });
   auth.setCredentials({ refresh_token: config.refreshToken });
 
   const doc = new GoogleSpreadsheet(config.spreadsheetId, auth);
