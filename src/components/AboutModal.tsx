@@ -10,7 +10,7 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <button
         type="button"
-        className="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-muffin-chocolate/50 backdrop-blur-[2px] transition-colors duration-200"
         aria-label="Dismiss about dialog"
         onClick={onClose}
       />
@@ -19,25 +19,28 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="about-title"
-        className="relative z-10 w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+        className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-surface-strong p-5 shadow-warm transition-colors duration-200"
         style={{ animation: 'aboutFade 180ms ease-out' }}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
               About
             </p>
             <h2
               id="about-title"
-              className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-50"
+              className="mt-1 font-display text-base font-bold text-text"
             >
-              Vibe Coded by Rahul Gouri, 2026
+              Muffin
             </h2>
+            <p className="mt-0.5 text-xs text-text-secondary">
+              Vibe Coded by Rahul Gouri, 2026
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-700 transition active:scale-95 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm transition-colors duration-200 active:scale-95"
             aria-label="Close"
           >
             <svg
@@ -57,15 +60,16 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
           </button>
         </div>
 
-        <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-          A personal finance PWA that turns your Google Sheet into a live
-          dashboard for income, expenses, investments, and net worth — built for
-          the phone, installable as an app.
+        <p className="mt-3 text-sm leading-relaxed text-text-secondary">
+          A cozy personal finance PWA that turns your Google Sheet into a live
+          dashboard — income, expenses, investments, Provident Fund tracking,
+          and net worth — baked for the phone and installable as an app.
         </p>
 
-        <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-          Stack: React, TypeScript, Vite, Tailwind CSS, Netlify Functions, Google
-          Sheets (published CSV), with PWA support via Workbox. Built with Cursor
+        <p className="mt-3 text-sm leading-relaxed text-text-secondary">
+          Warm light & dark themes, amount masking, ledger add/edit, and
+          drill-down charts. Stack: React, TypeScript, Vite, Tailwind CSS,
+          Netlify Functions, Google Sheets, and Workbox PWA. Built with Cursor
           and GitHub Copilot.
         </p>
       </div>

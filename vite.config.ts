@@ -9,10 +9,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon_192.png', 'icons/icon_512.png'],
       manifest: {
-        name: 'My Finance Dashboard',
-        short_name: 'My Finances',
+        name: 'Muffin',
+        short_name: 'Muffin',
         description:
-          'Track income, expenses, and investments from a Google Sheet on your phone',
+          'Muffin — track income, expenses, and investments from a Google Sheet on your phone',
         start_url: '/',
         scope: '/',
         display: 'standalone',

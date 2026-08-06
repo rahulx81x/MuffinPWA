@@ -3,6 +3,11 @@ import {
   INITIAL_LIQUID_BALANCE,
 } from '../config';
 import type { FinancialMetrics, MonthlyKPI, Transaction } from '../types';
+import {
+  isCountedInvestment,
+  isProvidentFund,
+  sumProvidentFund,
+} from './providentFund';
 
 function pct(part: number, whole: number): number {
   if (!whole) return 0;
@@ -64,7 +69,7 @@ export function buildMonthlyKPIs(transactions: Transaction[]): MonthlyKPI[] {
       byMonth[key].spends += t.amount;
       byMonth[key].expensesByCategory[t.category] =
         (byMonth[key].expensesByCategory[t.category] || 0) + t.amount;
-    } else if (t.type === 'investment') {
+    } else if (isCountedInvestment(t)) {
       byMonth[key].investment += t.amount;
     }
   });
@@ -109,6 +114,7 @@ export function buildInvestmentBreakup(
   if (initial.fixed) breakdown['Fixed Deposits'] = initial.fixed;
   if (initial.mutual) breakdown['Mutual Funds'] = initial.mutual;
 
+  // Include every investment type in the graph/breakup (PF included for visibility).
   transactions
     .filter((t) => t.type === 'investment')
     .forEach((t) => {
@@ -131,8 +137,9 @@ export function buildFinancialMetrics(
     .filter((t) => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
   const trackedInvestment = transactions
-    .filter((t) => t.type === 'investment')
+    .filter(isCountedInvestment)
     .reduce((sum, t) => sum + t.amount, 0);
+  const providentFundBalance = sumProvidentFund(transactions);
 
   const initInv = getInitialInvestmentBreakdown().total;
   const initLiq = INITIAL_LIQUID_BALANCE;
@@ -166,7 +173,7 @@ export function buildFinancialMetrics(
     .filter((t) => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
   const currentMonthInvestment = monthTx
-    .filter((t) => t.type === 'investment')
+    .filter(isCountedInvestment)
     .reduce((sum, t) => sum + t.amount, 0);
   const currentMonthLiquid =
     currentMonthIncome - currentMonthExpense - currentMonthInvestment;
@@ -182,6 +189,7 @@ export function buildFinancialMetrics(
     savingsRate,
     liquidBalance,
     investmentBalance,
+    providentFundBalance,
     currentMonthIncome,
     currentMonthExpense,
     currentMonthInvestment,
@@ -203,6 +211,7 @@ export const EMPTY_METRICS: FinancialMetrics = {
   savingsRate: 0,
   liquidBalance: 0,
   investmentBalance: 0,
+  providentFundBalance: 0,
   currentMonthIncome: 0,
   currentMonthExpense: 0,
   currentMonthInvestment: 0,
@@ -215,3 +224,5 @@ export const EMPTY_METRICS: FinancialMetrics = {
   monthsTracked: 0,
   investmentBreakup: {},
 };
+
+export { isProvidentFund, isCountedInvestment };

@@ -10,6 +10,7 @@ export type MetricKey =
   | 'totalLiquid'
   | 'totalInvestment'
   | 'investmentBreakup'
+  | 'providentFund'
   | 'netWorth'
   | 'totalIncome'
   | 'totalSpends'
@@ -23,6 +24,8 @@ export type KpiModalKind = 'list' | 'pie' | 'line';
 
 export type KpiIconHint = 'list' | 'chart';
 
+export type SheetTabName = 'Income' | 'Expense' | 'Investment';
+
 export interface Transaction {
   id: string;
   date: string;
@@ -31,6 +34,9 @@ export interface Transaction {
   amount: number;
   comment: string;
   investmentType?: string;
+  /** Present for sheet-backed rows; omitted for local planner entries. */
+  tabName?: SheetTabName;
+  rowIndex?: number;
 }
 
 export interface FinancialMetrics {
@@ -40,6 +46,8 @@ export interface FinancialMetrics {
   savingsRate: number;
   liquidBalance: number;
   investmentBalance: number;
+  /** Cumulative Provident Fund contributions — display only, not in net worth. */
+  providentFundBalance: number;
   currentMonthIncome: number;
   currentMonthExpense: number;
   currentMonthInvestment: number;
@@ -74,15 +82,13 @@ export interface NewTransactionInput {
   type: TransactionType;
   amount: number;
   comment: string;
+  investmentType?: string;
 }
 
-export interface SheetPayload {
-  combinedCsv?: string;
-  sheetCsv?: string;
-  incomeCsv?: string;
-  income_csv?: string;
-  expenseCsv?: string;
-  expense_csv?: string;
-  investmentCsv?: string;
-  investment_csv?: string;
-}
+export type SheetRowData = {
+  Date: string;
+  Category: string;
+  Amount: number | string;
+  Comment?: string;
+  'Investment Type'?: string;
+};

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'my-finance-app-v3';
+const CACHE_NAME = 'muffin-v1';
 const ASSETS = [
   './',
   './index.html',

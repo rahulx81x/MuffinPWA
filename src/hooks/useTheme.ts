@@ -11,6 +11,10 @@ function getPreferredDark(): boolean {
 
 function applyDarkClass(isDark: boolean): void {
   document.documentElement.classList.toggle('dark', isDark);
+  const themeColor = isDark ? '#1C130D' : '#FAF5EF';
+  document
+    .querySelectorAll('meta[name="theme-color"]')
+    .forEach((el) => el.setAttribute('content', themeColor));
 }
 
 export function useTheme() {

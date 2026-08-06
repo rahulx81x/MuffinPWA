@@ -1,7 +1,7 @@
 {
-  "name": "My Finance Dashboard",
-  "short_name": "My Finances",
-  "description": "Track income, expenses, and investments from a Google Sheet on your phone",
+  "name": "Muffin",
+  "short_name": "Muffin",
+  "description": "Muffin — track income, expenses, and investments from a Google Sheet on your phone",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -3,12 +3,14 @@ import { AboutModal } from './components/AboutModal';
 import { FloatingNav } from './components/FloatingNav';
 import { HomeView } from './components/HomeView';
 import { LedgerView } from './components/LedgerView';
+import { ManageTransactionModal } from './components/ManageTransactionModal';
 import { MonthlyView } from './components/MonthlyView';
+import { MuffinIcon } from './components/MuffinIcon';
 import { PlannerView, toPlannerTransaction } from './components/PlannerView';
 import { useMask } from './hooks/useMask';
 import { useTheme } from './hooks/useTheme';
+import { deleteTransaction, getTransactions } from './lib/api';
 import { buildFinancialMetrics, EMPTY_METRICS } from './lib/metrics';
-import { fetchSheetTransactions } from './lib/parseSheet';
 import type {
   AppTab,
   FinancialMetrics,
@@ -47,12 +49,42 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [manageMode, setManageMode] = useState<'add' | 'edit'>('add');
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [mutating, setMutating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const ledgerTransactions = useMemo(
     () =>
       [...sheetTransactions].sort((a, b) => a.date.localeCompare(b.date)),
     [sheetTransactions]
   );
+
+  const investmentTypeOptions = useMemo(() => {
+    const labels = new Set<string>();
+    for (const tx of sheetTransactions) {
+      if (tx.type !== 'investment') continue;
+      const label = (tx.investmentType || tx.category || '').trim();
+      if (label) labels.add(label);
+    }
+    return Array.from(labels);
+  }, [sheetTransactions]);
+
+  async function refreshTransactions() {
+    setError(null);
+    try {
+      const transactions = await getTransactions();
+      setSheetTransactions(transactions);
+    } catch (err) {
+      console.error('Error loading sheet data', err);
+      setError(
+        "Couldn't load your sheet. Showing overview with configured starting balances."
+      );
+      setSheetTransactions([]);
+      throw err;
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +94,7 @@ export default function App() {
       setError(null);
 
       try {
-        const transactions = await fetchSheetTransactions();
+        const transactions = await getTransactions();
         if (cancelled) return;
         setSheetTransactions(transactions);
       } catch (err) {
@@ -109,20 +141,72 @@ export default function App() {
     savePlannerTransactions([]);
   }
 
+  function openAddModal() {
+    setManageMode('add');
+    setEditingTx(null);
+    setManageOpen(true);
+  }
+
+  function openEditModal(tx: Transaction) {
+    setManageMode('edit');
+    setEditingTx(tx);
+    setManageOpen(true);
+  }
+
+  async function handleManageSuccess() {
+    setStatusMessage(null);
+    try {
+      await refreshTransactions();
+      setStatusMessage(
+        manageMode === 'add' ? 'Transaction added.' : 'Transaction updated.'
+      );
+    } catch {
+      setStatusMessage('Saved to sheet, but refresh failed. Pull to reload.');
+    }
+  }
+
+  async function handleDelete(tx: Transaction) {
+    if (tx.tabName == null || tx.rowIndex == null) return;
+    const label = tx.category || 'this transaction';
+    if (!window.confirm(`Delete ${label}?`)) return;
+
+    setMutating(true);
+    setStatusMessage(null);
+    setError(null);
+
+    try {
+      await deleteTransaction(tx.tabName, tx.rowIndex);
+      await refreshTransactions();
+      setStatusMessage('Transaction deleted.');
+    } catch (err) {
+      console.error('Failed to delete transaction', err);
+      setError(
+        err instanceof Error ? err.message : 'Could not delete transaction.'
+      );
+    } finally {
+      setMutating(false);
+    }
+  }
+
+  const headerBtnClass =
+    'inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-strong text-text-secondary shadow-warm-sm transition-colors duration-200 active:scale-95';
+
   return (
-    <div className="min-h-dvh bg-zinc-100 text-zinc-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-50">
-      <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-zinc-100/90 backdrop-blur-md safe-pt transition-colors duration-300 dark:border-zinc-800/80 dark:bg-zinc-950/90">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-1.5">
+    <div className="min-h-dvh bg-canvas text-text transition-colors duration-200">
+      <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur-md safe-pt transition-colors duration-200">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2">
           <div className="min-w-0">
-            <h1 className="font-display text-[1.15rem] font-extrabold leading-none tracking-[-0.04em] text-zinc-900 dark:text-zinc-50">
-              My{' '}
-              <span className="bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent dark:from-emerald-400 dark:to-teal-300">
-                Finances
-              </span>
-            </h1>
-            <p className="mt-0.5 flex items-center gap-1 text-[9px] font-medium uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
+            <div className="flex items-center gap-2.5">
+              <MuffinIcon className="h-6 w-6 shrink-0 text-amber-600 dark:text-amber-500" />
+              <h1 className="font-display text-[1.2rem] font-bold leading-none tracking-[-0.03em] text-text">
+                <span className="bg-gradient-to-r from-amber-700 to-amber-500 bg-clip-text text-transparent dark:from-amber-400 dark:to-amber-300">
+                  Muffin
+                </span>
+              </h1>
+            </div>
+            <p className="mt-1 flex items-center gap-1.5 pl-[2.125rem] text-[9px] font-medium uppercase tracking-[0.14em] text-text-muted">
               <span
-                className="inline-block h-1 w-1 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_0_2px] shadow-emerald-500/15 dark:bg-emerald-400 dark:shadow-emerald-400/20"
+                className="inline-block h-1 w-1 shrink-0 rounded-full bg-primary shadow-[0_0_0_2px] shadow-primary/20"
                 aria-hidden="true"
               />
               Synced from your Google Sheet
@@ -132,7 +216,7 @@ export default function App() {
             <button
               type="button"
               onClick={toggleMask}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition active:scale-95 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className={headerBtnClass}
               title={masked ? 'Show amounts' : 'Hide amounts'}
               aria-label={masked ? 'Show amounts' : 'Hide amounts'}
               aria-pressed={masked}
@@ -177,7 +261,7 @@ export default function App() {
             <button
               type="button"
               onClick={toggleTheme}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition active:scale-95 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className={headerBtnClass}
               title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               aria-label={
                 isDark ? 'Switch to light mode' : 'Switch to dark mode'
@@ -219,7 +303,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setAboutOpen(true)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition active:scale-95 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+              className={headerBtnClass}
               title="About"
               aria-label="About this app"
             >
@@ -246,7 +330,7 @@ export default function App() {
       <main className="mx-auto max-w-lg px-4 pt-3 main-bottom-pad">
         {error && (
           <div
-            className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+            className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 transition-colors duration-200 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
             role="status"
           >
             {error}
@@ -254,8 +338,8 @@ export default function App() {
         )}
 
         {loading ? (
-          <div className="py-16 text-center text-sm text-zinc-500 dark:text-zinc-400">
-            Loading your finances…
+          <div className="py-16 text-center text-sm text-text-muted transition-colors duration-200">
+            Baking your money muffins…
           </div>
         ) : activeTab === 'home' ? (
           <HomeView metrics={metrics} transactions={sheetTransactions} />
@@ -268,14 +352,74 @@ export default function App() {
             onClear={handleClearPlanner}
           />
         ) : activeTab === 'ledger' ? (
-          <LedgerView transactions={ledgerTransactions} />
+          <LedgerView
+            transactions={ledgerTransactions}
+            onEdit={openEditModal}
+            onDelete={handleDelete}
+            mutating={mutating}
+          />
         ) : (
           <MonthlyView transactions={ledgerTransactions} />
         )}
       </main>
 
-      <FloatingNav activeTab={activeTab} onTabChange={setActiveTab} />
+      {statusMessage && (
+        <div
+          className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[calc(env(safe-area-inset-top,0px)+3.75rem)]"
+          role="status"
+          aria-live="polite"
+        >
+          <div
+            className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-amber-200/90 bg-surface-strong/95 px-4 py-3 text-sm text-amber-950 shadow-warm backdrop-blur-md transition-colors duration-200 dark:border-amber-800/60 dark:bg-surface/95 dark:text-amber-100"
+            style={{ animation: 'toastIn 180ms ease-out' }}
+          >
+            <p className="min-w-0 flex-1 leading-snug">{statusMessage}</p>
+            <button
+              type="button"
+              onClick={() => setStatusMessage(null)}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-amber-800/80 transition-colors duration-200 active:scale-95 hover:bg-amber-50 dark:text-amber-200/90 dark:hover:bg-amber-950/60"
+              aria-label="Dismiss notification"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 6l12 12M18 6 6 18"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <FloatingNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onAdd={openAddModal}
+        showAdd={!loading}
+      />
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <ManageTransactionModal
+        open={manageOpen}
+        mode={manageMode}
+        transaction={editingTx}
+        investmentTypeOptions={investmentTypeOptions}
+        onClose={() => setManageOpen(false)}
+        onSuccess={handleManageSuccess}
+      />
+      <style>{`
+        @keyframes toastIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

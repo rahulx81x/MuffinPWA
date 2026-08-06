@@ -21,11 +21,11 @@ interface KpiCardProps {
 }
 
 const toneClass: Record<KpiTone, string> = {
-  default: 'text-zinc-900 dark:text-zinc-50',
+  default: 'text-text',
   success: 'text-emerald-600 dark:text-emerald-400',
   destructive: 'text-rose-600 dark:text-rose-400',
-  teal: 'text-teal-600 dark:text-teal-400',
-  violet: 'text-violet-600 dark:text-violet-400',
+  teal: 'text-amber-700 dark:text-amber-400',
+  violet: 'text-amber-800 dark:text-amber-300',
   hero: 'text-white',
 };
 
@@ -37,8 +37,8 @@ function HintIcon({
   hero: boolean;
 }) {
   const color = hero
-    ? 'text-sky-100/80 dark:text-blue-300/70'
-    : 'text-zinc-400 dark:text-zinc-500';
+    ? 'text-amber-100/80 dark:text-amber-200/70'
+    : 'text-text-muted';
 
   if (hint === 'list') {
     return (
@@ -89,8 +89,8 @@ export function KpiCard({
 }: KpiCardProps) {
   const isHero = tone === 'hero';
   const base = isHero
-    ? 'bg-sky-500 border-sky-400 text-white dark:bg-[#071428] dark:border-blue-900/80'
-    : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800';
+    ? 'bg-gradient-to-br from-amber-600 to-amber-500 border-amber-500 text-white dark:from-amber-700 dark:to-amber-600 dark:border-amber-600'
+    : 'bg-surface-strong dark:bg-surface border-border';
 
   const content = (
     <>
@@ -98,8 +98,8 @@ export function KpiCard({
         <h3
           className={`text-[11px] font-semibold uppercase tracking-wide ${
             isHero
-              ? 'text-sky-100 dark:text-blue-300/80'
-              : 'text-zinc-500 dark:text-zinc-400'
+              ? 'text-amber-100 dark:text-amber-100/90'
+              : 'text-text-muted'
           }`}
         >
           {label}
@@ -126,7 +126,7 @@ export function KpiCard({
       <button
         type="button"
         onClick={onClick}
-        className={`w-full rounded-2xl border p-4 text-left shadow-sm transition duration-150 active:scale-[0.97] ${base} ${className}`}
+        className={`w-full rounded-2xl border p-4 text-left shadow-warm-sm transition-colors duration-200 active:scale-[0.97] ${base} ${className}`}
       >
         {content}
       </button>
@@ -135,7 +135,7 @@ export function KpiCard({
 
   return (
     <div
-      className={`w-full rounded-2xl border p-4 text-left shadow-sm ${base} ${className}`}
+      className={`w-full rounded-2xl border p-4 text-left shadow-warm-sm transition-colors duration-200 ${base} ${className}`}
     >
       {content}
     </div>

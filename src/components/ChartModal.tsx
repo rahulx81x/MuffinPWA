@@ -10,6 +10,7 @@ import {
   currentMonthKey,
   monthKey,
 } from '../lib/metrics';
+import { isCountedInvestment, isProvidentFund } from '../lib/providentFund';
 import type { MetricKey, Transaction } from '../types';
 import { TransactionList } from './TransactionList';
 
@@ -29,6 +30,7 @@ const MODAL_KIND: Partial<Record<MetricKey, ModalKind>> = {
   currentMonthIncome: 'list',
   currentMonthExpense: 'list',
   currentMonthInvestment: 'list',
+  providentFund: 'list',
   totalInvestment: 'pie',
   investmentBreakup: 'pie',
   totalLiquid: 'line',
@@ -37,14 +39,14 @@ const MODAL_KIND: Partial<Record<MetricKey, ModalKind>> = {
 };
 
 const PIE_COLORS = [
-  '#7c3aed',
-  '#0d9488',
-  '#e11d48',
-  '#2563eb',
   '#d97706',
-  '#059669',
-  '#db2777',
-  '#4f46e5',
+  '#b45309',
+  '#f59e0b',
+  '#8c6d53',
+  '#047857',
+  '#b91c1c',
+  '#7c5a43',
+  '#c2410c',
 ];
 
 function resolveListType(
@@ -65,7 +67,7 @@ function PieChart({ data }: { data: Record<string, number> }) {
 
   if (!entries.length || total <= 0) {
     return (
-      <p className="py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="py-10 text-center text-sm text-text-muted">
         No allocation data yet.
       </p>
     );
@@ -114,11 +116,11 @@ function PieChart({ data }: { data: Record<string, number> }) {
                     backgroundColor: PIE_COLORS[index % PIE_COLORS.length],
                   }}
                 />
-                <span className="truncate font-medium text-zinc-800 dark:text-zinc-200">
+                <span className="truncate font-medium text-text">
                   {name}
                 </span>
               </span>
-              <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">
+              <span className="shrink-0 tabular-nums text-text-muted">
                 {masked ? `${share}%` : `${formatCurrency(amount)} · ${share}%`}
               </span>
             </li>
@@ -169,11 +171,9 @@ function LineChart({
 }) {
   if (points.length < 2) {
     return (
-      <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-300 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
-        <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-          Trend chart
-        </p>
-        <p className="max-w-xs text-center text-sm text-zinc-500 dark:text-zinc-400">
+      <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-surface-strong p-6 transition-colors duration-200">
+        <p className="text-sm font-semibold text-text">Trend chart</p>
+        <p className="max-w-xs text-center text-sm text-text-muted">
           Need at least two months of closing balances to draw a trajectory.
         </p>
       </div>
@@ -205,7 +205,7 @@ function LineChart({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="rounded-2xl border border-border bg-surface-strong p-3 shadow-warm-sm transition-colors duration-200">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="h-56 w-full"
@@ -219,7 +219,7 @@ function LineChart({
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-teal-600 dark:text-teal-400"
+            className="text-amber-600 dark:text-amber-400"
           />
           {coords.map((point, index) => {
             const labelAbove = index % 2 === 0;
@@ -238,13 +238,13 @@ function LineChart({
                   cx={point.x}
                   cy={point.y}
                   r="4"
-                  className="fill-teal-600 dark:fill-teal-400"
+                  className="fill-amber-600 dark:fill-amber-400"
                 />
                 <text
                   x={point.x}
                   y={valueY}
                   textAnchor={anchor}
-                  className="fill-zinc-800 dark:fill-zinc-100"
+                  className="fill-text"
                   style={{ fontSize: '10px', fontWeight: 700 }}
                 >
                   {formatChartValue(point.value, asPercent, masked)}
@@ -253,7 +253,7 @@ function LineChart({
                   x={point.x}
                   y={monthY}
                   textAnchor={anchor}
-                  className="fill-zinc-500 dark:fill-zinc-400"
+                  className="fill-text-muted"
                   style={{ fontSize: '9px', fontWeight: 500 }}
                 >
                   {point.label}
@@ -264,9 +264,7 @@ function LineChart({
         </svg>
       </div>
       {footer && (
-        <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">
-          {footer}
-        </p>
+        <p className="text-center text-xs text-text-muted">{footer}</p>
       )}
     </div>
   );
@@ -346,11 +344,20 @@ export function ChartModal({
 
   const listTransactions = useMemo(() => {
     if (!metricKey) return [];
+    if (metricKey === 'providentFund') {
+      return transactions
+        .filter(isProvidentFund)
+        .sort((a, b) => a.date.localeCompare(b.date));
+    }
     const type = resolveListType(metricKey);
     if (!type) return [];
     const thisMonth = currentMonthKey();
     return transactions
-      .filter((t) => monthKey(t.date) === thisMonth && t.type === type)
+      .filter((t) => {
+        if (monthKey(t.date) !== thisMonth || t.type !== type) return false;
+        if (type === 'investment' && !isCountedInvestment(t)) return false;
+        return true;
+      })
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [metricKey, transactions]);
 
@@ -383,7 +390,7 @@ export function ChartModal({
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <button
         type="button"
-        className="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px] transition-opacity"
+        className="absolute inset-0 bg-muffin-chocolate/50 backdrop-blur-[2px] transition-opacity duration-200"
         aria-label="Dismiss modal"
         onClick={onClose}
       />
@@ -392,28 +399,26 @@ export function ChartModal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 flex max-h-[88dvh] w-full max-w-lg animate-in flex-col rounded-t-3xl border border-zinc-200 bg-zinc-50 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 pb-safe"
+        className="relative z-10 flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl border border-border bg-canvas shadow-warm transition-colors duration-200 pb-safe"
         style={{
           animation: 'slideUp 220ms ease-out',
         }}
       >
-        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" />
 
         <header className="flex items-start justify-between gap-3 px-4 pb-3 pt-4">
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-bold text-zinc-900 dark:text-zinc-50">
+            <h2 className="truncate font-display text-lg font-bold text-text">
               {title}
             </h2>
             {subtitle && (
-              <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                {subtitle}
-              </p>
+              <p className="mt-0.5 text-sm text-text-muted">{subtitle}</p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 transition active:scale-95 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-strong text-text-secondary shadow-warm-sm transition-colors duration-200 active:scale-95"
             aria-label="Close"
           >
             <svg
