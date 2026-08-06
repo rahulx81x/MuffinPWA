@@ -199,7 +199,7 @@ export function LedgerView({
 
   return (
     <section className="-mt-2 space-y-2">
-      <div className="sticky top-[calc(env(safe-area-inset-top,0px)+2.75rem)] z-20 -mx-4 space-y-2 border-b border-zinc-200/80 bg-zinc-100/95 px-4 py-2 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/95">
+      <div className="sticky top-[calc(env(safe-area-inset-top,0px)+2.75rem)] z-20 -mx-4 space-y-2 border-b border-border/80 bg-canvas/95 px-4 py-2 backdrop-blur-md transition-colors duration-200">
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <svg

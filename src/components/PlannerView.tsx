@@ -3,6 +3,7 @@ import { INITIAL_LIQUID_BALANCE } from '../config';
 import { useMask } from '../hooks/useMask';
 import { createId } from '../lib/parseSheet';
 import { buildMonthlyKPIs, currentMonthKey, monthKey } from '../lib/metrics';
+import { isCountedInvestment } from '../lib/providentFund';
 import type { NewTransactionInput, Transaction, TransactionType } from '../types';
 
 interface PlannerViewProps {
@@ -50,7 +51,7 @@ export function PlannerView({
     .filter((t) => t.type === 'expense')
     .reduce((s, t) => s + t.amount, 0);
   const investment = monthTx
-    .filter((t) => t.type === 'investment')
+    .filter(isCountedInvestment)
     .reduce((s, t) => s + t.amount, 0);
   const liquid = income - expenses - investment;
   const savingsPct = pct(investment + liquid, income);

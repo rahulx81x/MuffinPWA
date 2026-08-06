@@ -1,6 +1,8 @@
 # Muffin
 
-A personal finance Progressive Web App (**Muffin**) that turns a Google Sheet into a live dashboard. Track income, expenses, and investments in familiar spreadsheet tabs; a Netlify-hosted React app fetches that data securely, computes savings and net-worth metrics, and presents them in a mobile-friendly UI you can install on your phone.
+A personal finance Progressive Web App (**Muffin**) that turns a Google Sheet into a live dashboard. Track income, expenses, and investments in familiar spreadsheet tabs; a Netlify-hosted React app fetches that data securely, computes savings and net-worth metrics, and presents them in a warm, mobile-first UI you can install on your phone.
+
+Think of it as baking your money muffins: sheet data goes in, and Home serves up KPIs, charts, and a ledger you can edit on the go.
 
 ---
 
@@ -10,6 +12,7 @@ A personal finance Progressive Web App (**Muffin**) that turns a Google Sheet in
   - [1.1 Purpose and audience](#11-purpose-and-audience)
   - [1.2 Data model](#12-data-model)
   - [1.3 How investments are treated](#13-how-investments-are-treated)
+  - [1.3.1 Provident Fund (display-only)](#131-provident-fund-display-only)
   - [1.4 Metrics the dashboard computes](#14-metrics-the-dashboard-computes)
   - [1.5 Views and features](#15-views-and-features)
   - [1.6 Everyday data flow](#16-everyday-data-flow)
@@ -51,8 +54,11 @@ This project is a **personal finance dashboard** for individuals who already (or
 - This month’s income, spending, and investments
 - Liquid cash vs invested savings
 - Net worth and growth since you started tracking
+- Investment breakup (top types on Home; full pie on tap)
+- Provident Fund totals tracked separately (not mixed into net worth)
 - Month-by-month trends and category breakdowns
 - A planner for “what if I spend/save this?” scenarios without editing the real sheet
+- In-app add / edit / delete for sheet transactions when write access is configured
 
 It is designed for personal use (INR by default), not for multi-user accounting or bank sync.
 
@@ -67,7 +73,7 @@ Every money movement is a **transaction** with:
 | **Amount** | Number only — no `₹` or commas in the cell (e.g. `15000`) |
 | **Type** | Exactly one of `Income`, `Expense`, or `Investment` (combined sheet) — or implied by which tab you use (separate sheets) |
 | **Comment** | Optional note (shown in lists) |
-| **Investment Type** | Optional extra column on the Investment tab (e.g. Mutual Fund, Fixed Deposit) |
+| **Investment Type** | On the Investment tab: label such as Mutual Fund, Fixed Deposit, or Provident Fund (used for breakup + PF detection) |
 
 Sample templates live in:
 
@@ -83,17 +89,33 @@ Rows marked **Investment** (SIPs, stocks, FDs, etc.) are **money set aside**, no
 For any period:
 
 - **Spends** = sum of Expense rows
-- **Investment (saved)** = sum of Investment rows
+- **Investment (saved)** = sum of counted Investment rows (excludes Provident Fund — see below)
 - **Liquid savings** = Income − Spends − Investment
 
 So putting ₹10,000 into a SIP reduces liquid cash but increases your investment balance — it does **not** count as an expense.
+
+### 1.3.1 Provident Fund (display-only)
+
+You can log PF contributions as normal **Investment** rows. Tag them with Investment Type (or Category) set to one of:
+
+- `Provident Fund`, `PF`, `EPF`, or `PPF` (case-insensitive; “provident fund” as a phrase also matches)
+
+Those rows still appear in the Ledger and in the **Investment Breakup** chart (so you can see every type), but they are **excluded** from:
+
+- Net worth, liquid balance, and investment totals
+- Current-month investment / savings % math
+- Planner investment totals
+
+A dedicated **Provident Fund** card under Home → **More Details** shows the cumulative PF total and opens a list of PF entries when tapped.
 
 ### 1.4 Metrics the dashboard computes
 
 From your sheet rows plus optional starting balances in `src/config.ts`, the app derives:
 
 - **Current month:** income, expense, investment, liquid change, savings %
-- **Totals:** liquid balance, investment balance (with category breakup), net worth
+- **Totals:** liquid balance, investment balance, net worth
+- **Investment Breakup:** all investment types (including PF) — Home card shows the **top 3**; tap for the full pie
+- **Provident Fund:** cumulative contributions (More Details; not in net worth)
 - **Lifetime:** total income, total spends, income − spends
 - **Growth:** rupees and % since configured starting balances
 - **Averages:** average monthly savings, months tracked
@@ -105,24 +127,25 @@ Currency display defaults to **₹** with Indian digit grouping (e.g. ₹1,50,00
 
 | Tab | What it does |
 | --- | --- |
-| **Home** | KPI cards for the metrics above; tap many cards to open charts or transaction lists in a modal |
-| **Planner** | Add temporary income/expense/investment lines (stored only in your browser) and see this month’s plan vs sheet data |
-| **Ledger** | Chronological list of all sheet transactions |
-| **Monthly** | Month-by-month KPI table / breakdown |
+| **Home** | KPI cards; tap for charts or transaction lists. Investment Breakup shows top 3 chips; PF lives under More Details |
+| **Planner** | Add temporary income/expense/investment lines (browser-only) and see this month’s plan vs sheet data |
+| **Ledger** | Searchable chronological list; add / edit / delete sheet-backed rows via the manage modal |
+| **Monthly** | Month-by-month KPI breakdown |
 
 Also included:
 
-- **Dark / light theme** toggle
+- **Warm Muffin theme** — cream / oat light mode and dark chocolate / cocoa dark mode (CSS design tokens)
+- **Dark / light theme** toggle (persisted); theme-color meta updates with the mode
 - **Amount masking** (hide figures when someone is looking over your shoulder)
-- **About** info button (header) — opens a short credit / stack popup (“Vibe Coded by Rahul Gouri, 2026”)
-- **PWA install** — add to home screen on phone/desktop for an app-like experience
-- Compact branded sticky header + floating bottom navigation on mobile-width layouts
+- **About** info button (header) — credits, product blurb, and stack
+- **PWA install** — add to home screen on phone/desktop
+- Compact branded sticky header (muffin icon + wordmark) + full-width floating bottom nav aligned with cards
 
 ### 1.6 Everyday data flow
 
-1. You edit rows in Google Sheets (your source of truth for real transactions).
-2. Google’s “Publish to web” exposes each tab as a CSV URL.
-3. A **Netlify Function** on the server reads those secret URLs and returns CSV/JSON to the app.
+1. You add or edit rows in Google Sheets **or** via the in-app Ledger / + button (writes back through a Netlify Function when configured).
+2. Google’s published CSV (and/or the Sheets API write path) keeps the workbook as source of truth.
+3. A **Netlify Function** reads/writes sheet data; secret credentials stay on the server.
 4. The React app parses rows → builds metrics → updates Home / Ledger / Monthly.
 5. Planner entries stay on-device and never write back to Sheets.
 
@@ -138,10 +161,11 @@ Also included:
 
 ### 1.8 Limitations
 
-- No Google sign-in inside the app; it only reads **published** CSV links.
-- Not a bank aggregator — you enter (or import) transactions yourself.
+- No Google sign-in inside the app UI; sheet access is via published CSV and/or server-side Sheets credentials.
+- Not a bank aggregator — you enter transactions yourself (sheet or in-app forms).
 - “Publish to web” is privacy-by-obscure-link, not password login.
 - The Planner does not sync across devices or back into Sheets.
+- Provident Fund rows are tracked for display but do not change net worth / liquid / investment totals.
 - If the function cannot load the sheet, the UI still shows overview numbers from configured starting balances and shows a soft warning.
 
 ---
@@ -358,10 +382,10 @@ After changing these, redeploy (or rebuild locally) so the new values are includ
 
 ### 2.9 Everyday usage
 
-1. Add or edit rows in your Google Sheets tabs.
-2. Wait a short moment for Google’s published CSV to refresh (sometimes near-instant, sometimes a minute).
-3. Open your Netlify site and refresh the page.
-4. On Home, tap KPI cards to open charts or filtered lists.
+1. Add or edit rows in Google Sheets, or use the in-app **+** / Ledger edit flows.
+2. Wait a short moment for Google’s published CSV to refresh when reading via publish links (sometimes near-instant, sometimes a minute).
+3. Open your Netlify site and refresh if needed.
+4. On Home, tap KPI cards to open charts or filtered lists; open **More Details** for Provident Fund and extra KPIs.
 5. Use **Planner** for temporary what-if entries (device-only).
 6. Use the eye icon to mask amounts; use the sun/moon icon for theme; tap the **i** icon for About / credits.
 7. On your phone browser, use **Add to Home Screen** / **Install app** for the PWA.
@@ -374,8 +398,9 @@ After changing these, redeploy (or rebuild locally) so the new values are includ
 | Numbers stuck at starting balances only | Env vars missing or deploy not triggered after adding them |
 | Some months missing | Dates invalid or Amount cells not plain numbers |
 | Investments missing from breakup | On separate Investment sheet, fill **Investment Type**; on combined sheet, Category is used as the investment label |
+| PF showing in net worth / liquid | Tag PF with Investment Type `Provident Fund`, `PF`, `EPF`, or `PPF` so it is excluded from those totals |
 | Site shows old UI after code change | Wait for Netlify deploy to finish; hard-refresh the browser |
-| Local `npm run dev` can’t reach the function | Use `npm run dev` (Netlify Dev), not plain Vite alone, so `/.netlify/functions/fetch-sheet` exists |
+| Local `npm run dev` can’t reach the function | Use `npm run dev` (Netlify Dev), not plain Vite alone, so `/.netlify/functions/*` exists |
 
 ---
 
@@ -388,17 +413,18 @@ After changing these, redeploy (or rebuild locally) so the new values are includ
 | UI | **React 19** + **TypeScript** | Component tree, state, typed domain model |
 | Typography | **Syne** (display) + **DM Sans** (UI) | Branded header + app body font (Google Fonts) |
 | Build | **Vite 6** + `@vitejs/plugin-react` | Dev server, production bundle |
-| Styling | **Tailwind CSS 3** + PostCSS + Autoprefixer | Utility-first responsive UI, dark mode via `dark:` classes |
+| Styling | **Tailwind CSS 3** + CSS design tokens | Warm Muffin light/dark palette (`canvas`, `surface`, `primary`, `border`, …) |
+| Forms | **react-select** (Creatable) | Investment Type combobox (existing types + free text) |
 | PWA | **vite-plugin-pwa** + **Workbox** | Web app manifest, service worker, installability |
 | Hosting | **Netlify** | CDN for `dist`, SPA redirects, CI from Git |
-| Backend (thin) | **Netlify Functions** (`netlify/functions/fetch-sheet.js`) | Server-side proxy to Google published CSVs; keeps URLs secret |
-| Data source | **Google Sheets** (Publish to web → CSV) | Human-editable ledger / “database” |
+| Backend (thin) | **Netlify Functions** (`transactions`, etc.) | Server-side Google Sheets read/write; keeps secrets off the client |
+| Data source | **Google Sheets** | Human-editable ledger / “database” |
 | Source control | **GitHub** | Repo hosting; Netlify build trigger on push |
 | Tooling | **npm**, **Node.js**, **TypeScript ~5.7** | Install, typecheck (`tsc -b`), scripts |
 | AI IDE | **Cursor** | Agent/IDE-assisted implementation and docs |
 | AI assist | **GitHub Copilot** | Inline pair-programming during development |
 
-Runtime dependencies are intentionally small (`react`, `react-dom`). Charts/modals and metrics are custom code in `src/`.
+Runtime UI deps stay lean (`react`, `react-dom`, `react-select`). Charts/modals and metrics are custom code in `src/`.
 
 ### 3.2 Repository architecture
 
@@ -406,31 +432,33 @@ Runtime dependencies are intentionally small (`react`, `react-dom`). Charts/moda
 MuffinPWA/
 ├── src/
 │   ├── main.tsx              # React entry
-│   ├── App.tsx               # Shell: load sheet, tabs, planner, about modal
+│   ├── App.tsx               # Shell: load sheet, tabs, planner, manage modal, about
 │   ├── config.ts             # Starting balances + currency helpers
 │   ├── types.ts              # Shared TypeScript types
-│   ├── index.css             # Tailwind entry
-│   ├── components/           # Home, Planner, Ledger, Monthly, charts, nav, AboutModal
+│   ├── index.css             # Tailwind + Muffin theme tokens (light/dark)
+│   ├── components/           # Home, Planner, Ledger, Monthly, charts, nav, modals
 │   ├── hooks/                # useTheme, useMask
 │   └── lib/
-│       ├── parseSheet.ts     # Fetch + CSV → Transaction[]
-│       └── metrics.ts        # Aggregations and KPI builders
+│       ├── api.ts            # Client → Netlify transactions function
+│       ├── parseSheet.ts     # CSV → Transaction[]
+│       ├── metrics.ts        # Aggregations and KPI builders
+│       └── providentFund.ts  # PF detection helpers
 ├── public/icons/             # PWA icons
 ├── netlify/functions/
-│   └── fetch-sheet.js        # Serverless Google Sheets proxy
+│   └── transactions.js       # Sheets read/write API
 ├── templates/                # CSV examples for multi-sheet setup
 ├── finance_template.csv      # Combined-sheet example
 ├── legacy/                   # Previous vanilla JS PWA (reference)
 ├── dist/                     # Build output (generated)
 ├── netlify.toml              # Build, publish, redirects, functions
 ├── vite.config.ts            # React + PWA + dev proxy
-├── tailwind.config.js        # Theme tokens + fontFamily (display/sans)
-├── index.html                # Shell + Google Fonts preconnect/load
+├── tailwind.config.js        # Theme token colors, radii, warm shadows
+├── index.html                # Shell + Google Fonts + theme-color
 ├── package.json
 └── README.md
 ```
 
-The project migrated from a vanilla `app.js` / `config.js` PWA (`legacy/`) to a typed React SPA. The Netlify Function contract (proxy sheet → client) was preserved so env-var setup stays familiar.
+The project migrated from a vanilla `app.js` / `config.js` PWA (`legacy/`) to a typed React SPA with a warm dual-theme UI and optional in-app sheet writes.
 
 ### 3.3 Runtime architecture and data flow
 
@@ -438,22 +466,15 @@ The project migrated from a vanilla `app.js` / `config.js` PWA (`legacy/`) to a 
 sequenceDiagram
   participant User
   participant React as React SPA (browser)
-  participant Fn as Netlify Function<br/>fetch-sheet
-  participant Sheets as Google Sheets<br/>published CSV
+  participant Fn as Netlify Function<br/>transactions
+  participant Sheets as Google Sheets
   participant Metrics as metrics.ts
 
   User->>React: Open dashboard
-  React->>Fn: GET /.netlify/functions/fetch-sheet
-  alt Separate sheets configured
-    Fn->>Sheets: fetch Income + Expense + Investment URLs
-    Sheets-->>Fn: CSV texts
-    Fn-->>React: JSON { incomeCsv, expenseCsv, investmentCsv }
-  else Combined sheet configured
-    Fn->>Sheets: fetch SECRET_GOOGLE_SHEETS_URL
-    Sheets-->>Fn: CSV text
-    Fn-->>React: text/csv body
-  end
-  React->>React: parseSheet → Transaction[]
+  React->>Fn: GET /.netlify/functions/transactions
+  Fn->>Sheets: read workbook rows
+  Sheets-->>Fn: row data
+  Fn-->>React: Transaction[] JSON
   React->>Metrics: buildFinancialMetrics(transactions)
   Metrics-->>React: FinancialMetrics (+ monthly KPIs on demand)
   React-->>User: Home / Ledger / Monthly UI
@@ -462,45 +483,46 @@ sequenceDiagram
 **Why the proxy exists**
 
 - Browser code only calls a same-origin function path.
-- Published Google URLs stay in Netlify env (`SECRET_*`), not in client bundles.
-- Avoids exposing the sheet endpoint and simplifies CORS/caching control (`Cache-Control: no-store` on the function).
+- Google credentials / sheet IDs stay in Netlify env (`SECRET_*`), not in client bundles.
+- Read and write share one API surface (`src/lib/api.ts` → `transactions` function).
 
-### 3.4 Domain model and parsing
+### 3.4 Domain model and API
 
 Core types live in `src/types.ts`:
 
 - `TransactionType`: `'income' | 'expense' | 'investment'`
-- `Transaction`: `id`, `date` (ISO `YYYY-MM-DD`), `category`, `type`, `amount`, `comment`, optional `investmentType`
-- `FinancialMetrics`, `MonthlyKPI`, `SheetPayload`, planner input types, KPI modal kinds
+- `Transaction`: `id`, `date` (ISO `YYYY-MM-DD`), `category`, `type`, `amount`, `comment`, optional `investmentType`, optional `tabName` / `rowIndex` for sheet writes
+- `FinancialMetrics` (includes `providentFundBalance`), `MonthlyKPI`, planner input types, KPI modal kinds (`MetricKey` includes `providentFund`)
 
-**Parsing** (`src/lib/parseSheet.ts`):
+**Client API** (`src/lib/api.ts`):
 
-- Quote-aware CSV line split
-- Date parser prefers ISO; also handles `D/M/YYYY` with Indian-friendly day/month disambiguation
-- **Separate sheets:** `parseSheetCsv(csv, sheetType)` — Investment tab reads col3 as `investmentType`, col4 as comment
-- **Combined sheet:** `parseCombinedCsv` — Type column required; investment type defaults to category
-- `fetchSheetTransactions()` calls the function, then chooses JSON vs raw CSV via `Content-Type`
+- `getTransactions()` — `GET /.netlify/functions/transactions`
+- `createTransaction` / `updateTransaction` / `deleteTransaction` — POST/PUT/DELETE against the same function
 
-**Function modes** (`netlify/functions/fetch-sheet.js`):
+**Sheets function** (`netlify/functions/transactions.js`):
 
-1. If `SECRET_GOOGLE_SHEETS_URL_INCOME`, `_EXPENSE`, and `_INVESTMENT` are all set → parallel fetch → JSON body
-2. Else if `SECRET_GOOGLE_SHEETS_URL` is set → single fetch → raw CSV body
-3. Else → HTTP 500 with configuration error
+- Maps Income / Expense / Investment tabs to typed rows
+- Returns JSON transactions for the UI; mutates workbook rows when credentials are configured
+
+**PF helpers** (`src/lib/providentFund.ts`):
+
+- `isProvidentFund` / `isCountedInvestment` / `sumProvidentFund` — used by metrics, planner, and chart lists
 
 ### 3.5 Metrics engine
 
-`src/lib/metrics.ts` is pure (no I/O):
+`src/lib/metrics.ts` is pure (no I/O). Provident Fund helpers live in `src/lib/providentFund.ts`.
 
-- `buildMonthlyKPIs` — groups by `YYYY-MM`, tracks expense categories, rolls **closing liquid** from `INITIAL_LIQUID_BALANCE`
-- `buildInvestmentBreakup` — seeds from `getInitialInvestmentBreakdown()` then adds investment rows by type/category
-- `buildFinancialMetrics` — lifetime and current-month aggregates:
+- `buildMonthlyKPIs` — groups by `YYYY-MM`, tracks expense categories, rolls **closing liquid** from `INITIAL_LIQUID_BALANCE`; **excludes PF** from monthly investment
+- `buildInvestmentBreakup` — seeds from `getInitialInvestmentBreakdown()` then adds **all** investment rows by type/category (PF included for the pie / chips)
+- `buildFinancialMetrics` — lifetime and current-month aggregates using **counted** investments only (PF excluded), plus `providentFundBalance` for the More Details card:
 
 \[
 \begin{aligned}
-\text{investmentBalance} &= \text{initialInvestments} + \sum \text{investment} \\
-\text{trackedLiquid} &= \sum \text{income} - \sum \text{expense} - \sum \text{investment} \\
+\text{investmentBalance} &= \text{initialInvestments} + \sum \text{countedInvestment} \\
+\text{trackedLiquid} &= \sum \text{income} - \sum \text{expense} - \sum \text{countedInvestment} \\
 \text{liquidBalance} &= \text{INITIAL\_LIQUID\_BALANCE} + \text{trackedLiquid} \\
-\text{netWorth} &= \text{investmentBalance} + \text{liquidBalance}
+\text{netWorth} &= \text{investmentBalance} + \text{liquidBalance} \\
+\text{providentFundBalance} &= \sum \text{PF investment rows}
 \end{aligned}
 \]
 
@@ -508,12 +530,12 @@ Growth compares current net worth to `initialInvestments + INITIAL_LIQUID_BALANC
 
 ### 3.6 Frontend application structure
 
-- **`App.tsx`** owns sheet fetch lifecycle, error banner, `metrics` derived from sheet rows, active tab, about-modal state, and planner CRUD with `localStorage` key `plannerTransactions`.
-- **Views:** `HomeView` (KPI grid + `ChartModal`), `PlannerView` (merges sheet + planner for current month), `LedgerView`, `MonthlyView`.
-- **Shared UI:** `KpiCard`, `FloatingNav`, `TransactionList`, `ChartModal` (list / pie / line drill-downs keyed by `MetricKey`), `AboutModal` (credit + stack blurb).
-- **`KpiCard` tones:** semantic colors for income/expense/investment/etc.; Net Worth uses the `hero` tone — bright sky-blue in light mode, midnight blue in dark mode — so it stays theme-aware but visually distinct from the zinc cards.
-- **Hooks:** `useTheme` (dark class + persistence), `useMask` (masked formatting helpers).
-- Layout is mobile-first (`max-w-lg`), compact branded sticky header (Syne + gradient wordmark), bottom nav with safe-area padding.
+- **`App.tsx`** owns sheet fetch lifecycle, error banner, `metrics` derived from sheet rows, active tab, about/manage-modal state, and planner CRUD with `localStorage` key `plannerTransactions`.
+- **Views:** `HomeView` (KPI grid + `ChartModal` + More Details / PF), `PlannerView`, `LedgerView`, `MonthlyView`.
+- **Shared UI:** `KpiCard`, `FloatingNav`, `TransactionList`, `ChartModal` (list / pie / line), `ManageTransactionModal` (add/edit with Investment Type creatable select), `AboutModal`, `MuffinIcon`.
+- **`KpiCard` tones:** semantic colors for income/expense/investment; Net Worth uses the amber **hero** gradient so it stays on-theme.
+- **Hooks:** `useTheme` (dark class + persistence + theme-color), `useMask` (masked formatting helpers).
+- Layout is mobile-first (`max-w-lg`), branded sticky header, floating bottom nav width-matched to cards, themed modals/forms.
 
 ### 3.7 PWA behavior
 
@@ -556,10 +578,10 @@ From `netlify.toml`:
 ### 3.10 Extensibility
 
 - **New KPI:** extend `FinancialMetrics` / `MetricKey`, compute in `metrics.ts`, add a card in `HomeView`, wire a modal kind in `ChartModal` if interactive.
-- **New column:** update CSV parsers in `parseSheet.ts` and templates; keep header-row assumptions documented.
-- **Different backend:** replace `fetch-sheet` with any API that returns the same JSON/CSV shapes expected by `transactionsFromPayload`.
+- **New column:** update CSV parsers / Sheets row mapping and templates; keep header-row assumptions documented.
+- **Different backend:** replace the transactions function with any API that returns the same shapes expected by `src/lib/api.ts`.
 - **Multi-currency:** display helpers are centralized in `config.ts` / `useMask`, but amounts are stored as plain numbers with no FX conversion today.
-- **Write-back to Sheets:** not implemented; would require Google OAuth and the Sheets API (out of scope of the current publish-CSV design).
+- **PF-like carve-outs:** extend `providentFund.ts` matching rules if you need another display-only bucket.
 
 ### 3.11 AI-assisted development
 
@@ -575,8 +597,8 @@ These are **development aids**, not runtime dependencies. The production site on
 ## 4. Credits
 
 - **Vibe Coded by Rahul Gouri, 2026** (also shown in-app via the header About / **i** button).
-- Built as a personal finance PWA using React, Vite, Tailwind, Syne/DM Sans, and Netlify Functions.
-- Google Sheets used as a lightweight, human-editable data backend via published CSV.
+- Built as a cozy personal finance PWA using React, Vite, Tailwind (Muffin theme tokens), Syne/DM Sans, react-select, and Netlify Functions.
+- Google Sheets used as a lightweight, human-editable data backend.
 - Legacy vanilla implementation retained under `legacy/` for reference.
 
-If you publish your own fork, keep your `SECRET_GOOGLE_SHEETS_*` values private and avoid committing personal financial CSVs with real data.
+If you publish your own fork, keep your `SECRET_*` / Google credentials private and avoid committing personal financial CSVs with real data.

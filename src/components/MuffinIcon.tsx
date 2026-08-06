@@ -1,0 +1,35 @@
+interface MuffinIconProps {
+  className?: string;
+}
+
+/** Cozy muffin mark for the app header brand lockup. */
+export function MuffinIcon({ className = 'h-6 w-6' }: MuffinIconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M6.5 10.5c0-1.2.7-2.3 1.8-2.8.4-1.6 1.9-2.7 3.7-2.7s3.3 1.1 3.7 2.7c1.1.5 1.8 1.6 1.8 2.8 0 .4-.1.8-.2 1.1H6.7c-.1-.3-.2-.7-.2-1.1Z"
+        fill="currentColor"
+        opacity="0.92"
+      />
+      <circle cx="9.2" cy="9.2" r="0.7" fill="var(--color-surface-strong)" />
+      <circle cx="12" cy="8.4" r="0.65" fill="var(--color-surface-strong)" />
+      <circle cx="14.6" cy="9.4" r="0.55" fill="var(--color-surface-strong)" />
+      <path
+        d="M7 11.8h10l-.9 6.2a2.2 2.2 0 0 1-2.2 1.8H10.1a2.2 2.2 0 0 1-2.2-1.8L7 11.8Z"
+        fill="currentColor"
+      />
+      <path
+        d="M8.4 14.2h7.2M8.7 16.4h6.6"
+        stroke="var(--color-surface-strong)"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+        opacity="0.35"
+      />
+    </svg>
+  );
+}

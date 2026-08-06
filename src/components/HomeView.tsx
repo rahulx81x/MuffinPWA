@@ -109,6 +109,14 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
   const detailCards: CardDef[] = useMemo(
     () => [
       {
+        key: 'providentFund',
+        label: 'Provident Fund',
+        value: formatCurrency(metrics.providentFundBalance),
+        tone: 'teal',
+        iconHint: 'list',
+        interactive: true,
+      },
+      {
         key: 'currentMonthLiquid',
         label: 'Current Month Liquid',
         value: formatCurrency(metrics.currentMonthLiquid),
@@ -159,7 +167,9 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
     [metrics, formatCurrency, formatSignedCurrency]
   );
 
-  const activeCard = defaultCards.find((c) => c.key === activeMetric);
+  const activeCard =
+    defaultCards.find((c) => c.key === activeMetric) ??
+    detailCards.find((c) => c.key === activeMetric);
 
   return (
     <section className="space-y-3">
@@ -184,7 +194,7 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
                 ) : (
                   Object.entries(card.breakup)
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 6)
+                    .slice(0, 3)
                     .map(([name, amount]) => {
                       const share = breakupTotal
                         ? ((amount / breakupTotal) * 100).toFixed(0)
@@ -231,7 +241,7 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
 
       <div
         className={`grid grid-cols-2 gap-3 overflow-hidden transition-all duration-300 ease-out ${
-          showMore ? 'max-h-[1200px] opacity-100' : 'max-h-0 opacity-0'
+          showMore ? 'max-h-[1400px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
         {detailCards.map((card) => (
@@ -240,7 +250,11 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
             label={card.label}
             value={card.value}
             tone={card.tone}
-            interactive={false}
+            iconHint={card.iconHint}
+            interactive={card.interactive}
+            onClick={
+              card.interactive ? () => setActiveMetric(card.key) : undefined
+            }
           />
         ))}
       </div>
@@ -250,9 +264,11 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
         metricKey={activeMetric}
         title={activeCard?.label ?? ''}
         subtitle={
-          activeCard?.breakup
-            ? 'Allocation overview'
-            : activeCard?.value
+          activeCard?.key === 'providentFund'
+            ? 'Tracked separately · not in net worth'
+            : activeCard?.breakup
+              ? 'All investment types'
+              : activeCard?.value
         }
         transactions={transactions}
         breakup={metrics.investmentBreakup}

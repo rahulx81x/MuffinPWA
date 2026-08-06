@@ -10,6 +10,7 @@ export type MetricKey =
   | 'totalLiquid'
   | 'totalInvestment'
   | 'investmentBreakup'
+  | 'providentFund'
   | 'netWorth'
   | 'totalIncome'
   | 'totalSpends'
@@ -45,6 +46,8 @@ export interface FinancialMetrics {
   savingsRate: number;
   liquidBalance: number;
   investmentBalance: number;
+  /** Cumulative Provident Fund contributions — display only, not in net worth. */
+  providentFundBalance: number;
   currentMonthIncome: number;
   currentMonthExpense: number;
   currentMonthInvestment: number;
