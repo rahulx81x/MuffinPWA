@@ -111,7 +111,12 @@ export default function App() {
         if (cancelled) return;
         setSheetTransactions(transactions);
       } catch (err) {
-        if (err instanceof NetlifySessionExpiredError) return;
+        if (err instanceof NetlifySessionExpiredError) {
+          if (!cancelled) {
+            setStatusMessage('Session expired — signing in again…');
+          }
+          return;
+        }
         console.error('Error loading sheet data', err);
         if (!cancelled) {
           setError(
@@ -130,27 +135,31 @@ export default function App() {
     };
   }, []);
 
-  // When the PWA returns from background, probe Netlify Private Access.
-  // Expired sessions reload via apiFetch; network/sheet errors are ignored here.
+  // When the PWA returns from background, probe Netlify Edge Access.
+  // Expired sessions navigate to login via apiFetch; network errors are ignored.
   useEffect(() => {
     if (loading) return;
 
     let lastProbeAt = Date.now();
+    let hiddenAt: number | null = null;
     let probing = false;
 
-    async function probeSession() {
+    async function probeSession(force = false) {
       if (document.visibilityState !== 'visible') return;
       if (probing) return;
       const now = Date.now();
-      if (now - lastProbeAt < SESSION_PROBE_MIN_INTERVAL_MS) return;
+      if (!force && now - lastProbeAt < SESSION_PROBE_MIN_INTERVAL_MS) return;
 
       probing = true;
       try {
         await checkSessionHealth();
         lastProbeAt = Date.now();
       } catch (err) {
-        if (err instanceof NetlifySessionExpiredError) return;
-        // Offline / transient failures: do not force reload.
+        if (err instanceof NetlifySessionExpiredError) {
+          setStatusMessage('Session expired — signing in again…');
+          return;
+        }
+        // Offline / transient failures: do not force re-auth.
         console.warn('[muffin] Session health probe failed', err);
       } finally {
         probing = false;
@@ -158,12 +167,35 @@ export default function App() {
     }
 
     function onVisibilityChange() {
-      void probeSession();
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+        return;
+      }
+      const awayMs = hiddenAt == null ? 0 : Date.now() - hiddenAt;
+      hiddenAt = null;
+      void probeSession(awayMs >= SESSION_PROBE_MIN_INTERVAL_MS);
+    }
+
+    function onPageShow(event: PageTransitionEvent) {
+      if (event.persisted) {
+        void probeSession(true);
+      }
+    }
+
+    function onFocus() {
+      const awayMs = hiddenAt == null ? 0 : Date.now() - hiddenAt;
+      if (awayMs >= SESSION_PROBE_MIN_INTERVAL_MS) {
+        void probeSession(true);
+      }
     }
 
     document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('focus', onFocus);
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('focus', onFocus);
     };
   }, [loading]);
 
@@ -211,7 +243,11 @@ export default function App() {
       setStatusMessage(
         manageMode === 'add' ? 'Transaction added.' : 'Transaction updated.'
       );
-    } catch {
+    } catch (err) {
+      if (err instanceof NetlifySessionExpiredError) {
+        setStatusMessage('Session expired — signing in again…');
+        return;
+      }
       setStatusMessage('Saved to sheet, but refresh failed. Pull to reload.');
     }
   }
@@ -230,7 +266,10 @@ export default function App() {
       await refreshTransactions();
       setStatusMessage('Transaction deleted.');
     } catch (err) {
-      if (err instanceof NetlifySessionExpiredError) return;
+      if (err instanceof NetlifySessionExpiredError) {
+        setStatusMessage('Session expired — signing in again…');
+        return;
+      }
       console.error('Failed to delete transaction', err);
       setError(
         err instanceof Error ? err.message : 'Could not delete transaction.'

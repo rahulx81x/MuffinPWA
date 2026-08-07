@@ -39,18 +39,35 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: '/index.html',
-        // Never SPA-fallback Netlify Functions (auth redirects must stay network).
-        navigateFallbackDenylist: [/^\/\.netlify\/functions\//],
+        // Exclude index.html from precache so expired Netlify Edge Access
+        // sessions can challenge document navigations (login redirect HTML).
+        globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
+        globIgnores: ['**/index.html'],
+        // Navigations hit the network first so Edge Access can challenge.
+        // (App data already requires network; offline shell is best-effort.)
+        navigateFallback: undefined,
         // Always hit the network for API — never cache HTML login pages or JSON.
-        runtimeCaching: (
-          ['GET', 'POST', 'PUT', 'DELETE'] as const
-        ).map((method) => ({
-          urlPattern: /\/\.netlify\/functions\//,
-          handler: 'NetworkOnly' as const,
-          method,
-        })),
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst' as const,
+            options: {
+              cacheName: 'muffin-navigations',
+              networkTimeoutSeconds: 5,
+              plugins: [
+                {
+                  cacheWillUpdate: async ({ response }) =>
+                    response && response.ok ? response : null,
+                },
+              ],
+            },
+          },
+          ...(['GET', 'POST', 'PUT', 'DELETE'] as const).map((method) => ({
+            urlPattern: /\/\.netlify\/functions\//,
+            handler: 'NetworkOnly' as const,
+            method,
+          })),
+        ],
       },
       devOptions: {
         enabled: false,
