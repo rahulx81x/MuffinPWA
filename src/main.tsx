@@ -3,21 +3,26 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import { MaskProvider } from './hooks/useMask';
+import { ThemeProvider } from './hooks/useTheme';
+import {
+  applyThemeToDocument,
+  resolveInitialThemeId,
+} from './lib/themes';
 import './index.css';
 
+/* Apply theme before paint to avoid a light/dark flash. */
 (() => {
-  const stored = localStorage.getItem('themeMode');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const useDark = stored === 'dark' || (stored === null && prefersDark);
-  document.documentElement.classList.toggle('dark', useDark);
+  applyThemeToDocument(resolveInitialThemeId());
 })();
 
 registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <MaskProvider>
-      <App />
-    </MaskProvider>
+    <ThemeProvider>
+      <MaskProvider>
+        <App />
+      </MaskProvider>
+    </ThemeProvider>
   </StrictMode>
 );

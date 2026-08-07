@@ -16,9 +16,14 @@ export default {
       boxShadow: {
         warm: 'var(--shadow-warm)',
         'warm-sm': 'var(--shadow-warm-sm)',
+        glow: 'var(--shadow-glow)',
+        elevate: 'var(--shadow-elevate)',
       },
       transitionDuration: {
-        theme: '200ms',
+        theme: '400ms',
+      },
+      transitionTimingFunction: {
+        cozy: 'cubic-bezier(0.22, 1, 0.36, 1)',
       },
       colors: {
         canvas: 'var(--color-canvas)',
@@ -34,6 +39,7 @@ export default {
         primary: {
           DEFAULT: 'var(--color-primary)',
           muted: 'var(--color-primary-muted)',
+          foreground: 'var(--color-on-primary)',
         },
         success: {
           DEFAULT: 'var(--color-success)',

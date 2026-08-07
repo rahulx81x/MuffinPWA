@@ -114,15 +114,13 @@ export function buildInvestmentBreakup(
   if (initial.fixed) breakdown['Fixed Deposits'] = initial.fixed;
   if (initial.mutual) breakdown['Mutual Funds'] = initial.mutual;
 
-  // Include every investment type in the graph/breakup (PF included for visibility).
-  transactions
-    .filter((t) => t.type === 'investment')
-    .forEach((t) => {
-      const key =
-        (t.investmentType || t.category || 'Uncategorized').trim() ||
-        'Uncategorized';
-      breakdown[key] = (breakdown[key] || 0) + t.amount;
-    });
+  // Counted investments only — PF has its own card and is omitted from breakup/pie.
+  transactions.filter(isCountedInvestment).forEach((t) => {
+    const key =
+      (t.investmentType || t.category || 'Uncategorized').trim() ||
+      'Uncategorized';
+    breakdown[key] = (breakdown[key] || 0) + t.amount;
+  });
 
   return breakdown;
 }

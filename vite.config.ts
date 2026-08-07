@@ -41,6 +41,16 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: '/index.html',
+        // Never SPA-fallback Netlify Functions (auth redirects must stay network).
+        navigateFallbackDenylist: [/^\/\.netlify\/functions\//],
+        // Always hit the network for API — never cache HTML login pages or JSON.
+        runtimeCaching: (
+          ['GET', 'POST', 'PUT', 'DELETE'] as const
+        ).map((method) => ({
+          urlPattern: /\/\.netlify\/functions\//,
+          handler: 'NetworkOnly' as const,
+          method,
+        })),
       },
       devOptions: {
         enabled: false,
