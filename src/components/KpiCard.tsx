@@ -1,5 +1,8 @@
+import { motion } from 'framer-motion';
+import { ChartNoAxesCombined, List } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { KpiIconHint } from '../types';
+import { springSoft } from '../lib/motion';
 
 export type KpiTone =
   | 'default'
@@ -24,9 +27,9 @@ const toneClass: Record<KpiTone, string> = {
   default: 'text-text',
   success: 'text-emerald-600 dark:text-emerald-400',
   destructive: 'text-rose-600 dark:text-rose-400',
-  teal: 'text-amber-700 dark:text-amber-400',
-  violet: 'text-amber-800 dark:text-amber-300',
-  hero: 'text-white',
+  teal: 'text-primary',
+  violet: 'text-primary-muted',
+  hero: 'text-primary-foreground',
 };
 
 function HintIcon({
@@ -37,43 +40,18 @@ function HintIcon({
   hero: boolean;
 }) {
   const color = hero
-    ? 'text-amber-100/80 dark:text-amber-200/70'
+    ? 'text-primary-foreground/75'
     : 'text-text-muted';
 
   if (hint === 'list') {
-    return (
-      <svg
-        viewBox="0 0 24 24"
-        className={`h-3.5 w-3.5 ${color}`}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
-        />
-      </svg>
-    );
+    return <List className={`h-3.5 w-3.5 ${color}`} strokeWidth={2} />;
   }
 
   return (
-    <svg
-      viewBox="0 0 24 24"
+    <ChartNoAxesCombined
       className={`h-3.5 w-3.5 ${color}`}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 19V5M4 19h16M8 15v4M12 11v8M16 7v12"
-      />
-    </svg>
+      strokeWidth={2}
+    />
   );
 }
 
@@ -89,17 +67,15 @@ export function KpiCard({
 }: KpiCardProps) {
   const isHero = tone === 'hero';
   const base = isHero
-    ? 'bg-gradient-to-br from-amber-600 to-amber-500 border-amber-500 text-white dark:from-amber-700 dark:to-amber-600 dark:border-amber-600'
-    : 'bg-surface-strong dark:bg-surface border-border';
+    ? 'bg-gradient-to-br from-primary-muted to-primary border-primary/80 text-primary-foreground shadow-glow'
+    : 'cozy-card border-border';
 
   const content = (
     <>
       <div className="flex items-start justify-between gap-2">
         <h3
           className={`text-[11px] font-semibold uppercase tracking-wide ${
-            isHero
-              ? 'text-amber-100 dark:text-amber-100/90'
-              : 'text-text-muted'
+            isHero ? 'text-primary-foreground/80' : 'text-text-muted'
           }`}
         >
           {label}
@@ -110,7 +86,7 @@ export function KpiCard({
         <p
           className={`mt-2 font-bold tabular-nums ${
             isHero
-              ? 'font-display text-2xl tracking-tight text-white'
+              ? 'font-display text-2xl tracking-tight text-primary-foreground'
               : `text-xl ${toneClass[tone]}`
           }`}
         >
@@ -123,21 +99,26 @@ export function KpiCard({
 
   if (interactive) {
     return (
-      <button
+      <motion.button
         type="button"
         onClick={onClick}
-        className={`w-full rounded-2xl border p-4 text-left shadow-warm-sm transition-colors duration-200 active:scale-[0.97] ${base} ${className}`}
+        whileHover={{ scale: 1.015, y: -2 }}
+        whileTap={{ scale: 0.98 }}
+        transition={springSoft}
+        className={`w-full rounded-2xl border p-4 text-left shadow-warm-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${base} ${className}`}
       >
         {content}
-      </button>
+      </motion.button>
     );
   }
 
   return (
-    <div
-      className={`w-full rounded-2xl border p-4 text-left shadow-warm-sm transition-colors duration-200 ${base} ${className}`}
+    <motion.div
+      whileHover={{ y: -1 }}
+      transition={springSoft}
+      className={`w-full rounded-2xl border p-4 text-left shadow-warm-sm ${base} ${className}`}
     >
       {content}
-    </div>
+    </motion.div>
   );
 }

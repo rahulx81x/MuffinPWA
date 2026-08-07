@@ -1,15 +1,23 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import {
   formatCurrency as formatCurrencyRaw,
   getInitialInvestmentTotal,
   INITIAL_LIQUID_BALANCE,
 } from '../config';
 import { useMask, MASKED_VALUE } from '../hooks/useMask';
+import { useTheme } from '../hooks/useTheme';
 import {
   buildMonthlyKPIs,
   currentMonthKey,
   monthKey,
 } from '../lib/metrics';
+import {
+  backdropVariants,
+  sheetTransition,
+  sheetVariants,
+} from '../lib/motion';
 import { isCountedInvestment, isProvidentFund } from '../lib/providentFund';
 import type { MetricKey, Transaction } from '../types';
 import { TransactionList } from './TransactionList';
@@ -38,17 +46,6 @@ const MODAL_KIND: Partial<Record<MetricKey, ModalKind>> = {
   currentMonthSavingsPct: 'line',
 };
 
-const PIE_COLORS = [
-  '#d97706',
-  '#b45309',
-  '#f59e0b',
-  '#8c6d53',
-  '#047857',
-  '#b91c1c',
-  '#7c5a43',
-  '#c2410c',
-];
-
 function resolveListType(
   metricKey: MetricKey
 ): Transaction['type'] | null {
@@ -60,6 +57,8 @@ function resolveListType(
 
 function PieChart({ data }: { data: Record<string, number> }) {
   const { masked, formatCurrency } = useMask();
+  const { theme } = useTheme();
+  const pieColors = theme.chartColors;
   const entries = Object.entries(data)
     .filter(([, amount]) => amount > 0)
     .sort((a, b) => b[1] - a[1]);
@@ -83,6 +82,7 @@ function PieChart({ data }: { data: Record<string, number> }) {
         {entries.map(([name, amount], index) => {
           const fraction = amount / total;
           const dash = fraction * circumference;
+          const color = pieColors[index % pieColors.length];
           const segment = (
             <circle
               key={name}
@@ -90,7 +90,7 @@ function PieChart({ data }: { data: Record<string, number> }) {
               cy="90"
               r={radius}
               fill="none"
-              stroke={PIE_COLORS[index % PIE_COLORS.length]}
+              stroke={color}
               strokeWidth="28"
               strokeDasharray={`${dash} ${circumference - dash}`}
               strokeDashoffset={-offset}
@@ -113,7 +113,7 @@ function PieChart({ data }: { data: Record<string, number> }) {
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{
-                    backgroundColor: PIE_COLORS[index % PIE_COLORS.length],
+                    backgroundColor: pieColors[index % pieColors.length],
                   }}
                 />
                 <span className="truncate font-medium text-text">
@@ -219,7 +219,7 @@ function LineChart({
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-amber-600 dark:text-amber-400"
+            className="text-primary"
           />
           {coords.map((point, index) => {
             const labelAbove = index % 2 === 0;
@@ -238,7 +238,7 @@ function LineChart({
                   cx={point.x}
                   cy={point.y}
                   r="4"
-                  className="fill-amber-600 dark:fill-amber-400"
+                  className="fill-primary"
                 />
                 <text
                   x={point.x}
@@ -340,16 +340,35 @@ export function ChartModal({
   onClose,
 }: ChartModalProps) {
   const { masked } = useMask();
-  const kind = metricKey ? MODAL_KIND[metricKey] : undefined;
+
+  // Keep last open payload so exit animation still has content to show.
+  const [snapshot, setSnapshot] = useState<{
+    metricKey: MetricKey;
+    title: string;
+    subtitle?: string;
+    breakup: Record<string, number>;
+  } | null>(null);
+
+  useEffect(() => {
+    if (open && metricKey) {
+      setSnapshot({ metricKey, title, subtitle, breakup });
+    }
+  }, [open, metricKey, title, subtitle, breakup]);
+
+  const activeKey = snapshot?.metricKey ?? null;
+  const kind = activeKey ? MODAL_KIND[activeKey] : undefined;
+  const activeTitle = snapshot?.title ?? title;
+  const activeSubtitle = snapshot?.subtitle ?? subtitle;
+  const activeBreakup = snapshot?.breakup ?? breakup;
 
   const listTransactions = useMemo(() => {
-    if (!metricKey) return [];
-    if (metricKey === 'providentFund') {
+    if (!activeKey) return [];
+    if (activeKey === 'providentFund') {
       return transactions
         .filter(isProvidentFund)
         .sort((a, b) => a.date.localeCompare(b.date));
     }
-    const type = resolveListType(metricKey);
+    const type = resolveListType(activeKey);
     if (!type) return [];
     const thisMonth = currentMonthKey();
     return transactions
@@ -359,14 +378,14 @@ export function ChartModal({
         return true;
       })
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [metricKey, transactions]);
+  }, [activeKey, transactions]);
 
   const series = useMemo(() => {
-    if (!metricKey || kind !== 'line') {
+    if (!activeKey || kind !== 'line') {
       return { points: [], labels: [], footer: '', asPercent: false };
     }
-    return buildClosingSeries(transactions, metricKey, masked);
-  }, [metricKey, kind, transactions, masked]);
+    return buildClosingSeries(transactions, activeKey, masked);
+  }, [activeKey, kind, transactions, masked]);
 
   useEffect(() => {
     if (!open) return;
@@ -384,83 +403,89 @@ export function ChartModal({
     };
   }, [open, onClose]);
 
-  if (!open || !metricKey || !kind) return null;
+  const show = open && !!activeKey && !!kind;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <button
-        type="button"
-        className="absolute inset-0 bg-muffin-chocolate/50 backdrop-blur-[2px] transition-opacity duration-200"
-        aria-label="Dismiss modal"
-        onClick={onClose}
-      />
+  return createPortal(
+    <AnimatePresence>
+      {show && (
+        <motion.button
+          key="chart-backdrop"
+          type="button"
+          variants={backdropVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed inset-0 z-[100] bg-black/50"
+          aria-label="Dismiss modal"
+          onClick={onClose}
+        />
+      )}
+      {show && (
+        <motion.div
+          key="chart-sheet"
+          role="dialog"
+          aria-modal="true"
+          aria-label={activeTitle}
+          variants={sheetVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={sheetTransition}
+          className="fixed inset-x-0 bottom-0 z-[101] mx-auto flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl border border-border bg-canvas shadow-elevate transition-theme pb-safe"
+        >
+          <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" />
 
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className="relative z-10 flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl border border-border bg-canvas shadow-warm transition-colors duration-200 pb-safe"
-        style={{
-          animation: 'slideUp 220ms ease-out',
-        }}
-      >
-        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" />
+          <header className="flex items-start justify-between gap-3 px-4 pb-3 pt-4">
+            <div className="min-w-0">
+              <h2 className="truncate font-display text-lg font-bold text-text">
+                {activeTitle}
+              </h2>
+              {activeSubtitle && (
+                <p className="mt-0.5 text-sm text-text-muted">{activeSubtitle}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-strong text-text-secondary shadow-warm-sm transition-colors duration-200 active:scale-95"
+              aria-label="Close"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 6l12 12M18 6 6 18"
+                />
+              </svg>
+            </button>
+          </header>
 
-        <header className="flex items-start justify-between gap-3 px-4 pb-3 pt-4">
-          <div className="min-w-0">
-            <h2 className="truncate font-display text-lg font-bold text-text">
-              {title}
-            </h2>
-            {subtitle && (
-              <p className="mt-0.5 text-sm text-text-muted">{subtitle}</p>
+          <div className="overflow-y-auto px-4 pb-6">
+            {kind === 'list' && (
+              <TransactionList transactions={listTransactions} />
+            )}
+            {kind === 'pie' && <PieChart data={activeBreakup} />}
+            {kind === 'line' && (
+              <LineChart
+                points={series.points}
+                labels={series.labels}
+                footer={series.footer}
+                asPercent={series.asPercent}
+                masked={masked}
+              />
             )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-strong text-text-secondary shadow-warm-sm transition-colors duration-200 active:scale-95"
-            aria-label="Close"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 6l12 12M18 6 6 18"
-              />
-            </svg>
-          </button>
-        </header>
-
-        <div className="overflow-y-auto px-4 pb-6">
-          {kind === 'list' && (
-            <TransactionList transactions={listTransactions} />
-          )}
-          {kind === 'pie' && <PieChart data={breakup} />}
-          {kind === 'line' && (
-            <LineChart
-              points={series.points}
-              labels={series.labels}
-              footer={series.footer}
-              asPercent={series.asPercent}
-              masked={masked}
-            />
-          )}
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes slideUp {
-          from { transform: translateY(100%); opacity: 0.6; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 }

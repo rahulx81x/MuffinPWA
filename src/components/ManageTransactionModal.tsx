@@ -1,4 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import CreatableSelect from 'react-select/creatable';
 import type {
   CSSObjectWithLabel,
@@ -10,15 +13,18 @@ import type {
 import {
   createTransaction,
   deleteTransaction,
+  NetlifySessionExpiredError,
   updateTransaction,
 } from '../lib/api';
 import { useTheme } from '../hooks/useTheme';
+import { backdropVariants, popoverVariants, springSoft } from '../lib/motion';
 import type {
   SheetRowData,
   SheetTabName,
   Transaction,
   TransactionType,
 } from '../types';
+import { SoftButton } from './SoftButton';
 
 interface ManageTransactionModalProps {
   open: boolean;
@@ -41,11 +47,10 @@ const TYPE_TO_TAB: Record<TransactionType, SheetTabName> = {
   investment: 'Investment',
 };
 
-const fieldClass =
-  'w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text outline-none transition-colors duration-200 focus:border-primary disabled:opacity-60';
+const fieldClass = 'field-cozy';
 const labelClass = 'mb-1 block text-xs font-semibold text-text-muted';
 const closeBtnClass =
-  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm transition-colors duration-200 active:scale-95 disabled:opacity-50';
+  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-canvas/90 text-text-secondary shadow-warm-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50';
 
 function todayIso(): string {
   const now = new Date();
@@ -77,17 +82,33 @@ function buildRowData(
   };
 }
 
+function readThemeVar(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback;
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+  return value || fallback;
+}
+
 function buildSelectStyles(
-  isDark: boolean
+  themeId: string
 ): StylesConfig<InvestmentTypeOption, false> {
-  const border = isDark ? '#423024' : '#e5d3b3';
-  const borderFocus = isDark ? '#f59e0b' : '#d97706';
-  const surface = isDark ? '#291d15' : '#fffaf5';
-  const menuBg = isDark ? '#34261c' : '#fffaf5';
-  const text = isDark ? '#f3e8dc' : '#3d2314';
-  const muted = isDark ? '#b89c88' : '#7c5a43';
-  const optionHover = isDark ? '#423024' : '#f3e8dc';
-  const optionSelected = isDark ? '#d97706' : '#d97706';
+  // themeId dependency forces rebuild when the palette changes.
+  void themeId;
+
+  const border = readThemeVar('--color-border', '#e5d3b3');
+  const borderFocus = readThemeVar('--color-primary', '#d97706');
+  const surface = readThemeVar('--color-surface-strong', '#fffaf5');
+  const menuBg = readThemeVar('--color-surface-strong', '#fffaf5');
+  const text = readThemeVar('--color-text', '#3d2314');
+  const muted = readThemeVar('--color-text-secondary', '#7c5a43');
+  const optionHover = readThemeVar('--color-surface', '#f3e8dc');
+  const optionSelected = readThemeVar('--color-primary', '#d97706');
+  const onPrimary = readThemeVar('--color-on-primary', '#fffaf5');
+  const shadow = readThemeVar(
+    '--shadow-warm',
+    '0 8px 24px rgba(61,35,20,0.12)'
+  );
 
   return {
     control: (
@@ -126,9 +147,7 @@ function buildSelectStyles(
       overflow: 'hidden',
       backgroundColor: menuBg,
       border: `1px solid ${border}`,
-      boxShadow: isDark
-        ? '0 8px 24px rgba(0,0,0,0.4)'
-        : '0 8px 24px rgba(61,35,20,0.12)',
+      boxShadow: shadow,
       zIndex: 60,
     }),
     menuList: (base: CSSObjectWithLabel) => ({
@@ -147,7 +166,7 @@ function buildSelectStyles(
         : state.isFocused
           ? optionHover
           : 'transparent',
-      color: state.isSelected ? '#fffaf5' : text,
+      color: state.isSelected ? onPrimary : text,
       cursor: 'pointer',
       fontSize: 14,
     }),
@@ -180,7 +199,7 @@ export function ManageTransactionModal({
   onClose,
   onSuccess,
 }: ManageTransactionModalProps) {
-  const { isDark } = useTheme();
+  const { themeId } = useTheme();
   const [date, setDate] = useState(todayIso());
   const [type, setType] = useState<TransactionType>('expense');
   const [category, setCategory] = useState('');
@@ -205,7 +224,7 @@ export function ManageTransactionModal({
     return ordered.sort((a, b) => a.label.localeCompare(b.label));
   }, [investmentTypeOptions]);
 
-  const selectStyles = useMemo(() => buildSelectStyles(isDark), [isDark]);
+  const selectStyles = useMemo(() => buildSelectStyles(themeId), [themeId]);
 
   const selectedOption = useMemo(() => {
     const trimmed = investmentType.trim();
@@ -242,10 +261,9 @@ export function ManageTransactionModal({
     }
   }, [open, mode, transaction]);
 
-  if (!open) return null;
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (!open) return;
     const amount = parseFloat(amountText);
     if (!category.trim() || Number.isNaN(amount) || amount <= 0) {
       setError('Enter a valid category and amount.');
@@ -289,6 +307,7 @@ export function ManageTransactionModal({
       await onSuccess();
       onClose();
     } catch (err) {
+      if (err instanceof NetlifySessionExpiredError) return;
       console.error('Failed to save transaction', err);
       setError(
         err instanceof Error ? err.message : 'Could not save transaction.'
@@ -298,60 +317,57 @@ export function ManageTransactionModal({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-6 sm:items-center sm:pb-0">
-      <button
-        type="button"
-        className="absolute inset-0 bg-muffin-chocolate/50 backdrop-blur-[2px] transition-colors duration-200"
-        aria-label="Dismiss transaction dialog"
-        onClick={onClose}
-        disabled={saving}
-      />
-
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="manage-tx-title"
-        className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-surface-strong p-5 shadow-warm transition-colors duration-200"
-        style={{ animation: 'manageTxFade 180ms ease-out' }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
-              {mode === 'add' ? 'New' : 'Edit'}
-            </p>
-            <h2
-              id="manage-tx-title"
-              className="mt-1 font-display text-base font-bold text-text"
-            >
-              {mode === 'add' ? 'Add transaction' : 'Edit transaction'}
-            </h2>
-          </div>
-          <button
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-6 sm:items-center sm:pb-0">
+          <motion.button
             type="button"
+            variants={backdropVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0 bg-black/50"
+            aria-label="Dismiss transaction dialog"
             onClick={onClose}
             disabled={saving}
-            className={closeBtnClass}
-            aria-label="Close"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 6l12 12M18 6 6 18"
-              />
-            </svg>
-          </button>
-        </div>
+          />
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manage-tx-title"
+            variants={popoverVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={springSoft}
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
+                  {mode === 'add' ? 'New' : 'Edit'}
+                </p>
+                <h2
+                  id="manage-tx-title"
+                  className="mt-1 font-display text-base font-bold text-text"
+                >
+                  {mode === 'add' ? 'Add transaction' : 'Edit transaction'}
+                </h2>
+              </div>
+              <SoftButton
+                onClick={onClose}
+                disabled={saving}
+                className={closeBtnClass}
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              </SoftButton>
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className={labelClass}>Date</span>
@@ -460,7 +476,8 @@ export function ManageTransactionModal({
               />
               <span className="mt-1 block text-[11px] leading-snug text-text-muted">
                 Pick from existing types or type a new one. Use “Provident Fund”,
-                “PF”, or “EPF” to track PF separately (excluded from net worth).
+                “PF”, or “EPF” to track PF on its own card (excluded from net
+                worth and investment breakup).
               </span>
             </div>
           )}
@@ -479,33 +496,32 @@ export function ManageTransactionModal({
 
           {error && (
             <p
-              className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 transition-colors duration-200 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+              className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 transition-theme dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
               role="alert"
             >
               {error}
             </p>
           )}
 
-          <button
+          <motion.button
             type="submit"
             disabled={saving}
-            className="w-full min-h-11 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-warm-sm transition-colors duration-200 active:scale-[0.98] disabled:opacity-60 dark:text-muffin-chocolate"
+            whileHover={saving ? undefined : { scale: 1.015 }}
+            whileTap={saving ? undefined : { scale: 0.97 }}
+            transition={springSoft}
+            className="soft-glow w-full min-h-11 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-warm disabled:opacity-60"
           >
             {saving
               ? 'Saving…'
               : mode === 'add'
                 ? 'Add transaction'
                 : 'Save changes'}
-          </button>
+          </motion.button>
         </form>
-      </div>
-
-      <style>{`
-        @keyframes manageTxFade {
-          from { opacity: 0; transform: translateY(8px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 }

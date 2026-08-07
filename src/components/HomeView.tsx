@@ -1,5 +1,8 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useMask } from '../hooks/useMask';
+import { springSoft } from '../lib/motion';
 import type { FinancialMetrics, KpiIconHint, MetricKey, Transaction } from '../types';
 import { ChartModal } from './ChartModal';
 import { KpiCard, type KpiTone } from './KpiCard';
@@ -220,44 +223,53 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
         ))}
       </div>
 
-      <button
+      <motion.button
         type="button"
         onClick={() => setShowMore((v) => !v)}
-        className="flex w-full items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+        whileHover={{ scale: 1.015 }}
+        whileTap={{ scale: 0.98 }}
+        transition={springSoft}
+        className="soft-glow flex w-full items-center justify-center gap-2 rounded-full border border-border/80 bg-surface-strong/90 px-4 py-2.5 text-sm font-semibold text-text shadow-warm-sm backdrop-blur-sm"
         aria-expanded={showMore}
       >
         {showMore ? 'Show Less' : 'More Details'}
-        <svg
-          viewBox="0 0 24 24"
-          className={`h-4 w-4 transition-transform ${showMore ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
+        <ChevronDown
+          className={`h-4 w-4 transition-transform duration-300 ease-cozy ${showMore ? 'rotate-180' : ''}`}
+          strokeWidth={2}
           aria-hidden="true"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
-        </svg>
-      </button>
+        />
+      </motion.button>
 
-      <div
-        className={`grid grid-cols-2 gap-3 overflow-hidden transition-all duration-300 ease-out ${
-          showMore ? 'max-h-[1400px] opacity-100' : 'max-h-0 opacity-0'
-        }`}
-      >
-        {detailCards.map((card) => (
-          <KpiCard
-            key={card.key}
-            label={card.label}
-            value={card.value}
-            tone={card.tone}
-            iconHint={card.iconHint}
-            interactive={card.interactive}
-            onClick={
-              card.interactive ? () => setActiveMetric(card.key) : undefined
-            }
-          />
-        ))}
-      </div>
+      <AnimatePresence initial={false}>
+        {showMore && (
+          <motion.div
+            key="details"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={springSoft}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              {detailCards.map((card) => (
+                <KpiCard
+                  key={card.key}
+                  label={card.label}
+                  value={card.value}
+                  tone={card.tone}
+                  iconHint={card.iconHint}
+                  interactive={card.interactive}
+                  onClick={
+                    card.interactive
+                      ? () => setActiveMetric(card.key)
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ChartModal
         open={activeMetric !== null}
