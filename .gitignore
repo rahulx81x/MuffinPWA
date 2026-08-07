@@ -18,5 +18,5 @@ Thumbs.db
 .vscode/
 .idea/
 
-# TypeScript
-*.tsbuildinfo
+# Showcase capture artifacts (regenerate via scripts)
+docs/showcase/screens/

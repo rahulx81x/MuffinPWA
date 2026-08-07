@@ -42,7 +42,9 @@ Think of it as baking your money muffins: sheet data goes in, and Home serves up
   - [3.9 Security and privacy](#39-security-and-privacy)
   - [3.10 Extensibility](#310-extensibility)
   - [3.11 AI-assisted development](#311-ai-assisted-development)
-- [4. Credits](#4-credits)
+  - [3.12 Product showcase PPT](#312-product-showcase-ppt)
+- [4. Analysis & Developer Notes](#4-analysis--developer-notes)
+- [5. Credits](#5-credits)
 
 ---
 
@@ -420,10 +422,11 @@ After changing these, redeploy (or rebuild locally) so the new values are includ
 | Data source | **Google Sheets** | Human-editable ledger / "database" (three tabs: Income, Expense, Investment) |
 | Source control | **GitHub** | Repo hosting; Netlify build trigger on push |
 | Tooling | **npm**, **Node.js**, **TypeScript ~5.7** | Install, typecheck (`tsc -b`), scripts |
+| Showcase (dev) | **Playwright** + **pptxgenjs** | Galaxy A55 screenshots + `Muffin_Showcase.pptx` generator |
 | AI IDE | **Cursor** | Agent/IDE-assisted implementation and docs |
 | AI assist | **GitHub Copilot** | Inline pair-programming during development |
 
-Runtime UI deps stay lean (`react`, `react-dom`, `react-select`, `framer-motion`, `lucide-react`). Charts/modals and metrics are custom code in `src/`. The only server-side runtime dependencies are `google-auth-library` and `google-spreadsheet`.
+Runtime UI deps stay lean (`react`, `react-dom`, `react-select`, `framer-motion`, `lucide-react`). Charts/modals and metrics are custom code in `src/`. The only server-side runtime dependencies are `google-auth-library` and `google-spreadsheet`. Playwright / pptxgenjs are **dev-only** showcase tooling (not shipped to production).
 
 ### 3.2 Repository architecture
 
@@ -444,6 +447,12 @@ MuffinPWA/
 │       ├── parseSheet.ts        # Date parsing + ID helpers (used by Planner)
 │       ├── metrics.ts            # Aggregations and KPI builders
 │       └── providentFund.ts      # PF detection helpers
+├── scripts/
+│   ├── capture-showcase.mjs     # Playwright Galaxy A55 screenshots (amounts masked)
+│   └── build-showcase-ppt.mjs   # Builds docs/showcase/Muffin_Showcase.pptx
+├── docs/showcase/
+│   ├── Muffin_Showcase.pptx     # 12-slide product showcase deck
+│   └── screens/                 # Captured PNGs (gitignored; regenerate via npm run showcase)
 ├── public/icons/                # PWA icons
 ├── netlify/functions/
 │   └── transactions.js          # Google Sheets OAuth read/write API
@@ -610,6 +619,39 @@ This codebase was developed with AI-assisted tooling in the loop:
 
 These are **development aids**, not runtime dependencies. The production site only needs Node (build time), Netlify, and a browser.
 
+### 3.12 Product showcase PPT
+
+A masked, Galaxy A55–framed product deck lives at **`docs/showcase/Muffin_Showcase.pptx`** (12 slides: title, promise, Home, drill-downs, themes, Planner, Ledger, Monthly, privacy/polish, architecture, stack, credits).
+
+Screenshots are captured from the **local running app** at CSS viewport **360×780** with **`deviceScaleFactor: 3`** (PNG size **1080×2340**), with amounts masked via the header eye control.
+
+| Script | Purpose |
+| --- | --- |
+| `scripts/capture-showcase.mjs` | Playwright walkthrough → `docs/showcase/screens/*.png` |
+| `scripts/build-showcase-ppt.mjs` | Embeds those PNGs into `Muffin_Showcase.pptx` via pptxgenjs |
+
+**Regenerate (requires `npm run dev` / Netlify Dev on `:8888`):**
+
+```bash
+# First time only (if Chromium not installed yet)
+npx playwright install chromium
+
+# Capture + build deck
+npm run showcase
+
+# Or separately:
+npm run showcase:capture
+npm run showcase:ppt
+```
+
+Optional base URL override:
+
+```bash
+node scripts/capture-showcase.mjs http://localhost:8888
+```
+
+`docs/showcase/screens/` is gitignored (regenerate locally). The `.pptx` itself can be kept in the repo for sharing.
+
 ---
 
 ## 4. Analysis & Developer Notes
@@ -619,11 +661,15 @@ These are **development aids**, not runtime dependencies. The production site on
   - `npm run dev` — run Netlify Dev (Vite + functions)
   - `npm run build` — TypeScript build then Vite production build
   - `npm run preview` — preview the production build locally
+  - `npm run showcase` — capture Galaxy A55 screenshots (masked) and rebuild `docs/showcase/Muffin_Showcase.pptx`
+  - `npm run showcase:capture` / `npm run showcase:ppt` — run capture or PPT build alone
 
 - **Project layout (key folders):**
   - `src/` — React + TypeScript app (`main.tsx`, `App.tsx`, views and components)
   - `src/config.ts` — starting balances and currency configuration
   - `netlify/functions/` — serverless functions that read/write Google Sheets (`transactions.js`, `health.js`)
+  - `scripts/` — showcase capture (`capture-showcase.mjs`) and PPT builder (`build-showcase-ppt.mjs`)
+  - `docs/showcase/` — product showcase deck + regenerated screen PNGs
   - `public/` — static assets and icons
   - `templates/` — CSV templates for the three required sheet tabs
   - `legacy/` — older version of the app and service-worker (kept for reference)
@@ -633,9 +679,10 @@ These are **development aids**, not runtime dependencies. The production site on
   - The `build` script runs `tsc -b` (TypeScript project references) then `vite build`.
   - Netlify Functions require these environment variables: `GOOGLE_SPREADSHEET_ID`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`.
   - Local development uses `netlify dev` so the functions are available at `/.netlify/functions/*` while testing.
+  - Showcase capture expects the app reachable (usually `http://localhost:8888`) with sheet data loading; amounts are masked in every shot.
   - There are no automated tests or linters configured in this repo currently.
 
-- **Notable dependencies:** React 19, Vite, TypeScript, Netlify CLI, `google-auth-library`, `google-spreadsheet`, `framer-motion`, `vite-plugin-pwa`.
+- **Notable dependencies:** React 19, Vite, TypeScript, Netlify CLI, `google-auth-library`, `google-spreadsheet`, `framer-motion`, `lucide-react`, `vite-plugin-pwa`; showcase tooling: `playwright`, `pptxgenjs`.
 
 - **Maintenance suggestions:**
   - Add CI (build + basic lint/tests) and README badges for clarity.
@@ -651,6 +698,7 @@ These are **development aids**, not runtime dependencies. The production site on
 
 - **Vibe Coded by Rahul Gouri, 2026** (also shown in-app via the header About / **i** button).
 - Built as a cozy personal finance PWA using React, Vite, Tailwind (six muffin theme tokens), Framer Motion, Lucide, Syne/DM Sans, react-select, and Netlify Functions.
+- Product showcase deck: `docs/showcase/Muffin_Showcase.pptx` (regenerate with `npm run showcase`).
 - Google Sheets used as a lightweight, human-editable data backend, accessed via the Google Sheets API over OAuth 2.0.
 - Legacy vanilla implementation (CSV-publish based) retained under `legacy/` for reference.
 
