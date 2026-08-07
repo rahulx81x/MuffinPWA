@@ -3,9 +3,9 @@ import type { SheetRowData, SheetTabName, Transaction } from '../types';
 const ENDPOINT = '/.netlify/functions/transactions';
 const HEALTH_ENDPOINT = '/.netlify/functions/health';
 
-/** Prevents a mis-detect from spinning reload loops. */
-const RELOAD_GUARD_KEY = 'muffin:netlify-session-reload';
-const RELOAD_GUARD_MS = 10_000;
+/** Prevents a mis-detect from spinning re-auth navigation loops. */
+const REAUTH_GUARD_KEY = 'muffin:netlify-session-reauth';
+const REAUTH_GUARD_MS = 10_000;
 
 export class NetlifySessionExpiredError extends Error {
   readonly code = 'NETLIFY_SESSION_EXPIRED' as const;
@@ -16,38 +16,109 @@ export class NetlifySessionExpiredError extends Error {
   }
 }
 
-function reloadForNetlifyLogin(): void {
+/**
+ * Extract Netlify Edge Access login URL from the Login Redirect HTML body.
+ * Rewrites requested_path to `/` so post-login returns to the app, not the
+ * raw function URL that triggered the challenge.
+ */
+function parseEdgeAccessLoginUrl(html: string): string | null {
+  const match = html.match(
+    /https:\\\/\\\/app\.netlify\.com\\\/edge-access\?[^'"]+/i
+  );
+  if (!match) {
+    const plain = html.match(
+      /https:\/\/app\.netlify\.com\/edge-access\?[^'"\s<>]+/i
+    );
+    if (!plain) return null;
+    try {
+      const url = new URL(plain[0].replace(/&amp;/g, '&'));
+      url.searchParams.set('requested_path', '/');
+      return url.toString();
+    } catch {
+      return null;
+    }
+  }
+
   try {
-    const last = sessionStorage.getItem(RELOAD_GUARD_KEY);
+    const unescaped = match[0]
+      .replace(/\\\//g, '/')
+      .replace(/\\u0026/g, '&');
+    const url = new URL(unescaped);
+    url.searchParams.set('requested_path', '/');
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function beginNetlifyReauth(loginUrl?: string | null): void {
+  try {
+    const last = sessionStorage.getItem(REAUTH_GUARD_KEY);
     const now = Date.now();
-    if (last && now - Number(last) < RELOAD_GUARD_MS) {
+    if (last && now - Number(last) < REAUTH_GUARD_MS) {
       return;
     }
-    sessionStorage.setItem(RELOAD_GUARD_KEY, String(now));
+    sessionStorage.setItem(REAUTH_GUARD_KEY, String(now));
   } catch {
-    // sessionStorage may be unavailable; still attempt reload
+    // sessionStorage may be unavailable; still attempt navigation
   }
-  window.location.reload();
+
+  const target =
+    loginUrl ||
+    `${window.location.origin}/?reauth=${Date.now()}`;
+
+  console.warn(
+    '[muffin] Netlify Edge Access session expired. Navigating to login gate.',
+    target
+  );
+  window.location.replace(target);
 }
 
 /**
- * Netlify Private Access intercepts unauthenticated requests to
- * `/.netlify/functions/*` with a 302 → HTML login page. When that happens
- * on an API call, `fetch` may follow the redirect and we receive HTML instead
- * of JSON — that is the signal the site session cookie has expired.
+ * Netlify Edge Access / Private Access intercepts unauthenticated requests to
+ * `/.netlify/functions/*` with 401 + Login Redirect HTML. That HTML only works
+ * as a document navigation (its script never runs inside fetch), so we must
+ * top-level navigate to Edge Access instead of reloading the SW app shell.
  */
-function assertNetlifySession(response: Response): void {
+async function assertNetlifySession(response: Response): Promise<void> {
   const contentType = response.headers.get('content-type') ?? '';
   const isHtml = contentType.includes('text/html');
   const isAuthStatus = response.status === 401 || response.status === 403;
+  const isOpaqueRedirect =
+    response.type === 'opaqueredirect' ||
+    (response.status >= 300 && response.status < 400);
 
-  if (response.redirected || isHtml || isAuthStatus) {
-    console.warn(
-      '[muffin] Netlify session expired or missing: API returned HTML/auth redirect. Reloading so Netlify can show the login gate.'
-    );
-    reloadForNetlifyLogin();
-    throw new NetlifySessionExpiredError();
+  if (!response.redirected && !isHtml && !isAuthStatus && !isOpaqueRedirect) {
+    return;
   }
+
+  let loginUrl: string | null = null;
+  if (isHtml || isAuthStatus) {
+    try {
+      const clone = response.clone();
+      const text = await clone.text();
+      if (
+        text.includes('edge-access') ||
+        text.includes('Login Redirect') ||
+        isHtml
+      ) {
+        loginUrl = parseEdgeAccessLoginUrl(text);
+      }
+      // Auth status with non-login JSON body is a real API error — don't reauth.
+      if (isAuthStatus && !isHtml && !loginUrl && !text.includes('Login Redirect')) {
+        const looksLikeJson =
+          contentType.includes('application/json') || text.trim().startsWith('{');
+        if (looksLikeJson) {
+          return;
+        }
+      }
+    } catch {
+      // ignore body read failures; still attempt re-auth on auth/HTML signals
+    }
+  }
+
+  beginNetlifyReauth(loginUrl);
+  throw new NetlifySessionExpiredError();
 }
 
 async function apiFetch(
@@ -57,8 +128,9 @@ async function apiFetch(
   const response = await fetch(input, {
     ...init,
     credentials: 'include',
+    redirect: 'follow',
   });
-  assertNetlifySession(response);
+  await assertNetlifySession(response);
   return response;
 }
 

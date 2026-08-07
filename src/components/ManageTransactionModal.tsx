@@ -307,7 +307,10 @@ export function ManageTransactionModal({
       await onSuccess();
       onClose();
     } catch (err) {
-      if (err instanceof NetlifySessionExpiredError) return;
+      if (err instanceof NetlifySessionExpiredError) {
+        setError('Session expired — signing in again…');
+        return;
+      }
       console.error('Failed to save transaction', err);
       setError(
         err instanceof Error ? err.message : 'Could not save transaction.'
