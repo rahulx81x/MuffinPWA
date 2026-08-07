@@ -612,7 +612,42 @@ These are **development aids**, not runtime dependencies. The production site on
 
 ---
 
-## 4. Credits
+## 4. Analysis & Developer Notes
+
+- **Quick dev commands:**
+  - `npm install` — install dependencies
+  - `npm run dev` — run Netlify Dev (Vite + functions)
+  - `npm run build` — TypeScript build then Vite production build
+  - `npm run preview` — preview the production build locally
+
+- **Project layout (key folders):**
+  - `src/` — React + TypeScript app (`main.tsx`, `App.tsx`, views and components)
+  - `src/config.ts` — starting balances and currency configuration
+  - `netlify/functions/` — serverless functions that read/write Google Sheets (`transactions.js`, `health.js`)
+  - `public/` — static assets and icons
+  - `templates/` — CSV templates for the three required sheet tabs
+  - `legacy/` — older version of the app and service-worker (kept for reference)
+  - `future-upgrades/` — notes and ideas for future changes
+
+- **Build & runtime notes:**
+  - The `build` script runs `tsc -b` (TypeScript project references) then `vite build`.
+  - Netlify Functions require these environment variables: `GOOGLE_SPREADSHEET_ID`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`.
+  - Local development uses `netlify dev` so the functions are available at `/.netlify/functions/*` while testing.
+  - There are no automated tests or linters configured in this repo currently.
+
+- **Notable dependencies:** React 19, Vite, TypeScript, Netlify CLI, `google-auth-library`, `google-spreadsheet`, `framer-motion`, `vite-plugin-pwa`.
+
+- **Maintenance suggestions:**
+  - Add CI (build + basic lint/tests) and README badges for clarity.
+  - Consider migrating serverless functions to TypeScript for type safety and DX.
+  - Add a short `DEVELOPER.md` with recommended environment variables and a `.env.example` reference (there is already an `.env.example` present).
+
+- **Where to look next:**
+  - App entry: `src/main.tsx` and `src/App.tsx` for routing and bootstrapping.
+  - Server functions: `netlify/functions/transactions.js` for read/write logic against Google Sheets.
+  - Templates: `templates/` and `finance_template.csv` for sample sheet layouts.
+
+## 5. Credits
 
 - **Vibe Coded by Rahul Gouri, 2026** (also shown in-app via the header About / **i** button).
 - Built as a cozy personal finance PWA using React, Vite, Tailwind (six muffin theme tokens), Framer Motion, Lucide, Syne/DM Sans, react-select, and Netlify Functions.
