@@ -63,7 +63,7 @@ This project is a **personal finance dashboard** for individuals who already (or
 - A planner for "what if I spend/save this?" scenarios without editing the real sheet
 - In-app add / edit / delete for sheet transactions, written straight back to your Google Sheet
 
-It is designed for personal use (INR by default), not for multi-user accounting or bank sync.
+It is designed for **personal finance** (INR by default): each person signs in with Google and links **their own** spreadsheet. It is not a shared multi-bookkeeper suite or a bank aggregator.
 
 ### 1.2 Data model
 
@@ -139,19 +139,22 @@ Currency display defaults to **â‚¹** with Indian digit grouping (e.g. â‚�
 
 Also included:
 
+- **Google Sign-In (multi-user)** — each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token
 - **Six muffin themes** — 3 light (Classic, Blueberry, Pistachio Matcha) and 3 dark (Double Chocolate, Red Velvet, Salted Caramel), with CSS design tokens + themed chart palettes
 - **Header settings (gear)** — one menu for Mask, Theme, About, Recipe (configuration), Download App (PWA install), and Log out
-- **Recipe** — view/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (persisted in `localStorage` as `muffinRecipe`)
+- **Recipe** — view/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in Netlify Blobs for the signed-in user; local cache for snappy UI)
+- **First-run tour** — short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again
 - **Cozy motion** — soft spring micro-interactions, sliding tab highlight, page transitions, and animated sheet/modals (Framer Motion)
 - Compact branded sticky header (muffin icon + wordmark) + full-width floating bottom nav aligned with cards
 
 ### 1.6 Everyday data flow
 
 1. You sign in with Google in the app, then link an existing workbook (paste URL/ID) or create a new one.
-2. You add, edit, or delete rows via the in-app Ledger / **+** button, or directly in Google Sheets.
-3. A **Netlify Function** uses your signed-in Google session (refresh token in an httpOnly cookie) and your linked spreadsheet ID (stored in Netlify Blobs per Google user) to read/write the `Income`, `Expense`, and `Investment` tabs. App OAuth client secrets never ship to the browser.
-4. The React app fetches transactions from that function on load (and after every add/edit/delete), builds metrics client-side, and updates Home / Ledger / Monthly.
-5. Planner entries stay on-device and never write back to Sheets.
+2. New users get a short **tour** covering the dashboard, main tabs, and Recipe; completing or skipping it is stored on your account.
+3. You add, edit, or delete rows via the in-app Ledger / **+** button, or directly in Google Sheets.
+4. A **Netlify Function** uses your signed-in Google session (refresh token in an httpOnly cookie) and your linked spreadsheet ID (stored in Netlify Blobs per Google user) to read/write the `Income`, `Expense`, and `Investment` tabs. App OAuth client secrets never ship to the browser.
+5. The React app fetches transactions from that function on load (and after every add/edit/delete), builds metrics client-side, and updates Home / Ledger / Monthly.
+6. Planner entries stay on-device and never write back to Sheets. Recipe starting balances sync via Blobs so they follow you across devices.
 
 ### 1.7 Where data lives
 
@@ -159,9 +162,9 @@ Also included:
 | --- | --- |
 | Real transactions | Your Google Sheet (`Income`, `Expense`, `Investment` tabs) |
 | Google OAuth app credentials | Netlify / local env (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`) |
-| Per-user sheet link | Netlify Blobs (`muffin-users`, keyed by Google user id) |
+| Per-user sheet link + Recipe + tour flag | Netlify Blobs (`muffin-users`, keyed by Google user id) |
 | Signed-in session | httpOnly cookie (encrypted refresh token) |
-| Starting balances (Recipe) | Browser `localStorage` (`muffinRecipe`); code defaults in `src/config.ts` |
+| Recipe local cache | Browser `localStorage` (`muffinRecipe`) — hydrated from Blobs on sign-in |
 | Currency display | `src/config.ts` (`CURRENCY`) |
 | Planner "what if" rows | Browser `localStorage` (`plannerTransactions`) |
 | Selected muffin theme | Browser `localStorage` (`muffinTheme`) |
@@ -175,6 +178,7 @@ Also included:
 - Read and write always travel together for the signed-in Google account.
 - The three tabs (`Income`, `Expense`, `Investment`) are fixed by the server; a single combined tab with a `Type` column is not read by the current backend.
 - The Planner does not sync across devices or back into Sheets.
+- Recipe starting balances sync across devices via Blobs; theme / mask / planner stay browser-local.
 - Provident Fund rows are tracked for display but do not change net worth / liquid / investment totals.
 - If the function cannot reach the sheet (revoked access, sheet renamed, missing tabs), the UI shows a soft warning and falls back to configured starting balances.
 
@@ -371,15 +375,17 @@ npm run dev
 
 ### 2.9 Recipe and starting balances
 
-You do **not** need a redeploy to set starting balances. In the live app:
+You do **not** need a redeploy to set starting balances. In the live app (while signed in):
 
 1. Open the header **gear** menu → **Recipe**.
 2. View / copy the linked spreadsheet ID.
 3. Set **Initial opening balance** (liquid cash before sheet history).
 4. Add one or more **Initial investments** (type + amount), e.g. Fixed Deposits, Mutual Funds.
-5. Save — values persist in this browser under `localStorage` key `muffinRecipe` and feed net worth / investment breakup.
+5. Save — values are written to **Netlify Blobs** for your Google account (and cached locally as `muffinRecipe` for the UI). They feed net worth / investment breakup on every device you sign into.
 
-Optional code defaults (used when Recipe has never been saved) and currency live in `src/config.ts` (`INITIAL_*`, `CURRENCY`). Changing currency still requires a rebuild/redeploy.
+If you had Recipe values only in the browser before Blobs sync shipped, the first successful sign-in migrates a non-empty local Recipe to Blobs automatically.
+
+Optional code defaults (used when no Recipe exists yet) and currency live in `src/config.ts` (`INITIAL_*`, `CURRENCY`). Changing currency still requires a rebuild/redeploy.
 
 ### 2.10 Everyday usage
 
@@ -388,15 +394,18 @@ Optional code defaults (used when Recipe has never been saved) and currency live
 3. On Home, tap KPI cards to open charts or filtered lists; open **More Details** for Provident Fund and extra KPIs.
 4. Use **Planner** for temporary what-if entries (device-only).
 5. Open the header **gear** for Mask, Theme, About, Recipe, Download App, and Log out.
-6. On your phone browser, use **Download App** from the gear menu (or the browser’s Add to Home Screen / Install).
+6. After your first sheet link, walk through the **tour** (or skip it) — it will not appear again once completed.
+7. On your phone browser, use **Download App** from the gear menu (or the browser’s Add to Home Screen / Install).
 
 ### 2.11 Troubleshooting
 
 | Symptom | Likely fix |
 | --- | --- |
 | Warning that the sheet couldn't load | Check all four required env vars (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`); confirm the signed-in Google account still has access to the spreadsheet |
-| Sign-in redirect / OAuth error | Redirect URI in Google Cloud, Netlify `GOOGLE_REDIRECT_URI`, and the live site URL must match exactly (prod: `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback`) |
-| Numbers stuck at starting balances only | Env vars missing, deploy not triggered after adding them, or sheet not linked yet — also check Recipe opening balance / investments |
+| Sign-in redirect / OAuth error | Redirect URI in Google Cloud, Netlify `GOOGLE_REDIRECT_URI`, and the live site URL must match exactly (prod: `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback`; local: `http://localhost:8888/.netlify/functions/auth-callback`) |
+| Numbers stuck at starting balances only | Env vars missing, deploy not triggered after adding them, or sheet not linked yet — also check Recipe opening balance / investments (gear → Recipe) |
+| Recipe missing on another device | Sign in with the same Google account; Recipe syncs via Blobs after Save |
+| First-run tour keeps appearing | Complete or skip the tour (writes `tourCompletedAt` on your Blobs user record); returning accounts with an older linked sheet are auto-skipped |
 | "Sheet tab X was not found" error | Confirm tabs are named exactly `Income`, `Expense`, `Investment` (case-sensitive, no extra spaces) |
 | Some months missing | Dates invalid or Amount cells not plain numbers |
 | Investments missing from breakup | Fill in **Investment Type** on the Investment tab (falls back to Category if blank) |
@@ -431,7 +440,7 @@ Optional code defaults (used when Recipe has never been saved) and currency live
 | AI IDE | **Cursor** | Agent/IDE-assisted implementation and docs |
 | AI assist | **GitHub Copilot** | Inline pair-programming during development |
 
-Runtime UI deps stay lean (`react`, `react-dom`, `react-select`, `framer-motion`, `lucide-react`). Charts/modals and metrics are custom code in `src/`. The only server-side runtime dependencies are `google-auth-library` and `google-spreadsheet`. Playwright / pptxgenjs are **dev-only** showcase tooling (not shipped to production).
+Runtime UI deps stay lean (`react`, `react-dom`, `react-select`, `framer-motion`, `lucide-react`). Charts/modals and metrics are custom code in `src/`. Server-side runtime dependencies include `google-auth-library`, `google-spreadsheet`, and `@netlify/blobs`. Playwright / pptxgenjs are **dev-only** showcase tooling (not shipped to production).
 
 ### 3.2 Repository architecture
 
@@ -439,14 +448,14 @@ Runtime UI deps stay lean (`react`, `react-dom`, `react-select`, `framer-motion`
 MuffinPWA/
 ├── src/
 │   ├── main.tsx              # React entry + Theme / Mask / Recipe providers; FOUC theme bootstrap
-│   ├── App.tsx                # Shell: auth, sheet load, tabs, planner, gear menu, modals
-│   ├── config.ts              # Currency helpers + Recipe defaults / localStorage recipe store
+│   ├── App.tsx                # Shell: auth, sheet load, tour, tabs, planner, gear menu, modals
+│   ├── config.ts              # Currency helpers + Recipe defaults / local cache helpers
 │   ├── types.ts                # Shared TypeScript types
 │   ├── index.css               # Tailwind + 6 muffin theme tokens (`data-theme`)
-│   ├── components/             # Home, Planner, Ledger, Monthly, HeaderMenu, RecipeModal, charts, nav
+│   ├── components/             # Home, Planner, Ledger, Monthly, HeaderMenu, RecipeModal, TourModal, charts, nav
 │   ├── hooks/                  # Theme, Mask, RecipeConfig, PwaInstall
 │   └── lib/
-│       ├── api.ts               # Client → Netlify auth / sheet / transactions functions
+│       ├── api.ts               # Client → Netlify auth / sheet / recipe / tour / transactions
 │       ├── themes.ts            # Theme catalog, persistence helpers, chart palettes
 │       ├── motion.ts            # Shared Framer Motion springs / variants
 │       ├── parseSheet.ts        # Date parsing + ID helpers (used by Planner)
@@ -456,16 +465,16 @@ MuffinPWA/
 │   ├── capture-showcase.mjs     # Playwright Galaxy A55 screenshots (amounts masked)
 │   └── build-showcase-ppt.mjs   # Builds docs/showcase/Muffin_Showcase.pptx
 ├── docs/showcase/
-│   ├── Muffin_Showcase.pptx     # 12-slide product showcase deck
+│   ├── Muffin_Showcase.pptx     # Product showcase deck
 │   └── screens/                 # Captured PNGs (gitignored; regenerate via npm run showcase)
 ├── public/icons/                # PWA icons
-├── netlify/functions/           # Auth, sheet link/create/unlink, transactions, health
-├── netlify/lib/                 # Shared function helpers (env, session, Blobs user store, Sheets)
+├── netlify/functions/           # auth-*, sheet-*, recipe, tour-complete, transactions, health
+├── netlify/lib/                 # Shared helpers (env, session, Blobs user store, Sheets, recipe/tour)
 ├── templates/                   # Per-tab CSV examples (Income / Expense / Investment)
 ├── finance_template.csv         # Reference-only combined layout (not read by the app)
 ├── legacy/                      # Previous vanilla JS PWA (CSV-publish based, reference)
 ├── dist/                        # Build output (generated)
-├── netlify.toml                 # Build, publish, redirects, functions
+├── netlify.toml                 # Build, publish, redirects, functions, secrets-scan omit
 ├── vite.config.ts               # React + PWA + dev proxy
 ├── tailwind.config.js           # Theme token colors, radii, warm shadows
 ├── index.html                   # Shell + Google Fonts + theme-color + inline theme bootstrap
@@ -474,7 +483,7 @@ MuffinPWA/
 └── README.md
 ```
 
-The project migrated from a vanilla `app.js` / `config.js` PWA that read published CSV links (`legacy/`) to a typed React SPA with a warm dual-theme UI, then to **six muffin-inspired themes** with shared motion polish. It has since migrated again from that CSV-publish approach to **OAuth-authenticated Google Sheets API access**, which enables full in-app read *and* write against a single three-tab workbook.
+The project migrated from a vanilla `app.js` / `config.js` PWA that read published CSV links (`legacy/`) to a typed React SPA, then to **six muffin-inspired themes**, then from CSV-publish to **OAuth Google Sheets**, and most recently to **per-user Google Sign-In** with sheet ID + Recipe stored in **Netlify Blobs**.
 
 ### 3.3 Runtime architecture and data flow
 
@@ -507,9 +516,10 @@ sequenceDiagram
 
 **Why the proxy exists**
 
-- Browser code only calls a same-origin function path.
-- The OAuth Client ID/Secret and refresh token stay in Netlify env vars, never in client bundles.
-- Read and write share one API surface (`src/lib/api.ts` â†’ `transactions` function).
+- Browser code only calls same-origin function paths.
+- The OAuth Client ID/Secret stay in Netlify / local env; each user’s refresh token lives in an encrypted httpOnly session cookie — never in client bundles.
+- Sheet ID, Recipe, and tour completion are stored in Netlify Blobs keyed by Google user id.
+- Read and write share one transactions API surface (`src/lib/api.ts` → `transactions` function).
 
 ### 3.4 Domain model and API
 
@@ -522,19 +532,28 @@ Core types live in `src/types.ts`:
 
 **Client API** (`src/lib/api.ts`):
 
-- `getTransactions()` â€” `GET /.netlify/functions/transactions`
-- `createTransaction` / `updateTransaction` / `deleteTransaction` â€” POST/PUT/DELETE against the same function, each identifying a row by `tabName` and `rowIndex`
+- Auth: `getMe`, `logout`, `AUTH_START_URL` → `auth-me` / `auth-logout` / `auth-start` (+ `auth-callback` for OAuth redirect)
+- Sheet onboarding: `linkSheet`, `createSheet`, `unlinkSheet`
+- Recipe: `getRecipe`, `saveRecipe` → `GET` / `PUT /.netlify/functions/recipe`
+- Tour: `completeTour` → `POST /.netlify/functions/tour-complete`
+- Transactions: `getTransactions`, `createTransaction` / `updateTransaction` / `deleteTransaction`
+
+**Blobs user record** (`netlify/lib/userStore.js`, store `muffin-users`):
+
+- `spreadsheetId` / `spreadsheetTitle` / `linkedAt`
+- `recipe` — `{ openingBalance, investments[], updatedAt }`
+- `tourCompletedAt` — set when the first-run tour is finished or skipped
 
 **Sheets function** (`netlify/functions/transactions.js`):
 
-- Authenticates with `google-auth-library`'s `OAuth2Client` (Client ID/Secret + refresh token) and opens the workbook with `google-spreadsheet`'s `GoogleSpreadsheet`
+- Authenticates with the signed-in user’s refresh token (`OAuth2Client`) and opens the workbook with `google-spreadsheet`'s `GoogleSpreadsheet`
 - Reads all rows from the fixed `Income`, `Expense`, `Investment` tabs and maps them to typed `Transaction` objects (`GET`)
 - Appends (`POST`), updates (`PUT`), or deletes (`DELETE`) a single row identified by tab name + row index
-- Returns JSON with `Cache-Control: no-store`; errors carry a `statusCode` (e.g. 400 for a missing tab, 404 for a missing row, 500 for missing/invalid credentials)
+- Returns JSON with `Cache-Control: no-store`; errors carry a `statusCode` (e.g. 400 for a missing tab, 404 for a missing row, 401 when not signed in)
 
 **PF helpers** (`src/lib/providentFund.ts`):
 
-- `isProvidentFund` / `isCountedInvestment` / `sumProvidentFund` â€” used by metrics, planner, and chart lists
+- `isProvidentFund` / `isCountedInvestment` / `sumProvidentFund` — used by metrics, planner, and chart lists
 
 ### 3.5 Metrics engine
 
@@ -558,13 +577,13 @@ Growth compares current net worth to `initialInvestments + openingBalance` (from
 
 ### 3.6 Frontend application structure
 
-- **`App.tsx`** owns auth + sheet lifecycle, error banner, `metrics` (recomputed when sheet rows or Recipe config change), active tab, gear-menu modals (About / Recipe / manage transaction), planner CRUD with `localStorage` key `plannerTransactions`, and tab `AnimatePresence` transitions.
+- **`App.tsx`** owns auth + sheet lifecycle, first-run tour, error banner, `metrics` (recomputed when sheet rows or Recipe config change), active tab, gear-menu modals (About / Recipe / manage transaction), planner CRUD with `localStorage` key `plannerTransactions`, and tab `AnimatePresence` transitions.
 - **Views:** `HomeView` (KPI grid + `ChartModal` + More Details / PF), `PlannerView`, `LedgerView`, `MonthlyView`.
-- **Shared UI:** `KpiCard`, `FloatingNav` (layout-animated active pill), `HeaderMenu` (gear dropdown + nested theme panel), `RecipeModal`, `SoftButton`, `TransactionList`, `ChartModal` (list / pie / line; portaled sheet with enter/exit), `ManageTransactionModal`, `AboutModal`, `MuffinIcon`.
+- **Shared UI:** `KpiCard`, `FloatingNav` (layout-animated active pill), `HeaderMenu` (gear dropdown + nested theme panel), `RecipeModal`, `TourModal`, `SoftButton`, `TransactionList`, `ChartModal` (list / pie / line; portaled sheet with enter/exit), `ManageTransactionModal`, `AboutModal`, `SignInScreen`, `SheetOnboarding`, `MuffinIcon`.
 - **`KpiCard` tones:** semantic colors for income/expense/investment; Net Worth uses the theme **hero** primary gradient.
 - **Themes:** `src/lib/themes.ts` catalogs six variants; `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color`. Charts pull per-theme `chartColors`.
 - **Motion:** shared springs/variants in `src/lib/motion.ts` (Framer Motion).
-- **Hooks:** `useTheme`, `useMask`, `useRecipeConfig` (Recipe / starting balances), `usePwaInstall` (`beforeinstallprompt`).
+- **Hooks:** `useTheme`, `useMask`, `useRecipeConfig` (local cache + `persistConfig` → Blobs), `usePwaInstall` (`beforeinstallprompt`).
 - Layout is mobile-first (`max-w-lg`), branded sticky header with a single gear control, floating bottom nav width-matched to cards, themed modals/forms portaled above the nav.
 
 ### 3.7 PWA behavior
@@ -586,6 +605,10 @@ From `netlify.toml`:
   publish = "dist"
   functions = "netlify/functions"
 
+# Redirect URIs are public during OAuth; omit from Netlify secret scan.
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_REDIRECT_URI"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -598,13 +621,15 @@ From `netlify.toml`:
 - **Production site:** [https://muffin-ledger.netlify.app/](https://muffin-ledger.netlify.app/)
 - **Env contract:** four required vars — see Section 2.7; never commit `.env` or secret credentials
 - After changing Netlify env vars, **trigger a new deploy** so functions pick them up
+- Do not put your real production redirect URL in committed docs (use `YOUR-SITE` placeholders) so secret scanning does not fail the build
 
 ### 3.9 Security and privacy
 
 - Google OAuth Client ID/Secret live only in Netlify / local env and are used server-side by auth and Sheets functions; the browser never sees them.
 - Each user’s Google refresh token is stored in an encrypted httpOnly session cookie (`SESSION_SECRET`); treat that secret like a password and rotate it if exposed.
 - End users must **Sign in with Google**; sheet access is limited to the signed-in account’s linked workbook (ID in Netlify Blobs).
-- Planner data, Recipe starting balances, theme, and mask preference are local to one browser profile.
+- Recipe starting balances and the first-run tour completion flag also live on the Blobs user record (cross-device). Planner data, theme, and mask preference remain local to one browser profile.
+- Auth error redirects use short codes (not long Google messages) so the address bar stays clean; the SPA also strips leftover OAuth query params on load.
 - Function responses use `Cache-Control: no-store` to reduce accidental CDN caching of financial payloads.
 - `.gitignore` excludes `.env` and `.env.*` (except `.env.example`) so local credential files aren't committed by accident.
 
@@ -672,10 +697,10 @@ node scripts/capture-showcase.mjs http://localhost:8888
   - `npm run showcase:capture` / `npm run showcase:ppt` â€” run capture or PPT build alone
 
 - **Project layout (key folders):**
-  - `src/` â€” React + TypeScript app (`main.tsx`, `App.tsx`, views and components)
-  - `src/config.ts` — currency helpers + Recipe defaults / `muffinRecipe` localStorage store
-  - `netlify/functions/` — serverless auth, sheet link/create/unlink, transactions, health
-  - `netlify/lib/` — shared env, session, Blobs user store, Sheets bootstrap helpers
+  - `src/` — React + TypeScript app (`main.tsx`, `App.tsx`, views and components)
+  - `src/config.ts` — currency helpers + Recipe defaults / local cache (`muffinRecipe`)
+  - `netlify/functions/` — auth-*, sheet-*, `recipe`, `tour-complete`, transactions, health
+  - `netlify/lib/` — shared env, session, Blobs user store (sheet + recipe + tour), Sheets bootstrap helpers
   - `scripts/` — showcase capture (`capture-showcase.mjs`) and PPT builder (`build-showcase-ppt.mjs`)
   - `docs/showcase/` — product showcase deck + regenerated screen PNGs
   - `public/` — static assets and icons
@@ -688,10 +713,11 @@ node scripts/capture-showcase.mjs http://localhost:8888
   - Netlify Functions require these environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`.
   - Production redirect: `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback`.
   - Local development uses `netlify dev` so the functions are available at `/.netlify/functions/*` while testing; local `.env` must use the localhost redirect URI.
+  - Blobs stores per-user `{ spreadsheetId, recipe, tourCompletedAt, … }` under store `muffin-users`.
   - Showcase capture expects the app reachable (usually `http://localhost:8888`) with sheet data loading; amounts are masked in every shot.
   - There are no automated tests or linters configured in this repo currently.
 
-- **Notable dependencies:** React 19, Vite, TypeScript, Netlify CLI, `google-auth-library`, `google-spreadsheet`, `framer-motion`, `lucide-react`, `vite-plugin-pwa`; showcase tooling: `playwright`, `pptxgenjs`.
+- **Notable dependencies:** React 19, Vite, TypeScript, Netlify CLI, `@netlify/blobs`, `google-auth-library`, `google-spreadsheet`, `framer-motion`, `lucide-react`, `vite-plugin-pwa`; showcase tooling: `playwright`, `pptxgenjs`.
 
 - **Maintenance suggestions:**
   - Add CI (build + basic lint/tests) and README badges for clarity.

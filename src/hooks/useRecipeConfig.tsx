@@ -8,17 +8,22 @@ import {
 } from 'react';
 import {
   getRecipeConfig,
+  hydrateRecipeConfig,
   saveRecipeConfig,
   subscribeRecipeConfig,
   type RecipeConfig,
   type RecipeInvestment,
 } from '../config';
+import { saveRecipe } from '../lib/api';
 
 interface RecipeConfigContextValue {
   config: RecipeConfig;
   openingBalance: number;
   investments: RecipeInvestment[];
+  /** Update local cache only (e.g. after loading from Blobs). */
   setConfig: (next: RecipeConfig) => void;
+  /** Persist to Netlify Blobs, then update local cache. */
+  persistConfig: (next: RecipeConfig) => Promise<RecipeConfig>;
   updateOpeningBalance: (amount: number) => void;
   updateInvestments: (investments: RecipeInvestment[]) => void;
 }
@@ -42,6 +47,11 @@ export function RecipeConfigProvider({ children }: { children: ReactNode }) {
     saveRecipeConfig(next);
   }, []);
 
+  const persistConfig = useCallback(async (next: RecipeConfig) => {
+    const saved = await saveRecipe(next);
+    return hydrateRecipeConfig(saved);
+  }, []);
+
   const updateOpeningBalance = useCallback((amount: number) => {
     const current = getRecipeConfig();
     saveRecipeConfig({ ...current, openingBalance: amount });
@@ -58,10 +68,17 @@ export function RecipeConfigProvider({ children }: { children: ReactNode }) {
       openingBalance: config.openingBalance,
       investments: config.investments,
       setConfig,
+      persistConfig,
       updateOpeningBalance,
       updateInvestments,
     }),
-    [config, setConfig, updateOpeningBalance, updateInvestments]
+    [
+      config,
+      setConfig,
+      persistConfig,
+      updateOpeningBalance,
+      updateInvestments,
+    ]
   );
 
   return (

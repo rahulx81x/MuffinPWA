@@ -132,6 +132,7 @@ export function getRecipeConfig(): RecipeConfig {
   return recipeCache;
 }
 
+/** Persist to local cache (and notify listeners). Server sync is separate. */
 export function saveRecipeConfig(config: RecipeConfig): RecipeConfig {
   const next = sanitizeRecipeConfig(config);
   recipeCache = next;
@@ -142,6 +143,28 @@ export function saveRecipeConfig(config: RecipeConfig): RecipeConfig {
   }
   recipeListeners.forEach((listener) => listener());
   return next;
+}
+
+/** Apply recipe loaded from Netlify Blobs (source of truth when signed in). */
+export function hydrateRecipeConfig(raw: unknown): RecipeConfig {
+  return saveRecipeConfig(sanitizeRecipeConfig(raw));
+}
+
+export function clearRecipeConfig(): RecipeConfig {
+  try {
+    localStorage.removeItem(RECIPE_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+  recipeCache = getDefaultRecipeConfig();
+  recipeListeners.forEach((listener) => listener());
+  return recipeCache;
+}
+
+/** True when the recipe has any non-zero opening balance or investments. */
+export function hasMeaningfulRecipe(config: RecipeConfig): boolean {
+  if ((config.openingBalance || 0) > 0) return true;
+  return config.investments.some((row) => (row.amount || 0) > 0 || row.type.trim());
 }
 
 export function subscribeRecipeConfig(listener: RecipeListener): () => void {

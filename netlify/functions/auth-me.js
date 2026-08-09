@@ -1,7 +1,13 @@
 import { oauthConfigured } from '../lib/googleAuth.js';
 import { json, noContent } from '../lib/http.js';
 import { readSession } from '../lib/session.js';
-import { bindBlobsEvent, getUserRecord } from '../lib/userStore.js';
+import {
+  bindBlobsEvent,
+  getUserRecipe,
+  getUserRecord,
+  markTourComplete,
+  shouldShowTour,
+} from '../lib/userStore.js';
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
@@ -26,9 +32,23 @@ export async function handler(event) {
       return json(event, 401, { error: 'Not signed in.', code: 'unauthenticated' });
     }
 
-    const record = await getUserRecord(session.sub);
+    let record = await getUserRecord(session.sub);
+    let showTour = shouldShowTour(record);
+
+    // Returning users without a tour flag: mark complete silently so we never nag.
+    if (
+      record &&
+      !record.tourCompletedAt &&
+      !showTour &&
+      (record.spreadsheetId || record.recipe != null)
+    ) {
+      record = await markTourComplete(session.sub);
+      showTour = false;
+    }
+
     const spreadsheetId = record?.spreadsheetId || '';
     const spreadsheetTitle = record?.spreadsheetTitle || '';
+    const recipe = getUserRecipe(record);
 
     return json(event, 200, {
       user: {
@@ -40,6 +60,8 @@ export async function handler(event) {
       spreadsheetId: spreadsheetId || null,
       spreadsheetTitle: spreadsheetTitle || null,
       needsSheet: !spreadsheetId,
+      recipe,
+      showTour,
     });
   } catch (error) {
     console.error('auth-me error', error);
@@ -48,4 +70,3 @@ export async function handler(event) {
     });
   }
 }
-

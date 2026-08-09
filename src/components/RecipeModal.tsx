@@ -42,11 +42,12 @@ export function RecipeModal({
   investmentTypeSuggestions = [],
 }: RecipeModalProps) {
   const titleId = useId();
-  const { config, setConfig } = useRecipeConfig();
+  const { config, persistConfig } = useRecipeConfig();
   const [openingBalance, setOpeningBalance] = useState('0');
   const [investments, setInvestments] = useState<RecipeInvestment[]>([]);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -87,7 +88,7 @@ export function RecipeModal({
     });
   }
 
-  function handleSave(event: FormEvent) {
+  async function handleSave(event: FormEvent) {
     event.preventDefault();
     setError(null);
 
@@ -106,14 +107,25 @@ export function RecipeModal({
       }
     }
 
-    setConfig({
-      openingBalance: parseAmountInput(openingBalance),
-      investments: cleaned.map((row) => ({
-        ...row,
-        type: row.type || 'Investment',
-      })),
-    });
-    onClose();
+    setSaving(true);
+    try {
+      await persistConfig({
+        openingBalance: parseAmountInput(openingBalance),
+        investments: cleaned.map((row) => ({
+          ...row,
+          type: row.type || 'Investment',
+        })),
+      });
+      onClose();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Could not save recipe. Try again.'
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   const suggestionList = Array.from(
@@ -166,7 +178,7 @@ export function RecipeModal({
                   Recipe
                 </h2>
                 <p className="mt-0.5 text-xs text-text-secondary">
-                  Starting balances used before sheet transactions.
+                  Starting balances synced to your account (all devices).
                 </p>
               </div>
               <SoftButton
@@ -216,6 +228,7 @@ export function RecipeModal({
                   onChange={(e) => setOpeningBalance(e.target.value)}
                   className={fieldClass}
                   placeholder="0"
+                  disabled={saving}
                 />
                 <span className="mt-1 block text-[11px] text-text-muted">
                   Liquid cash on hand before tracked months begin.
@@ -307,16 +320,18 @@ export function RecipeModal({
                 <SoftButton
                   type="button"
                   onClick={onClose}
-                  className="flex-1 rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm font-medium text-text-secondary"
+                  disabled={saving}
+                  className="flex-1 rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm font-medium text-text-secondary disabled:opacity-60"
                   glow={false}
                 >
                   Cancel
                 </SoftButton>
                 <SoftButton
                   type="submit"
-                  className="flex-1 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow"
+                  disabled={saving}
+                  className="flex-1 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow disabled:opacity-60"
                 >
-                  Save recipe
+                  {saving ? 'Saving…' : 'Save recipe'}
                 </SoftButton>
               </div>
             </form>

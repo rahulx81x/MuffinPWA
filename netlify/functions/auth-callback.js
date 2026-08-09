@@ -20,29 +20,30 @@ function parseCookies(header) {
 
 export async function handler(event) {
   const origin = siteOrigin(event);
-  const fail = (message) =>
-    redirect(`${origin}/?authError=${encodeURIComponent(message)}`);
+  // Short codes only — avoid stuffing long Google messages into the address bar.
+  const fail = (code) =>
+    redirect(`${origin}/?authError=${encodeURIComponent(code)}`);
 
   try {
     if (event.httpMethod !== 'GET') {
-      return fail('Invalid sign-in method.');
+      return fail('invalid_method');
     }
 
     const params = event.queryStringParameters || {};
     if (params.error) {
-      return fail(params.error_description || params.error || 'Google sign-in was denied.');
+      return fail('denied');
     }
 
     const code = params.code;
     const state = params.state;
-    if (!code) return fail('Missing authorization code.');
+    if (!code) return fail('missing_code');
 
     const cookies = parseCookies(
       event.headers?.cookie || event.headers?.Cookie || ''
     );
     const expected = cookies.muffin_oauth_state;
     if (!expected || !state || expected !== state) {
-      return fail('Invalid OAuth state. Try signing in again.');
+      return fail('invalid_state');
     }
 
     const { refreshToken, user } = await exchangeCode(code);
@@ -75,7 +76,7 @@ export async function handler(event) {
     };
   } catch (error) {
     console.error('auth-callback error', error);
-    return fail(error?.message || 'Google sign-in failed.');
+    return fail('failed');
   }
 }
 

@@ -143,3 +143,98 @@ export async function clearUserSheet(googleSub) {
   await writeRaw(googleSub, JSON.stringify(next));
   return next;
 }
+
+function newInvestmentId() {
+  return `inv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Normalize recipe payload stored on the user blob record. */
+export function sanitizeRecipe(raw) {
+  const empty = { openingBalance: 0, investments: [] };
+  if (!raw || typeof raw !== 'object') return empty;
+
+  const openingBalance = Number(raw.openingBalance);
+  const investments = Array.isArray(raw.investments)
+    ? raw.investments
+        .map((item) => {
+          if (!item || typeof item !== 'object') return null;
+          const type = String(item.type ?? '').trim();
+          const amount = Number(item.amount);
+          if (!type && !(amount > 0)) return null;
+          return {
+            id:
+              typeof item.id === 'string' && item.id
+                ? item.id
+                : newInvestmentId(),
+            type: type || 'Investment',
+            amount: Number.isFinite(amount) ? Math.max(0, amount) : 0,
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  return {
+    openingBalance: Number.isFinite(openingBalance)
+      ? Math.max(0, openingBalance)
+      : 0,
+    investments,
+  };
+}
+
+export function getUserRecipe(record) {
+  if (!record || record.recipe == null) return null;
+  return sanitizeRecipe(record.recipe);
+}
+
+export async function setUserRecipe(googleSub, recipe) {
+  const existing = (await getUserRecord(googleSub)) || {};
+  const nextRecipe = sanitizeRecipe(recipe);
+  const next = {
+    ...existing,
+    recipe: {
+      ...nextRecipe,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+  await writeRaw(googleSub, JSON.stringify(next));
+  return nextRecipe;
+}
+
+const RETURNING_USER_LINK_AGE_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * New users who just linked a sheet still get the tour.
+ * Returning users (sheet linked long ago, or already finished tour) do not.
+ */
+export function shouldShowTour(record) {
+  if (!record) return true;
+  if (record.tourCompletedAt) return false;
+
+  if (record.linkedAt) {
+    const linked = Date.parse(record.linkedAt);
+    if (
+      Number.isFinite(linked) &&
+      Date.now() - linked > RETURNING_USER_LINK_AGE_MS
+    ) {
+      return false;
+    }
+  }
+
+  // Established account: has recipe saved in Blobs
+  if (record.recipe != null) return false;
+
+  return true;
+}
+
+export async function markTourComplete(googleSub) {
+  const existing = (await getUserRecord(googleSub)) || {};
+  if (existing.tourCompletedAt) {
+    return existing;
+  }
+  const next = {
+    ...existing,
+    tourCompletedAt: new Date().toISOString(),
+  };
+  await writeRaw(googleSub, JSON.stringify(next));
+  return next;
+}

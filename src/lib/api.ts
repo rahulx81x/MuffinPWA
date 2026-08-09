@@ -7,6 +7,8 @@ const AUTH_LOGOUT = '/.netlify/functions/auth-logout';
 const SHEET_LINK = '/.netlify/functions/sheet-link';
 const SHEET_CREATE = '/.netlify/functions/sheet-create';
 const SHEET_UNLINK = '/.netlify/functions/sheet-unlink';
+const RECIPE = '/.netlify/functions/recipe';
+const TOUR_COMPLETE = '/.netlify/functions/tour-complete';
 
 export const AUTH_START_URL = '/.netlify/functions/auth-start';
 
@@ -35,11 +37,26 @@ export interface AuthUser {
   picture: string;
 }
 
+export interface RecipeInvestmentPayload {
+  id: string;
+  type: string;
+  amount: number;
+}
+
+export interface RecipePayload {
+  openingBalance: number;
+  investments: RecipeInvestmentPayload[];
+}
+
 export interface AuthMeResponse {
   user: AuthUser;
   spreadsheetId: string | null;
   spreadsheetTitle: string | null;
   needsSheet: boolean;
+  /** Null when the user has never saved a recipe to Blobs. */
+  recipe: RecipePayload | null;
+  /** True only for first-time users who have not finished / skipped the tour. */
+  showTour: boolean;
 }
 
 async function readErrorPayload(
@@ -123,6 +140,31 @@ export async function createSheet(): Promise<{
 
 export async function unlinkSheet(): Promise<void> {
   const response = await apiFetch(SHEET_UNLINK, { method: 'POST' });
+  await assertOk(response);
+}
+
+export async function getRecipe(): Promise<RecipePayload> {
+  const response = await apiFetch(RECIPE);
+  await assertOk(response);
+  const data = (await response.json()) as { recipe: RecipePayload };
+  return data.recipe;
+}
+
+export async function saveRecipe(
+  recipe: RecipePayload
+): Promise<RecipePayload> {
+  const response = await apiFetch(RECIPE, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe }),
+  });
+  await assertOk(response);
+  const data = (await response.json()) as { recipe: RecipePayload };
+  return data.recipe;
+}
+
+export async function completeTour(): Promise<void> {
+  const response = await apiFetch(TOUR_COMPLETE, { method: 'POST' });
   await assertOk(response);
 }
 

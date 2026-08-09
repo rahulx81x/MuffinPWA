@@ -14,16 +14,25 @@ import { RecipeModal } from './components/RecipeModal';
 import { SheetOnboarding } from './components/SheetOnboarding';
 import { SignInScreen } from './components/SignInScreen';
 import { SoftButton } from './components/SoftButton';
+import { TourModal } from './components/TourModal';
 import { useRecipeConfig } from './hooks/useRecipeConfig';
 import { useTheme } from './hooks/useTheme';
+import {
+  clearRecipeConfig,
+  getRecipeConfig,
+  hasMeaningfulRecipe,
+  hydrateRecipeConfig,
+} from './config';
 import {
   AuthRequiredError,
   NeedsSheetError,
   checkSessionHealth,
+  completeTour,
   deleteTransaction,
   getMe,
   getTransactions,
   logout,
+  saveRecipe,
   unlinkSheet,
   type AuthMeResponse,
 } from './lib/api';
@@ -54,14 +63,58 @@ function savePlannerTransactions(items: Transaction[]): void {
   localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(items));
 }
 
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  denied: 'Google sign-in was denied.',
+  missing_code: 'Missing authorization code. Try signing in again.',
+  invalid_state: 'Invalid OAuth state. Try signing in again.',
+  invalid_method: 'Invalid sign-in method.',
+  failed: 'Google sign-in failed. Try again.',
+};
+
+const OAUTH_QUERY_KEYS = [
+  'authError',
+  'code',
+  'state',
+  'scope',
+  'error',
+  'error_description',
+  'prompt',
+  'authuser',
+  'hd',
+  'session_state',
+] as const;
+
+/** Strip OAuth junk from the address bar and map short auth error codes. */
 function readAuthErrorFromUrl(): string | null {
   try {
     const params = new URLSearchParams(window.location.search);
-    const message = params.get('authError');
-    if (!message) return null;
-    params.delete('authError');
-    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ''}${window.location.hash}`;
-    window.history.replaceState({}, '', next);
+    const raw = params.get('authError');
+    const message = raw
+      ? AUTH_ERROR_MESSAGES[raw] ||
+        (raw.length > 120 ? AUTH_ERROR_MESSAGES.failed : raw)
+      : null;
+
+    let dirty = Boolean(raw);
+    for (const key of OAUTH_QUERY_KEYS) {
+      if (params.has(key)) {
+        params.delete(key);
+        dirty = true;
+      }
+    }
+
+    const onFunctionPath = window.location.pathname.includes(
+      '/.netlify/functions/'
+    );
+    if (dirty || onFunctionPath) {
+      const path = onFunctionPath ? '/' : window.location.pathname;
+      const query = params.toString();
+      window.history.replaceState(
+        {},
+        '',
+        `${path}${query ? `?${query}` : ''}`
+      );
+    }
+
     return message;
   } catch {
     return null;
@@ -88,6 +141,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [recipeOpen, setRecipeOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [manageMode, setManageMode] = useState<'add' | 'edit'>('add');
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
@@ -120,7 +174,25 @@ export default function App() {
   async function refreshAuth() {
     const me = await getMe();
     setAuth(me);
+    if (me) await syncRecipeFromAuth(me);
     return me;
+  }
+
+  async function syncRecipeFromAuth(me: AuthMeResponse) {
+    if (me.recipe) {
+      hydrateRecipeConfig(me.recipe);
+      return;
+    }
+
+    // One-time migrate: push existing localStorage recipe into Blobs.
+    const local = getRecipeConfig();
+    if (!hasMeaningfulRecipe(local)) return;
+    try {
+      const saved = await saveRecipe(local);
+      hydrateRecipeConfig(saved);
+    } catch (err) {
+      console.warn('Could not migrate local recipe to Blobs', err);
+    }
   }
 
   async function refreshTransactions() {
@@ -164,6 +236,7 @@ export default function App() {
         const me = await getMe();
         if (cancelled) return;
         setAuth(me);
+        if (me) await syncRecipeFromAuth(me);
       } catch (err) {
         console.error('Auth bootstrap failed', err);
         if (!cancelled) {
@@ -184,6 +257,11 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!ready || !auth?.showTour) return;
+    setTourOpen(true);
+  }, [ready, auth?.showTour]);
 
   useEffect(() => {
     if (!ready) {
@@ -382,12 +460,23 @@ export default function App() {
     }
   }
 
+  async function handleTourComplete() {
+    try {
+      await completeTour();
+    } catch (err) {
+      console.warn('Could not persist tour completion', err);
+    }
+    setTourOpen(false);
+    setAuth((prev) => (prev ? { ...prev, showTour: false } : prev));
+  }
+
   async function handleLogout() {
     try {
       await logout();
     } catch (err) {
       console.warn('Logout request failed', err);
     }
+    clearRecipeConfig();
     setAuth(null);
     setSheetTransactions([]);
     setStatusMessage(null);
@@ -440,6 +529,8 @@ export default function App() {
             spreadsheetId: info.spreadsheetId,
             spreadsheetTitle: info.spreadsheetTitle,
             needsSheet: false,
+            // Keep server flag — returning users who unlinked won't get the tour again.
+            showTour: Boolean(auth.showTour),
           });
           setStatusMessage(
             info.spreadsheetTitle
@@ -600,6 +691,7 @@ export default function App() {
         showAdd={!loading}
       />
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <TourModal open={tourOpen} onComplete={handleTourComplete} />
       <RecipeModal
         open={recipeOpen}
         onClose={() => setRecipeOpen(false)}
