@@ -4,9 +4,10 @@ import { createPortal } from 'react-dom';
 import {
   formatCurrency as formatCurrencyRaw,
   getInitialInvestmentTotal,
-  INITIAL_LIQUID_BALANCE,
+  getOpeningBalance,
 } from '../config';
 import { useMask, MASKED_VALUE } from '../hooks/useMask';
+import { useRecipeConfig } from '../hooks/useRecipeConfig';
 import { useTheme } from '../hooks/useTheme';
 import {
   buildMonthlyKPIs,
@@ -285,7 +286,7 @@ function buildClosingSeries(
     return { points: [], labels: [], footer: '', asPercent: false };
   }
 
-  let liquid = INITIAL_LIQUID_BALANCE;
+  let liquid = getOpeningBalance();
   let investment = getInitialInvestmentTotal();
   const points: number[] = [];
   const labels: string[] = [];
@@ -340,6 +341,7 @@ export function ChartModal({
   onClose,
 }: ChartModalProps) {
   const { masked } = useMask();
+  const { config: recipeConfig } = useRecipeConfig();
 
   // Keep last open payload so exit animation still has content to show.
   const [snapshot, setSnapshot] = useState<{
@@ -385,7 +387,7 @@ export function ChartModal({
       return { points: [], labels: [], footer: '', asPercent: false };
     }
     return buildClosingSeries(transactions, activeKey, masked);
-  }, [activeKey, kind, transactions, masked]);
+  }, [activeKey, kind, transactions, masked, recipeConfig]);
 
   useEffect(() => {
     if (!open) return;

@@ -1,5 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { INITIAL_LIQUID_BALANCE } from '../config';
+import { getOpeningBalance } from '../config';
+import { useRecipeConfig } from '../hooks/useRecipeConfig';
 import { useMask } from '../hooks/useMask';
 import { createId } from '../lib/parseSheet';
 import { buildMonthlyKPIs, currentMonthKey, monthKey } from '../lib/metrics';
@@ -32,6 +33,7 @@ export function PlannerView({
   onClear,
 }: PlannerViewProps) {
   const { masked, formatCurrency } = useMask();
+  const { config: recipeConfig } = useRecipeConfig();
   const thisMonth = currentMonthKey();
   const [date, setDate] = useState(todayIso());
   const [type, setType] = useState<TransactionType>('expense');
@@ -61,8 +63,8 @@ export function PlannerView({
     const prior = monthly.filter((m) => m.key < thisMonth);
     return prior.length > 0
       ? prior[prior.length - 1].closingLiquid
-      : INITIAL_LIQUID_BALANCE;
-  }, [sheetTransactions, thisMonth]);
+      : getOpeningBalance();
+  }, [sheetTransactions, thisMonth, recipeConfig]);
   const closingBalance = previousClose + liquid;
 
   const plannerThisMonth = plannerTransactions.filter(

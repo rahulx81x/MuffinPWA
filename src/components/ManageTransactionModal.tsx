@@ -13,7 +13,7 @@ import type {
 import {
   createTransaction,
   deleteTransaction,
-  NetlifySessionExpiredError,
+  AuthRequiredError,
   updateTransaction,
 } from '../lib/api';
 import {
@@ -335,8 +335,8 @@ export function ManageTransactionModal({
       await onSuccess();
       onClose();
     } catch (err) {
-      if (err instanceof NetlifySessionExpiredError) {
-        setError('Session expired — signing in again…');
+      if (err instanceof AuthRequiredError) {
+        setError('Session expired — please sign in again.');
         return;
       }
       console.error('Failed to save transaction', err);

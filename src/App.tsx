@@ -1,23 +1,31 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Eye, EyeOff, Info, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { AboutModal } from './components/AboutModal';
 import { FloatingNav } from './components/FloatingNav';
+import { HeaderMenu } from './components/HeaderMenu';
 import { HomeView } from './components/HomeView';
 import { LedgerView } from './components/LedgerView';
 import { ManageTransactionModal } from './components/ManageTransactionModal';
 import { MonthlyView } from './components/MonthlyView';
 import { MuffinIcon } from './components/MuffinIcon';
 import { PlannerView, toPlannerTransaction } from './components/PlannerView';
+import { RecipeModal } from './components/RecipeModal';
+import { SheetOnboarding } from './components/SheetOnboarding';
+import { SignInScreen } from './components/SignInScreen';
 import { SoftButton } from './components/SoftButton';
-import { ThemeSelector } from './components/ThemeSelector';
-import { useMask } from './hooks/useMask';
+import { useRecipeConfig } from './hooks/useRecipeConfig';
 import { useTheme } from './hooks/useTheme';
 import {
+  AuthRequiredError,
+  NeedsSheetError,
   checkSessionHealth,
   deleteTransaction,
+  getMe,
   getTransactions,
-  NetlifySessionExpiredError,
+  logout,
+  unlinkSheet,
+  type AuthMeResponse,
 } from './lib/api';
 import { buildFinancialMetrics, EMPTY_METRICS } from './lib/metrics';
 import { pageTransition, pageVariants, springSoft } from './lib/motion';
@@ -29,7 +37,6 @@ import type {
 } from './types';
 
 const PLANNER_STORAGE_KEY = 'plannerTransactions';
-/** Minimum gap between resume session probes. */
 const SESSION_PROBE_MIN_INTERVAL_MS = 30_000;
 
 function loadPlannerTransactions(): Transaction[] {
@@ -47,9 +54,28 @@ function savePlannerTransactions(items: Transaction[]): void {
   localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(items));
 }
 
+function readAuthErrorFromUrl(): string | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get('authError');
+    if (!message) return null;
+    params.delete('authError');
+    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ''}${window.location.hash}`;
+    window.history.replaceState({}, '', next);
+    return message;
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
-  const { themeId, setTheme } = useTheme();
-  const { masked, toggleMask } = useMask();
+  const { themeId } = useTheme();
+  const { config: recipeConfig } = useRecipeConfig();
+  const [authBooting, setAuthBooting] = useState(true);
+  const [auth, setAuth] = useState<AuthMeResponse | null>(null);
+  const [authError, setAuthError] = useState<string | null>(() =>
+    readAuthErrorFromUrl()
+  );
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [sheetTransactions, setSheetTransactions] = useState<Transaction[]>(
     []
@@ -58,14 +84,18 @@ export default function App() {
     Transaction[]
   >(() => loadPlannerTransactions());
   const [metrics, setMetrics] = useState<FinancialMetrics>(EMPTY_METRICS);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [recipeOpen, setRecipeOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [manageMode, setManageMode] = useState<'add' | 'edit'>('add');
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [mutating, setMutating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const needsSheet = Boolean(auth && auth.needsSheet);
+  const ready = Boolean(auth && !auth.needsSheet);
 
   const ledgerTransactions = useMemo(
     () =>
@@ -80,8 +110,18 @@ export default function App() {
       const label = (tx.investmentType || tx.category || '').trim();
       if (label) labels.add(label);
     }
+    for (const row of recipeConfig.investments) {
+      const label = row.type.trim();
+      if (label) labels.add(label);
+    }
     return Array.from(labels);
-  }, [sheetTransactions]);
+  }, [sheetTransactions, recipeConfig.investments]);
+
+  async function refreshAuth() {
+    const me = await getMe();
+    setAuth(me);
+    return me;
+  }
 
   async function refreshTransactions() {
     setError(null);
@@ -89,7 +129,23 @@ export default function App() {
       const transactions = await getTransactions();
       setSheetTransactions(transactions);
     } catch (err) {
-      if (err instanceof NetlifySessionExpiredError) throw err;
+      if (err instanceof AuthRequiredError) {
+        setAuth(null);
+        throw err;
+      }
+      if (err instanceof NeedsSheetError) {
+        setAuth((prev) =>
+          prev
+            ? {
+                ...prev,
+                needsSheet: true,
+                spreadsheetId: null,
+                spreadsheetTitle: null,
+              }
+            : prev
+        );
+        throw err;
+      }
       console.error('Error loading sheet data', err);
       setError(
         "Couldn't load your sheet. Showing overview with configured starting balances."
@@ -102,18 +158,66 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
 
+    async function boot() {
+      setAuthBooting(true);
+      try {
+        const me = await getMe();
+        if (cancelled) return;
+        setAuth(me);
+      } catch (err) {
+        console.error('Auth bootstrap failed', err);
+        if (!cancelled) {
+          setAuth(null);
+          setAuthError(
+            err instanceof Error
+              ? err.message
+              : 'Could not check sign-in status.'
+          );
+        }
+      } finally {
+        if (!cancelled) setAuthBooting(false);
+      }
+    }
+
+    void boot();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!ready) {
+      setSheetTransactions([]);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
     async function loadFinances() {
       setLoading(true);
       setError(null);
-
       try {
         const transactions = await getTransactions();
         if (cancelled) return;
         setSheetTransactions(transactions);
       } catch (err) {
-        if (err instanceof NetlifySessionExpiredError) {
+        if (err instanceof AuthRequiredError) {
+          if (!cancelled) setAuth(null);
+          return;
+        }
+        if (err instanceof NeedsSheetError) {
           if (!cancelled) {
-            setStatusMessage('Session expired — signing in again…');
+            setAuth((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    needsSheet: true,
+                    spreadsheetId: null,
+                    spreadsheetTitle: null,
+                  }
+                : prev
+            );
           }
           return;
         }
@@ -133,12 +237,10 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [ready, auth?.spreadsheetId]);
 
-  // When the PWA returns from background, probe Netlify Edge Access.
-  // Expired sessions navigate to login via apiFetch; network errors are ignored.
   useEffect(() => {
-    if (loading) return;
+    if (!ready || loading) return;
 
     let lastProbeAt = Date.now();
     let hiddenAt: number | null = null;
@@ -155,11 +257,11 @@ export default function App() {
         await checkSessionHealth();
         lastProbeAt = Date.now();
       } catch (err) {
-        if (err instanceof NetlifySessionExpiredError) {
-          setStatusMessage('Session expired — signing in again…');
+        if (err instanceof AuthRequiredError) {
+          setAuth(null);
+          setStatusMessage('Signed out — please sign in again.');
           return;
         }
-        // Offline / transient failures: do not force re-auth.
         console.warn('[muffin] Session health probe failed', err);
       } finally {
         probing = false;
@@ -197,11 +299,11 @@ export default function App() {
       window.removeEventListener('pageshow', onPageShow);
       window.removeEventListener('focus', onFocus);
     };
-  }, [loading]);
+  }, [ready, loading]);
 
   useEffect(() => {
     setMetrics(buildFinancialMetrics(sheetTransactions));
-  }, [sheetTransactions]);
+  }, [sheetTransactions, recipeConfig]);
 
   function handleAddPlanner(input: NewTransactionInput) {
     setPlannerTransactions((prev) => {
@@ -244,8 +346,8 @@ export default function App() {
         manageMode === 'add' ? 'Transaction added.' : 'Transaction updated.'
       );
     } catch (err) {
-      if (err instanceof NetlifySessionExpiredError) {
-        setStatusMessage('Session expired — signing in again…');
+      if (err instanceof AuthRequiredError) {
+        setStatusMessage('Signed out — please sign in again.');
         return;
       }
       setStatusMessage('Saved to sheet, but refresh failed. Pull to reload.');
@@ -266,8 +368,9 @@ export default function App() {
       await refreshTransactions();
       setStatusMessage('Transaction deleted.');
     } catch (err) {
-      if (err instanceof NetlifySessionExpiredError) {
-        setStatusMessage('Session expired — signing in again…');
+      if (err instanceof AuthRequiredError) {
+        setAuth(null);
+        setStatusMessage('Signed out — please sign in again.');
         return;
       }
       console.error('Failed to delete transaction', err);
@@ -279,8 +382,74 @@ export default function App() {
     }
   }
 
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch (err) {
+      console.warn('Logout request failed', err);
+    }
+    setAuth(null);
+    setSheetTransactions([]);
+    setStatusMessage(null);
+  }
+
+  async function handleChangeSheet() {
+    if (
+      !window.confirm(
+        'Unlink this spreadsheet from Muffin on this account? You can link another one next.'
+      )
+    ) {
+      return;
+    }
+    try {
+      await unlinkSheet();
+      await refreshAuth();
+      setSheetTransactions([]);
+      setStatusMessage('Spreadsheet unlinked.');
+    } catch (err) {
+      if (err instanceof AuthRequiredError) {
+        setAuth(null);
+        return;
+      }
+      setError(err instanceof Error ? err.message : 'Could not unlink sheet.');
+    }
+  }
+
   const headerBtnClass =
     'inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border/80 bg-surface-strong/90 text-text-secondary shadow-warm-sm backdrop-blur-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40';
+
+  if (authBooting) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-canvas text-sm text-text-muted">
+        Baking your money muffins…
+      </div>
+    );
+  }
+
+  if (!auth) {
+    return <SignInScreen authError={authError} />;
+  }
+
+  if (needsSheet) {
+    return (
+      <SheetOnboarding
+        userName={auth.user.name || auth.user.email}
+        onLinked={(info) => {
+          setAuth({
+            ...auth,
+            spreadsheetId: info.spreadsheetId,
+            spreadsheetTitle: info.spreadsheetTitle,
+            needsSheet: false,
+          });
+          setStatusMessage(
+            info.spreadsheetTitle
+              ? `Linked “${info.spreadsheetTitle}”.`
+              : 'Spreadsheet linked.'
+          );
+        }}
+      />
+    );
+  }
 
   return (
     <div className="relative min-h-dvh bg-canvas text-text transition-theme">
@@ -314,37 +483,22 @@ export default function App() {
                 className="inline-block h-1 w-1 shrink-0 rounded-full bg-primary shadow-[0_0_0_2px] shadow-primary/20"
                 aria-hidden="true"
               />
-              Synced from your Google Sheet
+              <button
+                type="button"
+                onClick={() => void handleChangeSheet()}
+                className="truncate text-left outline-none hover:text-text-secondary"
+                title="Change linked spreadsheet"
+              >
+                {auth.spreadsheetTitle || 'Synced from your Google Sheet'}
+              </button>
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <SoftButton
-              onClick={toggleMask}
-              className={headerBtnClass}
-              title={masked ? 'Show amounts' : 'Hide amounts'}
-              aria-label={masked ? 'Show amounts' : 'Hide amounts'}
-              aria-pressed={masked}
-            >
-              {masked ? (
-                <EyeOff className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              ) : (
-                <Eye className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              )}
-            </SoftButton>
-            <ThemeSelector
-              themeId={themeId}
-              onThemeChange={setTheme}
-              buttonClassName={headerBtnClass}
-            />
-            <SoftButton
-              onClick={() => setAboutOpen(true)}
-              className={headerBtnClass}
-              title="About"
-              aria-label="About this app"
-            >
-              <Info className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-            </SoftButton>
-          </div>
+          <HeaderMenu
+            buttonClassName={headerBtnClass}
+            onAbout={() => setAboutOpen(true)}
+            onRecipe={() => setRecipeOpen(true)}
+            onLogout={() => void handleLogout()}
+          />
         </div>
       </header>
 
@@ -446,6 +600,13 @@ export default function App() {
         showAdd={!loading}
       />
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <RecipeModal
+        open={recipeOpen}
+        onClose={() => setRecipeOpen(false)}
+        spreadsheetId={auth.spreadsheetId}
+        spreadsheetTitle={auth.spreadsheetTitle}
+        investmentTypeSuggestions={investmentTypeOptions}
+      />
       <ManageTransactionModal
         open={manageOpen}
         mode={manageMode}

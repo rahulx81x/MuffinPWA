@@ -1,6 +1,6 @@
-# Muffin
+﻿# Muffin
 
-A personal finance Progressive Web App (**Muffin**) that turns a Google Sheet into a live dashboard. Track income, expenses, and investments in three familiar spreadsheet tabs; a Netlify-hosted React app connects to that workbook via the Google Sheets API, computes savings and net-worth metrics, and presents them in a warm, mobile-first UI you can install on your phone — and edit right from the app.
+A personal finance Progressive Web App (**Muffin**) that turns a Google Sheet into a live dashboard. Track income, expenses, and investments in three familiar spreadsheet tabs; a Netlify-hosted React app connects to that workbook via the Google Sheets API, computes savings and net-worth metrics, and presents them in a warm, mobile-first UI you can install on your phone â€” and edit right from the app.
 
 Think of it as baking your money muffins: sheet data goes in, and Home serves up KPIs, charts, and a ledger you can manage on the go.
 
@@ -22,12 +22,12 @@ Think of it as baking your money muffins: sheet data goes in, and Home serves up
   - [2.1 Prerequisites](#21-prerequisites)
   - [2.2 Create your Google Sheet workbook](#22-create-your-google-sheet-workbook-single-book-three-tabs)
   - [2.3 Create a Google Cloud project and OAuth credentials](#23-create-a-google-cloud-project-and-oauth-credentials)
-  - [2.4 Generate a refresh token](#24-generate-a-refresh-token)
+  - [2.4 Add OAuth redirect URIs](#24-add-oauth-redirect-uris)
   - [2.5 Get the project onto GitHub](#25-get-the-project-onto-github)
   - [2.6 Deploy on Netlify](#26-deploy-on-netlify)
   - [2.7 Configure environment variables](#27-configure-environment-variables-in-netlify)
   - [2.8 Optional: run locally](#28-optional-run-locally)
-  - [2.9 Optional: customize starting balances](#29-optional-customize-starting-balances--currency)
+  - [2.9 Recipe and starting balances](#29-recipe-and-starting-balances)
   - [2.10 Everyday usage](#210-everyday-usage)
   - [2.11 Troubleshooting](#211-troubleshooting)
 - [3. Technical Solution (For Developers)](#3-technical-solution-for-developers)
@@ -73,18 +73,18 @@ Every money movement is a **transaction** with:
 | --- | --- |
 | **Date** | When it happened (`YYYY-MM-DD` preferred; `DD/MM/YYYY` also accepted) |
 | **Category** | Label such as Salary, Rent, Groceries, Mutual Fund SIP |
-| **Amount** | Number only — no `₹` or commas in the cell (e.g. `15000`) |
+| **Amount** | Number only â€” no `â‚¹` or commas in the cell (e.g. `15000`) |
 | **Comment** | Optional note (shown in lists) |
 | **Investment Type** | Investment tab only: label such as Mutual Fund, Fixed Deposit, or Provident Fund (breakup uses non-PF types; PF labels detect the dedicated card) |
 
-Transaction *type* (`Income` / `Expense` / `Investment`) is not a column you fill in — it's determined by **which tab the row lives on**. The app reads a single Google Sheets workbook with three fixed tabs: `Income`, `Expense`, and `Investment`.
+Transaction *type* (`Income` / `Expense` / `Investment`) is not a column you fill in â€” it's determined by **which tab the row lives on**. The app reads a single Google Sheets workbook with three fixed tabs: `Income`, `Expense`, and `Investment`.
 
 Sample layouts for each tab live in:
 
 - `templates/income_sheet_template.csv`
 - `templates/expense_sheet_template.csv`
 - `templates/investment_sheet_template.csv`
-- `finance_template.csv` — a single-sheet reference showing all columns side by side (for eyeballing the layout only; see note in Section 2.2)
+- `finance_template.csv` â€” a single-sheet reference showing all columns side by side (for eyeballing the layout only; see note in Section 2.2)
 
 ### 1.3 How investments are treated
 
@@ -93,10 +93,10 @@ Rows on the **Investment** tab (SIPs, stocks, FDs, etc.) are **money set aside**
 For any period:
 
 - **Spends** = sum of Expense rows
-- **Investment (saved)** = sum of counted Investment rows (excludes Provident Fund — see below)
-- **Liquid savings** = Income − Spends − Investment
+- **Investment (saved)** = sum of counted Investment rows (excludes Provident Fund â€” see below)
+- **Liquid savings** = Income âˆ’ Spends âˆ’ Investment
 
-So putting ₹10,000 into a SIP reduces liquid cash but increases your investment balance — it does **not** count as an expense.
+So putting â‚¹10,000 into a SIP reduces liquid cash but increases your investment balance â€” it does **not** count as an expense.
 
 ### 1.3.1 Provident Fund (display-only)
 
@@ -115,18 +115,18 @@ The **only** place PF surfaces on Home is its own **Provident Fund** card under 
 
 ### 1.4 Metrics the dashboard computes
 
-From your sheet rows plus optional starting balances in `src/config.ts`, the app derives:
+From your sheet rows plus optional starting balances (Recipe settings in the app, defaults in `src/config.ts`), the app derives:
 
 - **Current month:** income, expense, investment, liquid change, savings %
 - **Totals:** liquid balance, investment balance, net worth
-- **Investment Breakup:** counted investment types only (PF omitted) — Home card shows the **top 3**; tap for the full pie
+- **Investment Breakup:** counted investment types only (PF omitted) â€” Home card shows the **top 3**; tap for the full pie
 - **Provident Fund:** cumulative contributions (More Details only; not in net worth or breakup)
-- **Lifetime:** total income, total spends, income − spends
+- **Lifetime:** total income, total spends, income âˆ’ spends
 - **Growth:** rupees and % since configured starting balances
 - **Averages:** average monthly savings, months tracked
 - **Monthly KPIs:** per-month income / spends / investment / liquid / closing liquid / savings percentages / expense-by-category
 
-Currency display defaults to **₹** with Indian digit grouping (e.g. ₹1,50,000).
+Currency display defaults to **â‚¹** with Indian digit grouping (e.g. â‚¹1,50,000).
 
 ### 1.5 Views and features
 
@@ -140,80 +140,83 @@ Currency display defaults to **₹** with Indian digit grouping (e.g. ₹1,50,00
 Also included:
 
 - **Six muffin themes** — 3 light (Classic, Blueberry, Pistachio Matcha) and 3 dark (Double Chocolate, Red Velvet, Salted Caramel), with CSS design tokens + themed chart palettes
-- **Theme selector** — palette icon in the header opens a Light / Dark grouped menu; choice persists in `localStorage` (`muffinTheme`) and updates `theme-color` / `data-theme`
+- **Header settings (gear)** — one menu for Mask, Theme, About, Recipe (configuration), Download App (PWA install), and Log out
+- **Recipe** — view/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (persisted in `localStorage` as `muffinRecipe`)
 - **Cozy motion** — soft spring micro-interactions, sliding tab highlight, page transitions, and animated sheet/modals (Framer Motion)
-- **Amount masking** (hide figures when someone is looking over your shoulder)
-- **About** info button (header) — credits, product blurb, and stack
-- **PWA install** — add to home screen on phone/desktop
 - Compact branded sticky header (muffin icon + wordmark) + full-width floating bottom nav aligned with cards
 
 ### 1.6 Everyday data flow
 
-1. You add, edit, or delete rows via the in-app Ledger / **+** button, or directly in Google Sheets.
-2. A **Netlify Function** authenticates to the Google Sheets API with an OAuth2 refresh token and reads/writes the `Income`, `Expense`, and `Investment` tabs of your workbook. Your Google credentials never reach the browser.
-3. The React app fetches transactions from that function on load (and after every add/edit/delete), builds metrics client-side, and updates Home / Ledger / Monthly.
-4. Planner entries stay on-device and never write back to Sheets.
+1. You sign in with Google in the app, then link an existing workbook (paste URL/ID) or create a new one.
+2. You add, edit, or delete rows via the in-app Ledger / **+** button, or directly in Google Sheets.
+3. A **Netlify Function** uses your signed-in Google session (refresh token in an httpOnly cookie) and your linked spreadsheet ID (stored in Netlify Blobs per Google user) to read/write the `Income`, `Expense`, and `Investment` tabs. App OAuth client secrets never ship to the browser.
+4. The React app fetches transactions from that function on load (and after every add/edit/delete), builds metrics client-side, and updates Home / Ledger / Monthly.
+5. Planner entries stay on-device and never write back to Sheets.
 
 ### 1.7 Where data lives
 
 | Data | Location |
 | --- | --- |
 | Real transactions | Your Google Sheet (`Income`, `Expense`, `Investment` tabs) |
-| Google OAuth credentials | Netlify environment variables (`GOOGLE_*`) — never shipped to the browser |
-| Starting balances / currency | `src/config.ts` (baked into the build when you change them) |
-| Planner "what if" rows | Browser `localStorage` |
+| Google OAuth app credentials | Netlify / local env (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`) |
+| Per-user sheet link | Netlify Blobs (`muffin-users`, keyed by Google user id) |
+| Signed-in session | httpOnly cookie (encrypted refresh token) |
+| Starting balances (Recipe) | Browser `localStorage` (`muffinRecipe`); code defaults in `src/config.ts` |
+| Currency display | `src/config.ts` (`CURRENCY`) |
+| Planner "what if" rows | Browser `localStorage` (`plannerTransactions`) |
 | Selected muffin theme | Browser `localStorage` (`muffinTheme`) |
-| App UI / assets | Netlify CDN (`dist` after build) |
+| Amount mask preference | Browser `localStorage` (`valuesMasked`) |
+| App UI / assets | Netlify CDN (`dist` after build); live site: [muffin-ledger.netlify.app](https://muffin-ledger.netlify.app/) |
 
 ### 1.8 Limitations
 
-- No Google sign-in inside the app UI; the server-side Netlify Function holds a single OAuth refresh token for one Google account with access to your workbook.
-- Not a bank aggregator — you enter transactions yourself (sheet or in-app forms).
-- Read and write always travel together — because access is OAuth-based, there's no read-only / write-optional split; if credentials are configured, both work.
-- The three tabs (`Income`, `Expense`, `Investment`) are fixed by the server function; a single combined tab with a `Type` column is not read by the current backend.
+- Google Cloud OAuth consent in **Testing** only allows listed test users until you complete free verification for broader public use.
+- Not a bank aggregator â€” you enter transactions yourself (sheet or in-app forms).
+- Read and write always travel together for the signed-in Google account.
+- The three tabs (`Income`, `Expense`, `Investment`) are fixed by the server; a single combined tab with a `Type` column is not read by the current backend.
 - The Planner does not sync across devices or back into Sheets.
 - Provident Fund rows are tracked for display but do not change net worth / liquid / investment totals.
-- If the function cannot reach the sheet (missing/invalid credentials, revoked access, sheet renamed), the UI still shows an overview built from configured starting balances and shows a soft warning.
+- If the function cannot reach the sheet (revoked access, sheet renamed, missing tabs), the UI shows a soft warning and falls back to configured starting balances.
 
 ---
 
 ## 2. Setup Tutorial (Non-Developer Friendly)
 
-This section walks you from a blank Google Sheet to a live website. You do **not** need to be a programmer, but you will create a small Google Cloud project to authorize the app — follow the steps in order and it's mostly clicking through screens.
+This section walks you from a blank Google Sheet to a live website. You do **not** need to be a programmer, but you will create a small Google Cloud project to authorize the app â€” follow the steps in order and it's mostly clicking through screens.
 
 ### 2.1 Prerequisites
 
 Create free accounts for:
 
-1. **Google** — for Google Sheets and Google Cloud (OAuth credentials)
-2. **GitHub** — to hold a copy of this project (recommended)
-3. **Netlify** — to host the website ([https://app.netlify.com](https://app.netlify.com); you can sign up with GitHub)
+1. **Google** â€” for Google Sheets and Google Cloud (OAuth credentials)
+2. **GitHub** â€” to hold a copy of this project (recommended)
+3. **Netlify** â€” to host the website ([https://app.netlify.com](https://app.netlify.com); you can sign up with GitHub)
 
 Also useful:
 
 - A modern browser (Chrome, Edge, Firefox, or Safari)
-- About 45–60 minutes the first time (the OAuth step takes the longest)
+- About 45â€“60 minutes the first time (the OAuth step takes the longest)
 
 **Plain-English terms:**
 
-- **Repository (repo)** — a project folder on GitHub
-- **Fork** — your own copy of someone else's repo on GitHub
-- **Deploy** — publishing the site so it has a public URL
-- **Environment variable** — a private setting stored on Netlify (used for your Google credentials)
-- **OAuth client** — a Google-issued ID/secret pair that identifies this app when it asks for permission to read your sheet
-- **Refresh token** — a long-lived credential that lets the server fetch your data without you signing in every time
+- **Repository (repo)** â€” a project folder on GitHub
+- **Fork** â€” your own copy of someone else's repo on GitHub
+- **Deploy** â€” publishing the site so it has a public URL
+- **Environment variable** â€” a private setting stored on Netlify (used for your Google credentials)
+- **OAuth client** â€” a Google-issued ID/secret pair that identifies this app when it asks for permission to read your sheet
+- **Refresh token** â€” a long-lived credential that lets the server fetch your data without you signing in every time
 
 ### 2.2 Create your Google Sheet workbook (single book, three tabs)
 
 The app expects **one Google Spreadsheet (workbook)** with **exactly three tabs**, named precisely `Income`, `Expense`, and `Investment`.
 
-#### Step A — Create the workbook
+#### Step A â€” Create the workbook
 
 1. Go to [https://sheets.google.com](https://sheets.google.com) and sign in.
 2. Click **Blank spreadsheet**.
 3. Rename the file (top left), e.g. `My Personal Finances`.
 
-#### Step B — Create three tabs
+#### Step B â€” Create three tabs
 
 At the bottom of the sheet:
 
@@ -223,9 +226,9 @@ At the bottom of the sheet:
 
 Tab names are matched exactly, so avoid trailing spaces or extra tabs with the same names. (You can delete any unused default tab.)
 
-#### Step C — Add headers and sample rows
+#### Step C â€” Add headers and sample rows
 
-**Income tab** — row 1 headers, then data:
+**Income tab** â€” row 1 headers, then data:
 
 ```text
 Date,Category,Amount,Comment
@@ -250,71 +253,67 @@ Date,Category,Amount,Investment Type,Comment
 2026-02-09,Stocks,5000,Equities,Bought blue-chip shares
 ```
 
-You can also copy from the repo files under `templates/` (`income_sheet_template.csv`, etc.): in Sheets use **File → Import → Upload**, importing each CSV into its matching tab.
+You can also copy from the repo files under `templates/` (`income_sheet_template.csv`, etc.): in Sheets use **File â†’ Import â†’ Upload**, importing each CSV into its matching tab.
 
-> **Note:** `finance_template.csv` in the repo root shows all columns combined into one sheet — it's kept as a quick reference for the overall layout, but the live app always reads the three separate tabs described above, not a single combined tab.
+> **Note:** `finance_template.csv` in the repo root shows all columns combined into one sheet â€” it's kept as a quick reference for the overall layout, but the live app always reads the three separate tabs described above, not a single combined tab.
 
 #### Column rules (important)
 
 - **Date:** prefer `YYYY-MM-DD` (e.g. `2026-01-05`). `DD/MM/YYYY` also works.
-- **Amount:** digits only — `55000` not `₹55,000` (commas are stripped automatically, but keep it simple).
-- **Do not leave the header row out** — the app skips the first row as headers.
+- **Amount:** digits only â€” `55000` not `â‚¹55,000` (commas are stripped automatically, but keep it simple).
+- **Do not leave the header row out** â€” the app skips the first row as headers.
 - Replace sample rows with your real data anytime; the app reads live from the sheet on every load.
 
 ### 2.3 Create a Google Cloud project and OAuth credentials
 
-The backend authenticates as **your** Google account using OAuth 2.0, so it can both read and write your workbook.
+Each end user signs in with **their own** Google account. The app uses a shared OAuth **Web client** (Client ID/Secret) to complete that sign-in and access Sheets on their behalf.
 
-1. Go to [https://console.cloud.google.com](https://console.cloud.google.com) and sign in with the same Google account that owns (or has edit access to) your finance spreadsheet.
-2. Create a new project (top bar → **New Project**), e.g. `Muffin Finance`.
-3. Open **APIs & Services → Library**, search for **Google Sheets API**, and click **Enable**.
-4. Open **APIs & Services → OAuth consent screen**:
-   - Choose **External** (unless you have a Google Workspace org) and fill in the required app name / support email fields.
-   - Add yourself as a **test user** if prompted — this keeps the app in "Testing" mode, which is fine for personal use.
-5. Open **APIs & Services → Credentials → Create Credentials → OAuth client ID**:
-   - Application type: **Web application** (or **Desktop app** if you prefer to use a local script for the next step).
-   - If using a Web application type, add `https://developers.google.com/oauthplayground` under **Authorized redirect URIs** (needed for Section 2.4).
-6. Save the generated **Client ID** and **Client Secret** somewhere private — you'll need them for Netlify.
+1. Go to [https://console.cloud.google.com](https://console.cloud.google.com) and sign in.
+2. Create a new project (top bar â†’ **New Project**), e.g. `Muffin Finance`.
+3. Open **APIs & Services â†’ Library**, search for **Google Sheets API**, and click **Enable**.
+4. Open **APIs & Services â†’ OAuth consent screen**:
+   - Choose **External** and fill in the required app name / support email fields.
+   - Scopes used by the app: `openid`, `email`, `profile`, and `https://www.googleapis.com/auth/spreadsheets`.
+   - While status is **Testing**, add every Google account that should sign in as a **test user**.
+5. Open **APIs & Services â†’ Credentials â†’ Create Credentials â†’ OAuth client ID**:
+   - Application type: **Web application**.
+   - Save the generated **Client ID** and **Client Secret** somewhere private â€” you'll need them for Netlify / `.env`.
 
-### 2.4 Generate a refresh token
+### 2.4 Add OAuth redirect URIs
 
-This one-time step exchanges your Google login for a refresh token the server can reuse indefinitely.
+On the same OAuth Web client, under **Authorized redirect URIs**, add:
 
-1. Go to [https://developers.google.com/oauthplayground](https://developers.google.com/oauthplayground).
-2. Click the gear icon (top right) → check **Use your own OAuth credentials** → paste in the **Client ID** and **Client Secret** from Section 2.3.
-3. In the left panel, find **Google Sheets API v4** and select the scope `https://www.googleapis.com/auth/spreadsheets`.
-4. Click **Authorize APIs**, sign in with the Google account that owns your spreadsheet, and allow access.
-5. Click **Exchange authorization code for tokens**.
-6. Copy the **Refresh token** shown — this is the value that goes into `GOOGLE_REFRESH_TOKEN`.
-7. From your spreadsheet's URL, copy the long ID between `/d/` and `/edit` — this is `GOOGLE_SPREADSHEET_ID`:
+- Local Netlify Dev: `http://localhost:8888/.netlify/functions/auth-callback`
+- Production (this project): `https://muffin-ledger.netlify.app/.netlify/functions/auth-callback`
+- Other forks: `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback`
 
-   `https://docs.google.com/spreadsheets/d/`**`THIS_PART_IS_THE_ID`**`/edit`
+These must match `GOOGLE_REDIRECT_URI` exactly (including `http` vs `https`).
 
-Treat the Client Secret and Refresh Token like passwords — anyone with both can read and edit your spreadsheet. Never commit them to Git; they only belong in Netlify's environment variables (next steps).
+Users no longer generate a long-lived Playground refresh token. Sign-in in the app issues a per-user refresh token stored in an encrypted httpOnly session cookie; the linked spreadsheet ID is stored in Netlify Blobs keyed by Google user id.
 
 ### 2.5 Get the project onto GitHub
 
 Recommended path: keep the code on GitHub so Netlify can rebuild automatically when you update.
 
-#### Option A — Fork (if this repo is on GitHub)
+#### Option A â€” Fork (if this repo is on GitHub)
 
 1. Open the GitHub page for this project while signed in.
 2. Click **Fork** (top right).
 3. Confirm to create a copy under your account.
 
-#### Option B — Create a new repo and upload
+#### Option B â€” Create a new repo and upload
 
 1. On GitHub, click **New repository**.
 2. Name it (e.g. `muffin`), leave it Private if you prefer, create it.
 3. Upload the project files (or use GitHub Desktop / `git` if you know how).
-   - Include everything except secrets. Never upload a `.env` file or anything containing your Client Secret / Refresh Token — `.gitignore` already excludes `.env*` (except `.env.example`).
+   - Include everything except secrets. Never upload a `.env` file or anything containing your Client Secret / Refresh Token â€” `.gitignore` already excludes `.env*` (except `.env.example`).
 
 You do **not** need to understand the code to deploy. Netlify will build it for you.
 
 ### 2.6 Deploy on Netlify
 
 1. Go to [https://app.netlify.com](https://app.netlify.com) and log in (GitHub login is easiest).
-2. Click **Add new site → Import an existing project**.
+2. Click **Add new site â†’ Import an existing project**.
 3. Choose **GitHub** and authorize Netlify if prompted.
 4. Select your fork / repo.
 5. Confirm build settings (this repo already includes `netlify.toml`, which sets them):
@@ -323,32 +322,35 @@ You do **not** need to understand the code to deploy. Netlify will build it for 
    - Functions folder: `netlify/functions`
 6. Click **Deploy site**.
 
-Wait until the deploy finishes (a few minutes the first time). Netlify gives you a URL like `https://random-name.netlify.app`.
+Wait until the deploy finishes (a few minutes the first time). This project's production site is [https://muffin-ledger.netlify.app/](https://muffin-ledger.netlify.app/). Forks get a URL like `https://random-name.netlify.app`.
 
-You can later rename it under **Site configuration → Domain management**.
+You can rename the site under **Site configuration → Domain management**.
 
 > **Note:** Older versions of this project were a drag-and-drop static site. The current app is a **Vite + React** build. Prefer the Git-connected deploy above so Netlify runs `npm run build` and publishes `dist`.
 
 ### 2.7 Configure environment variables in Netlify
 
-Until you add the OAuth credentials, the dashboard cannot load or save live transactions.
+Until you add the OAuth app credentials, users cannot sign in or sync sheets.
 
 1. In Netlify, open your site.
-2. Go to **Site configuration → Environment variables**.
-3. Add the following four variables (all required):
+2. Turn **off** Private Access / password protection so the site is public (Google Sign-In gates data).
+3. Go to **Site configuration → Environment variables**.
+4. Add the following variables (all required):
 
 | Variable name | Value |
 | --- | --- |
-| `GOOGLE_SPREADSHEET_ID` | The ID from your spreadsheet's URL (Section 2.4, step 7) |
 | `GOOGLE_CLIENT_ID` | OAuth Client ID from Section 2.3 |
 | `GOOGLE_CLIENT_SECRET` | OAuth Client Secret from Section 2.3 |
-| `GOOGLE_REFRESH_TOKEN` | Refresh token from Section 2.4 |
+| `GOOGLE_REDIRECT_URI` | `https://muffin-ledger.netlify.app/.netlify/functions/auth-callback` (or your site URL; must match the OAuth client redirect URI) |
+| `SESSION_SECRET` | Long random string (e.g. `openssl rand -hex 32`) |
 
-4. Save the variables.
-5. **Trigger a new deploy** (Deploys → Trigger deploy → Deploy site) so the function picks up the new values.
-6. Open your live site. You should see KPIs fill in from your sample (or real) rows. Use a hard refresh if needed.
+5. Remove legacy single-user vars if present: `GOOGLE_SPREADSHEET_ID`, `GOOGLE_REFRESH_TOKEN`.
+6. Save the variables and **trigger a new deploy** (env changes do not apply until redeploy).
+7. Open the live site → **Sign in with Google** → paste an existing sheet URL/ID or **Create a sheet for me**.
 
-If any of the four variables is missing, the function returns an error and the app falls back to showing an overview built from your configured starting balances only.
+While the OAuth consent screen is in **Testing**, add each Google account as a test user.
+
+**Local vs production redirect:** keep `GOOGLE_REDIRECT_URI=http://localhost:8888/.netlify/functions/auth-callback` in your local `.env` for `npm run dev`. Use the `https://muffin-ledger.netlify.app/...` value only in Netlify Production (and matching Google OAuth redirect URIs).
 
 ### 2.8 Optional: run locally
 
@@ -356,26 +358,29 @@ If you want to try changes on your computer:
 
 1. Install [Node.js](https://nodejs.org/) (LTS version).
 2. Download or clone the repo to a folder.
-3. Copy `.env.example` to `.env` and fill in the same four `GOOGLE_*` values from Section 2.7. Do **not** commit `.env`.
-4. Open a terminal in that folder and run:
+3. Copy `.env.example` to `.env` and fill in `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SESSION_SECRET`, and set `GOOGLE_REDIRECT_URI` to `http://localhost:8888/.netlify/functions/auth-callback`. Do **not** commit `.env`.
+4. Add that same localhost redirect URI on your Google OAuth client.
+5. Open a terminal in that folder and run:
 
 ```bash
 npm install
 npm run dev
 ```
 
-5. `npm run dev` runs **Netlify Dev** (see `package.json`), which starts Vite and the serverless function together. Open the URL it prints (often `http://localhost:8888`).
-6. Netlify Dev picks up variables from your local `.env` file automatically; alternatively, link the folder to your Netlify site (`netlify link`) so it can pull the same values you set in Section 2.7.
+6. `npm run dev` runs **Netlify Dev** (see `package.json`), which starts Vite and the serverless functions together. Open the URL it prints (often `http://localhost:8888`).
+7. Netlify Dev picks up variables from your local `.env` file automatically.
 
-### 2.9 Optional: customize starting balances / currency
+### 2.9 Recipe and starting balances
 
-Open `src/config.ts` and edit the numbers at the top, for example:
+You do **not** need a redeploy to set starting balances. In the live app:
 
-- `INITIAL_REGULAR_DEPOSITS`, `INITIAL_FIXED_DEPOSITS`, `INITIAL_MUTUAL_FUNDS` — investments you already held before the sheet history starts
-- `INITIAL_LIQUID_BALANCE` — cash starting point
-- `CURRENCY.symbol` / `CURRENCY.locale` — if you need a different currency display
+1. Open the header **gear** menu → **Recipe**.
+2. View / copy the linked spreadsheet ID.
+3. Set **Initial opening balance** (liquid cash before sheet history).
+4. Add one or more **Initial investments** (type + amount), e.g. Fixed Deposits, Mutual Funds.
+5. Save — values persist in this browser under `localStorage` key `muffinRecipe` and feed net worth / investment breakup.
 
-After changing these, redeploy (or rebuild locally) so the new values are included.
+Optional code defaults (used when Recipe has never been saved) and currency live in `src/config.ts` (`INITIAL_*`, `CURRENCY`). Changing currency still requires a rebuild/redeploy.
 
 ### 2.10 Everyday usage
 
@@ -383,22 +388,23 @@ After changing these, redeploy (or rebuild locally) so the new values are includ
 2. Open your Netlify site (or pull to refresh) to see the latest numbers; the app re-fetches after every in-app add/edit/delete automatically.
 3. On Home, tap KPI cards to open charts or filtered lists; open **More Details** for Provident Fund and extra KPIs.
 4. Use **Planner** for temporary what-if entries (device-only).
-5. Use the eye icon to mask amounts; use the **palette** icon to pick a muffin theme; tap the **i** icon for About / credits.
-6. On your phone browser, use **Add to Home Screen** / **Install app** for the PWA.
+5. Open the header **gear** for Mask, Theme, About, Recipe, Download App, and Log out.
+6. On your phone browser, use **Download App** from the gear menu (or the browser’s Add to Home Screen / Install).
 
 ### 2.11 Troubleshooting
 
 | Symptom | Likely fix |
 | --- | --- |
-| Warning that the sheet couldn't load | Check all four `GOOGLE_*` env var names/values; confirm the OAuth account still has access to the spreadsheet |
-| Numbers stuck at starting balances only | Env vars missing, or a deploy wasn't triggered after adding them |
+| Warning that the sheet couldn't load | Check all four required env vars (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`); confirm the signed-in Google account still has access to the spreadsheet |
+| Sign-in redirect / OAuth error | Redirect URI in Google Cloud, Netlify `GOOGLE_REDIRECT_URI`, and the live site URL must match exactly (prod: `https://muffin-ledger.netlify.app/.netlify/functions/auth-callback`) |
+| Numbers stuck at starting balances only | Env vars missing, deploy not triggered after adding them, or sheet not linked yet — also check Recipe opening balance / investments |
 | "Sheet tab X was not found" error | Confirm tabs are named exactly `Income`, `Expense`, `Investment` (case-sensitive, no extra spaces) |
 | Some months missing | Dates invalid or Amount cells not plain numbers |
 | Investments missing from breakup | Fill in **Investment Type** on the Investment tab (falls back to Category if blank) |
 | PF showing in net worth / liquid | Tag PF with Investment Type `Provident Fund`, `PF`, `EPF`, or `PPF` so it is excluded from those totals |
-| Add/edit/delete fails in the app | Same OAuth credentials handle reads and writes — if reading works but writing fails, re-check the refresh token wasn't revoked and the account has **edit** (not just view) access |
-| Site shows old UI after code change | Wait for Netlify deploy to finish; hard-refresh the browser |
-| Local `npm run dev` can't reach the function | Use `npm run dev` (Netlify Dev), not plain Vite alone, so `/.netlify/functions/*` exists; confirm `.env` is populated |
+| Add/edit/delete fails in the app | Re-sign in if the session expired; confirm the Google account has **edit** (not just view) access to the sheet |
+| Site shows old UI after code change | Wait for Netlify deploy to finish; hard-refresh the browser (PWA may need a second load for the service worker) |
+| Local `npm run dev` can't reach the function | Use `npm run dev` (Netlify Dev), not plain Vite alone, so `/.netlify/functions/*` exists; confirm `.env` is populated with the **localhost** redirect URI |
 
 ---
 
@@ -413,7 +419,7 @@ After changing these, redeploy (or rebuild locally) so the new values are includ
 | Icons | **Lucide React** | Soft-contoured header / nav / modal icons |
 | Typography | **Syne** (display) + **DM Sans** (UI) | Branded header + app body font (Google Fonts) |
 | Build | **Vite 6** + `@vitejs/plugin-react` | Dev server, production bundle |
-| Styling | **Tailwind CSS 3** + CSS design tokens | Six muffin themes via `data-theme` (`canvas`, `surface`, `primary`, `border`, chart colors, …) |
+| Styling | **Tailwind CSS 3** + CSS design tokens | Six muffin themes via `data-theme` (`canvas`, `surface`, `primary`, `border`, chart colors, â€¦) |
 | Forms | **react-select** (Creatable) | Investment Type combobox (existing types + free text) |
 | PWA | **vite-plugin-pwa** + **Workbox** | Web app manifest, service worker, installability |
 | Hosting | **Netlify** | CDN for `dist`, SPA redirects, CI from Git |
@@ -433,15 +439,15 @@ Runtime UI deps stay lean (`react`, `react-dom`, `react-select`, `framer-motion`
 ```text
 MuffinPWA/
 ├── src/
-│   ├── main.tsx              # React entry + ThemeProvider; FOUC theme bootstrap
-│   ├── App.tsx                # Shell: load sheet, tabs, planner, manage modal, about
-│   ├── config.ts               # Starting balances + currency helpers
+│   ├── main.tsx              # React entry + Theme / Mask / Recipe providers; FOUC theme bootstrap
+│   ├── App.tsx                # Shell: auth, sheet load, tabs, planner, gear menu, modals
+│   ├── config.ts              # Currency helpers + Recipe defaults / localStorage recipe store
 │   ├── types.ts                # Shared TypeScript types
 │   ├── index.css               # Tailwind + 6 muffin theme tokens (`data-theme`)
-│   ├── components/             # Home, Planner, Ledger, Monthly, charts, nav, modals, ThemeSelector
-│   ├── hooks/                  # ThemeProvider / useTheme, useMask
+│   ├── components/             # Home, Planner, Ledger, Monthly, HeaderMenu, RecipeModal, charts, nav
+│   ├── hooks/                  # Theme, Mask, RecipeConfig, PwaInstall
 │   └── lib/
-│       ├── api.ts               # Client → Netlify transactions function
+│       ├── api.ts               # Client → Netlify auth / sheet / transactions functions
 │       ├── themes.ts            # Theme catalog, persistence helpers, chart palettes
 │       ├── motion.ts            # Shared Framer Motion springs / variants
 │       ├── parseSheet.ts        # Date parsing + ID helpers (used by Planner)
@@ -454,8 +460,8 @@ MuffinPWA/
 │   ├── Muffin_Showcase.pptx     # 12-slide product showcase deck
 │   └── screens/                 # Captured PNGs (gitignored; regenerate via npm run showcase)
 ├── public/icons/                # PWA icons
-├── netlify/functions/
-│   └── transactions.js          # Google Sheets OAuth read/write API
+├── netlify/functions/           # Auth, sheet link/create/unlink, transactions, health
+├── netlify/lib/                 # Shared function helpers (env, session, Blobs user store, Sheets)
 ├── templates/                   # Per-tab CSV examples (Income / Expense / Investment)
 ├── finance_template.csv         # Reference-only combined layout (not read by the app)
 ├── legacy/                      # Previous vanilla JS PWA (CSV-publish based, reference)
@@ -464,7 +470,7 @@ MuffinPWA/
 ├── vite.config.ts               # React + PWA + dev proxy
 ├── tailwind.config.js           # Theme token colors, radii, warm shadows
 ├── index.html                   # Shell + Google Fonts + theme-color + inline theme bootstrap
-├── .env.example                 # GOOGLE_* variable names for local dev
+├── .env.example                 # GOOGLE_* / SESSION_SECRET names for local + prod redirect notes
 ├── package.json
 └── README.md
 ```
@@ -504,7 +510,7 @@ sequenceDiagram
 
 - Browser code only calls a same-origin function path.
 - The OAuth Client ID/Secret and refresh token stay in Netlify env vars, never in client bundles.
-- Read and write share one API surface (`src/lib/api.ts` → `transactions` function).
+- Read and write share one API surface (`src/lib/api.ts` â†’ `transactions` function).
 
 ### 3.4 Domain model and API
 
@@ -517,8 +523,8 @@ Core types live in `src/types.ts`:
 
 **Client API** (`src/lib/api.ts`):
 
-- `getTransactions()` — `GET /.netlify/functions/transactions`
-- `createTransaction` / `updateTransaction` / `deleteTransaction` — POST/PUT/DELETE against the same function, each identifying a row by `tabName` and `rowIndex`
+- `getTransactions()` â€” `GET /.netlify/functions/transactions`
+- `createTransaction` / `updateTransaction` / `deleteTransaction` â€” POST/PUT/DELETE against the same function, each identifying a row by `tabName` and `rowIndex`
 
 **Sheets function** (`netlify/functions/transactions.js`):
 
@@ -529,38 +535,38 @@ Core types live in `src/types.ts`:
 
 **PF helpers** (`src/lib/providentFund.ts`):
 
-- `isProvidentFund` / `isCountedInvestment` / `sumProvidentFund` — used by metrics, planner, and chart lists
+- `isProvidentFund` / `isCountedInvestment` / `sumProvidentFund` â€” used by metrics, planner, and chart lists
 
 ### 3.5 Metrics engine
 
 `src/lib/metrics.ts` is pure (no I/O). Provident Fund helpers live in `src/lib/providentFund.ts`.
 
-- `buildMonthlyKPIs` — groups by `YYYY-MM`, tracks expense categories, rolls **closing liquid** from `INITIAL_LIQUID_BALANCE`; **excludes PF** from monthly investment
-- `buildInvestmentBreakup` — seeds from `getInitialInvestmentBreakdown()` then adds **counted** investment rows by type/category (**excludes PF**; PF is only on its own card)
+- `buildMonthlyKPIs` — groups by `YYYY-MM`, tracks expense categories, rolls **closing liquid** from `getOpeningBalance()` (Recipe); **excludes PF** from monthly investment
+- `buildInvestmentBreakup` — seeds from Recipe initial investments (`getInitialInvestments()`) then adds **counted** investment rows by type/category (**excludes PF**; PF is only on its own card)
 - `buildFinancialMetrics` — lifetime and current-month aggregates using **counted** investments only (PF excluded), plus `providentFundBalance` for the More Details card:
 
 \[
 \begin{aligned}
 \text{investmentBalance} &= \text{initialInvestments} + \sum \text{countedInvestment} \\
 \text{trackedLiquid} &= \sum \text{income} - \sum \text{expense} - \sum \text{countedInvestment} \\
-\text{liquidBalance} &= \text{INITIAL\_LIQUID\_BALANCE} + \text{trackedLiquid} \\
+\text{liquidBalance} &= \text{openingBalance} + \text{trackedLiquid} \\
 \text{netWorth} &= \text{investmentBalance} + \text{liquidBalance} \\
 \text{providentFundBalance} &= \sum \text{PF investment rows}
 \end{aligned}
 \]
 
-Growth compares current net worth to `initialInvestments + INITIAL_LIQUID_BALANCE`.
+Growth compares current net worth to `initialInvestments + openingBalance` (from Recipe / config defaults).
 
 ### 3.6 Frontend application structure
 
-- **`App.tsx`** owns the transaction-fetch lifecycle (initial load + refetch after mutations), error banner, `metrics` derived from sheet rows, active tab, about/manage-modal state, planner CRUD with `localStorage` key `plannerTransactions`, and tab `AnimatePresence` transitions.
+- **`App.tsx`** owns auth + sheet lifecycle, error banner, `metrics` (recomputed when sheet rows or Recipe config change), active tab, gear-menu modals (About / Recipe / manage transaction), planner CRUD with `localStorage` key `plannerTransactions`, and tab `AnimatePresence` transitions.
 - **Views:** `HomeView` (KPI grid + `ChartModal` + More Details / PF), `PlannerView`, `LedgerView`, `MonthlyView`.
-- **Shared UI:** `KpiCard`, `FloatingNav` (layout-animated active pill), `ThemeSelector`, `SoftButton`, `TransactionList`, `ChartModal` (list / pie / line; portaled sheet with enter/exit), `ManageTransactionModal`, `AboutModal`, `MuffinIcon`.
+- **Shared UI:** `KpiCard`, `FloatingNav` (layout-animated active pill), `HeaderMenu` (gear dropdown + nested theme panel), `RecipeModal`, `SoftButton`, `TransactionList`, `ChartModal` (list / pie / line; portaled sheet with enter/exit), `ManageTransactionModal`, `AboutModal`, `MuffinIcon`.
 - **`KpiCard` tones:** semantic colors for income/expense/investment; Net Worth uses the theme **hero** primary gradient.
 - **Themes:** `src/lib/themes.ts` catalogs six variants; `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color`. Charts pull per-theme `chartColors`.
 - **Motion:** shared springs/variants in `src/lib/motion.ts` (Framer Motion).
-- **Hooks:** `useTheme` (shared context), `useMask` (masked formatting helpers).
-- Layout is mobile-first (`max-w-lg`), branded sticky header, floating bottom nav width-matched to cards, themed modals/forms portaled above the nav.
+- **Hooks:** `useTheme`, `useMask`, `useRecipeConfig` (Recipe / starting balances), `usePwaInstall` (`beforeinstallprompt`).
+- Layout is mobile-first (`max-w-lg`), branded sticky header with a single gear control, floating bottom nav width-matched to cards, themed modals/forms portaled above the nav.
 
 ### 3.7 PWA behavior
 
@@ -590,14 +596,16 @@ From `netlify.toml`:
 - **Build:** `tsc -b && vite build` (`package.json`)
 - **Dev:** `npm run dev` → `netlify dev` running Vite on `5173`, Netlify on `8888`; Vite proxies `/.netlify/functions` to `8888`
 - **CI path:** push to GitHub → Netlify builds → deploys `dist` + functions
+- **Production site:** [https://muffin-ledger.netlify.app/](https://muffin-ledger.netlify.app/)
 - **Env contract:** four required vars — see Section 2.7; never commit `.env` or secret credentials
+- After changing Netlify env vars, **trigger a new deploy** so functions pick them up
 
 ### 3.9 Security and privacy
 
-- Google OAuth Client ID/Secret and the refresh token are the keys to your spreadsheet — they live only in Netlify environment variables and are read server-side by the `transactions` function; the browser never sees them.
-- Because the refresh token grants read **and** write access to the workbook, treat it with the same care as a password; rotate it (re-run Section 2.4) if it's ever exposed.
-- No end-user authentication in the app itself — anyone with your **Netlify site URL** can view (and, through the UI, mutate) the computed finances. Keep the site URL private or add Netlify access control if you need a gate.
-- Planner data is local to one browser profile.
+- Google OAuth Client ID/Secret live only in Netlify / local env and are used server-side by auth and Sheets functions; the browser never sees them.
+- Each user’s Google refresh token is stored in an encrypted httpOnly session cookie (`SESSION_SECRET`); treat that secret like a password and rotate it if exposed.
+- End users must **Sign in with Google**; sheet access is limited to the signed-in account’s linked workbook (ID in Netlify Blobs).
+- Planner data, Recipe starting balances, theme, and mask preference are local to one browser profile.
 - Function responses use `Cache-Control: no-store` to reduce accidental CDN caching of financial payloads.
 - `.gitignore` excludes `.env` and `.env.*` (except `.env.example`) so local credential files aren't committed by accident.
 
@@ -614,20 +622,20 @@ From `netlify.toml`:
 
 This codebase was developed with AI-assisted tooling in the loop:
 
-- **Cursor** — agent-driven refactors (vanilla PWA → React/Vite, CSV-publish → OAuth Sheets API), feature work, and documentation
-- **GitHub Copilot** — inline completions while editing components and libs
+- **Cursor** â€” agent-driven refactors (vanilla PWA â†’ React/Vite, CSV-publish â†’ OAuth Sheets API), feature work, and documentation
+- **GitHub Copilot** â€” inline completions while editing components and libs
 
 These are **development aids**, not runtime dependencies. The production site only needs Node (build time), Netlify, and a browser.
 
 ### 3.12 Product showcase PPT
 
-A masked, Galaxy A55–framed product deck lives at **`docs/showcase/Muffin_Showcase.pptx`** (12 slides: title, promise, Home, drill-downs, themes, Planner, Ledger, Monthly, privacy/polish, architecture, stack, credits).
+A masked, Galaxy A55â€“framed product deck lives at **`docs/showcase/Muffin_Showcase.pptx`** (12 slides: title, promise, Home, drill-downs, themes, Planner, Ledger, Monthly, privacy/polish, architecture, stack, credits).
 
-Screenshots are captured from the **local running app** at CSS viewport **360×780** with **`deviceScaleFactor: 3`** (PNG size **1080×2340**), with amounts masked via the header eye control.
+Screenshots are captured from the **local running app** at CSS viewport **360×780** with **`deviceScaleFactor: 3`** (PNG size **1080×2340**), with amounts masked via the gear menu **Mask** control.
 
 | Script | Purpose |
 | --- | --- |
-| `scripts/capture-showcase.mjs` | Playwright walkthrough → `docs/showcase/screens/*.png` |
+| `scripts/capture-showcase.mjs` | Playwright walkthrough â†’ `docs/showcase/screens/*.png` |
 | `scripts/build-showcase-ppt.mjs` | Embeds those PNGs into `Muffin_Showcase.pptx` via pptxgenjs |
 
 **Regenerate (requires `npm run dev` / Netlify Dev on `:8888`):**
@@ -657,17 +665,18 @@ node scripts/capture-showcase.mjs http://localhost:8888
 ## 4. Analysis & Developer Notes
 
 - **Quick dev commands:**
-  - `npm install` — install dependencies
-  - `npm run dev` — run Netlify Dev (Vite + functions)
-  - `npm run build` — TypeScript build then Vite production build
-  - `npm run preview` — preview the production build locally
-  - `npm run showcase` — capture Galaxy A55 screenshots (masked) and rebuild `docs/showcase/Muffin_Showcase.pptx`
-  - `npm run showcase:capture` / `npm run showcase:ppt` — run capture or PPT build alone
+  - `npm install` â€” install dependencies
+  - `npm run dev` â€” run Netlify Dev (Vite + functions)
+  - `npm run build` â€” TypeScript build then Vite production build
+  - `npm run preview` â€” preview the production build locally
+  - `npm run showcase` â€” capture Galaxy A55 screenshots (masked) and rebuild `docs/showcase/Muffin_Showcase.pptx`
+  - `npm run showcase:capture` / `npm run showcase:ppt` â€” run capture or PPT build alone
 
 - **Project layout (key folders):**
-  - `src/` — React + TypeScript app (`main.tsx`, `App.tsx`, views and components)
-  - `src/config.ts` — starting balances and currency configuration
-  - `netlify/functions/` — serverless functions that read/write Google Sheets (`transactions.js`, `health.js`)
+  - `src/` â€” React + TypeScript app (`main.tsx`, `App.tsx`, views and components)
+  - `src/config.ts` — currency helpers + Recipe defaults / `muffinRecipe` localStorage store
+  - `netlify/functions/` — serverless auth, sheet link/create/unlink, transactions, health
+  - `netlify/lib/` — shared env, session, Blobs user store, Sheets bootstrap helpers
   - `scripts/` — showcase capture (`capture-showcase.mjs`) and PPT builder (`build-showcase-ppt.mjs`)
   - `docs/showcase/` — product showcase deck + regenerated screen PNGs
   - `public/` — static assets and icons
@@ -677,8 +686,9 @@ node scripts/capture-showcase.mjs http://localhost:8888
 
 - **Build & runtime notes:**
   - The `build` script runs `tsc -b` (TypeScript project references) then `vite build`.
-  - Netlify Functions require these environment variables: `GOOGLE_SPREADSHEET_ID`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`.
-  - Local development uses `netlify dev` so the functions are available at `/.netlify/functions/*` while testing.
+  - Netlify Functions require these environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`.
+  - Production redirect for this site: `https://muffin-ledger.netlify.app/.netlify/functions/auth-callback`.
+  - Local development uses `netlify dev` so the functions are available at `/.netlify/functions/*` while testing; local `.env` must use the localhost redirect URI.
   - Showcase capture expects the app reachable (usually `http://localhost:8888`) with sheet data loading; amounts are masked in every shot.
   - There are no automated tests or linters configured in this repo currently.
 
@@ -696,10 +706,11 @@ node scripts/capture-showcase.mjs http://localhost:8888
 
 ## 5. Credits
 
-- **Vibe Coded by Rahul Gouri, 2026** (also shown in-app via the header About / **i** button).
+- **Vibe Coded by Rahul Gouri, 2026** (also shown in-app via gear → **About**).
 - Built as a cozy personal finance PWA using React, Vite, Tailwind (six muffin theme tokens), Framer Motion, Lucide, Syne/DM Sans, react-select, and Netlify Functions.
+- Live site: [https://muffin-ledger.netlify.app/](https://muffin-ledger.netlify.app/).
 - Product showcase deck: `docs/showcase/Muffin_Showcase.pptx` (regenerate with `npm run showcase`).
 - Google Sheets used as a lightweight, human-editable data backend, accessed via the Google Sheets API over OAuth 2.0.
 - Legacy vanilla implementation (CSV-publish based) retained under `legacy/` for reference.
 
-If you publish your own fork, keep your `GOOGLE_CLIENT_SECRET` / `GOOGLE_REFRESH_TOKEN` and other credentials private, and avoid committing personal financial CSVs with real data.
+If you publish your own fork, keep your `GOOGLE_CLIENT_SECRET` / `SESSION_SECRET` and other credentials private, and avoid committing personal financial CSVs with real data.
