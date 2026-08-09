@@ -284,8 +284,7 @@ Each end user signs in with **their own** Google account. The app uses a shared 
 On the same OAuth Web client, under **Authorized redirect URIs**, add:
 
 - Local Netlify Dev: `http://localhost:8888/.netlify/functions/auth-callback`
-- Production (this project): `https://muffin-ledger.netlify.app/.netlify/functions/auth-callback`
-- Other forks: `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback`
+- Production: `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback`
 
 These must match `GOOGLE_REDIRECT_URI` exactly (including `http` vs `https`).
 
@@ -341,7 +340,7 @@ Until you add the OAuth app credentials, users cannot sign in or sync sheets.
 | --- | --- |
 | `GOOGLE_CLIENT_ID` | OAuth Client ID from Section 2.3 |
 | `GOOGLE_CLIENT_SECRET` | OAuth Client Secret from Section 2.3 |
-| `GOOGLE_REDIRECT_URI` | `https://muffin-ledger.netlify.app/.netlify/functions/auth-callback` (or your site URL; must match the OAuth client redirect URI) |
+| `GOOGLE_REDIRECT_URI` | `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback` (must match the OAuth client redirect URI) |
 | `SESSION_SECRET` | Long random string (e.g. `openssl rand -hex 32`) |
 
 5. Remove legacy single-user vars if present: `GOOGLE_SPREADSHEET_ID`, `GOOGLE_REFRESH_TOKEN`.
@@ -350,7 +349,7 @@ Until you add the OAuth app credentials, users cannot sign in or sync sheets.
 
 While the OAuth consent screen is in **Testing**, add each Google account as a test user.
 
-**Local vs production redirect:** keep `GOOGLE_REDIRECT_URI=http://localhost:8888/.netlify/functions/auth-callback` in your local `.env` for `npm run dev`. Use the `https://muffin-ledger.netlify.app/...` value only in Netlify Production (and matching Google OAuth redirect URIs).
+**Local vs production redirect:** keep `GOOGLE_REDIRECT_URI=http://localhost:8888/.netlify/functions/auth-callback` in your local `.env` for `npm run dev`. Use your live site’s `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback` value only in Netlify Production (and matching Google OAuth redirect URIs).
 
 ### 2.8 Optional: run locally
 
@@ -396,7 +395,7 @@ Optional code defaults (used when Recipe has never been saved) and currency live
 | Symptom | Likely fix |
 | --- | --- |
 | Warning that the sheet couldn't load | Check all four required env vars (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`); confirm the signed-in Google account still has access to the spreadsheet |
-| Sign-in redirect / OAuth error | Redirect URI in Google Cloud, Netlify `GOOGLE_REDIRECT_URI`, and the live site URL must match exactly (prod: `https://muffin-ledger.netlify.app/.netlify/functions/auth-callback`) |
+| Sign-in redirect / OAuth error | Redirect URI in Google Cloud, Netlify `GOOGLE_REDIRECT_URI`, and the live site URL must match exactly (prod: `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback`) |
 | Numbers stuck at starting balances only | Env vars missing, deploy not triggered after adding them, or sheet not linked yet — also check Recipe opening balance / investments |
 | "Sheet tab X was not found" error | Confirm tabs are named exactly `Income`, `Expense`, `Investment` (case-sensitive, no extra spaces) |
 | Some months missing | Dates invalid or Amount cells not plain numbers |
@@ -687,7 +686,7 @@ node scripts/capture-showcase.mjs http://localhost:8888
 - **Build & runtime notes:**
   - The `build` script runs `tsc -b` (TypeScript project references) then `vite build`.
   - Netlify Functions require these environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`.
-  - Production redirect for this site: `https://muffin-ledger.netlify.app/.netlify/functions/auth-callback`.
+  - Production redirect: `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback`.
   - Local development uses `netlify dev` so the functions are available at `/.netlify/functions/*` while testing; local `.env` must use the localhost redirect URI.
   - Showcase capture expects the app reachable (usually `http://localhost:8888`) with sheet data loading; amounts are masked in every shot.
   - There are no automated tests or linters configured in this repo currently.

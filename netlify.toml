@@ -3,6 +3,10 @@
   publish = "dist"
   functions = "netlify/functions"
 
+# Redirect URIs are public (visible in the browser during OAuth); omit from secret scan.
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "GOOGLE_REDIRECT_URI"
+
 [functions]
   node_bundler = "esbuild"
 
