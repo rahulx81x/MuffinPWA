@@ -287,6 +287,37 @@ body {
     box-shadow: var(--shadow-glow);
   }
 
+  .nav-tab-indicator {
+    border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+    background: linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--color-primary-muted) 78%, transparent) 0%,
+      color-mix(in srgb, var(--color-primary) 70%, transparent) 100%
+    );
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.22),
+      inset 0 6px 14px rgba(0, 0, 0, 0.14),
+      inset 0 -1px 0 color-mix(in srgb, var(--color-on-primary) 22%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, transparent),
+      0 0 18px rgba(var(--accent-rgb), 0.22);
+    backdrop-filter: blur(14px) saturate(1.25);
+    -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  }
+
+  .nav-tab-indicator::before {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.14) 0%,
+      transparent 42%,
+      color-mix(in srgb, var(--color-on-primary) 10%, transparent) 100%
+    );
+  }
+
   .field-cozy {
     @apply w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text outline-none disabled:opacity-60;
   }

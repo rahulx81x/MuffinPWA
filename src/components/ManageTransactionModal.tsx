@@ -16,6 +16,10 @@ import {
   NetlifySessionExpiredError,
   updateTransaction,
 } from '../lib/api';
+import {
+  evaluateAmountExpression,
+  looksLikeAmountExpression,
+} from '../lib/evaluateAmount';
 import { useTheme } from '../hooks/useTheme';
 import { backdropVariants, popoverVariants, springSoft } from '../lib/motion';
 import type {
@@ -236,6 +240,12 @@ export function ManageTransactionModal({
     );
   }, [investmentType, typeOptions]);
 
+  const amountPreview = useMemo(() => {
+    if (!looksLikeAmountExpression(amountText)) return null;
+    const result = evaluateAmountExpression(amountText);
+    return result.ok ? result.value : null;
+  }, [amountText]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -261,12 +271,30 @@ export function ManageTransactionModal({
     }
   }, [open, mode, transaction]);
 
+  function resolveAmountField(): number | null {
+    const result = evaluateAmountExpression(amountText);
+    if (!result.ok || result.value <= 0) return null;
+    return result.value;
+  }
+
+  function handleAmountBlur() {
+    if (!looksLikeAmountExpression(amountText)) return;
+    const result = evaluateAmountExpression(amountText);
+    if (result.ok) {
+      setAmountText(String(result.value));
+    }
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!open) return;
-    const amount = parseFloat(amountText);
-    if (!category.trim() || Number.isNaN(amount) || amount <= 0) {
-      setError('Enter a valid category and amount.');
+    const amount = resolveAmountField();
+    if (!category.trim() || amount == null) {
+      setError(
+        looksLikeAmountExpression(amountText)
+          ? 'Enter a valid category and amount expression (e.g. 1200+350-50).'
+          : 'Enter a valid category and amount.'
+      );
       return;
     }
 
@@ -414,17 +442,29 @@ export function ManageTransactionModal({
             <label className="block">
               <span className={labelClass}>Amount</span>
               <input
-                type="number"
+                type="text"
                 required
-                min="0"
-                step="0.01"
-                inputMode="decimal"
-                placeholder="0"
+                inputMode="text"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="0 or 1200+350"
                 value={amountText}
                 disabled={saving}
                 onChange={(e) => setAmountText(e.target.value)}
+                onBlur={handleAmountBlur}
+                aria-describedby={
+                  amountPreview != null ? 'amount-expr-preview' : undefined
+                }
                 className={fieldClass}
               />
+              {amountPreview != null && (
+                <span
+                  id="amount-expr-preview"
+                  className="mt-1 block text-[11px] tabular-nums leading-snug text-text-muted"
+                >
+                  = {amountPreview}
+                </span>
+              )}
             </label>
           </div>
 

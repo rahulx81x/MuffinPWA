@@ -62,8 +62,9 @@ function NavTab({
       {active && (
         <motion.span
           layoutId="activeTab"
-          className="absolute inset-0 rounded-full bg-primary shadow-glow"
+          className="nav-tab-indicator absolute inset-0 rounded-full"
           transition={springLayout}
+          aria-hidden="true"
         />
       )}
       <span className="relative z-10 flex flex-col items-center gap-1">
