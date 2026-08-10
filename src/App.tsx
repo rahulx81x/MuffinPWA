@@ -12,6 +12,7 @@ import { PlannerView, toPlannerTransaction } from './components/PlannerView';
 import { PrivacyModal } from './components/PrivacyModal';
 import { RecipeModal } from './components/RecipeModal';
 import { SheetOnboarding } from './components/SheetOnboarding';
+import { ShimmerSkeleton } from './components/ShimmerSkeleton';
 import { TermsModal } from './components/TermsModal';
 import { SignInScreen } from './components/SignInScreen';
 import { SoftButton } from './components/SoftButton';
@@ -515,8 +516,8 @@ export default function App() {
 
   if (authBooting) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-canvas text-sm text-text-muted">
-        Baking your money muffins…
+      <div className="relative min-h-dvh bg-canvas py-8 text-text transition-theme">
+        <ShimmerSkeleton />
       </div>
     );
   }
@@ -535,7 +536,6 @@ export default function App() {
             spreadsheetId: info.spreadsheetId,
             spreadsheetTitle: info.spreadsheetTitle,
             needsSheet: false,
-            // Keep server flag — returning users who unlinked won't get the tour again.
             showTour: Boolean(auth.showTour),
           });
           setStatusMessage(
@@ -553,11 +553,15 @@ export default function App() {
       <motion.div
         key={themeId}
         aria-hidden="true"
-        initial={{ opacity: 0.28 }}
-        animate={{ opacity: 0 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none fixed inset-0 z-[5] bg-[radial-gradient(ellipse_at_top,rgba(var(--accent-rgb),0.18),transparent_60%)]"
-      />
+        initial={{ opacity: 0.3, scale: 0.95 }}
+        animate={{ opacity: 0.8, scale: 1 }}
+        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+      >
+        <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -right-20 top-1/3 h-80 w-80 rounded-full bg-primary-muted/15 blur-3xl" />
+        <div className="absolute bottom-10 left-1/4 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+      </motion.div>
 
       <header className="sticky top-0 z-30 border-b border-border/70 bg-surface/80 backdrop-blur-xl safe-pt transition-theme">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2 sm:max-w-3xl lg:max-w-5xl">

@@ -510,19 +510,41 @@ export function ManageTransactionModal({
                       Frequent Categories (1-Tap)
                     </span>
                     <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                      {dynamicCategoryChips.map((chip) => (
-                        <button
-                          key={chip}
-                          type="button"
-                          onClick={() => {
-                            triggerHaptic();
-                            setCategory(chip);
-                          }}
-                          className="shrink-0 rounded-full border border-border/80 bg-canvas/80 px-2.5 py-1 text-[11px] font-semibold text-text-secondary transition active:scale-95 hover:border-primary/50 hover:text-text"
-                        >
-                          {chip}
-                        </button>
-                      ))}
+                      {dynamicCategoryChips.map((chip) => {
+                        const active = category.trim().toLowerCase() === chip.toLowerCase();
+                        const c = chip.toLowerCase();
+                        let colorStyle = 'border-border/80 bg-canvas/80 text-text-secondary hover:border-primary/50 hover:text-text';
+                        
+                        if (active) {
+                          colorStyle = 'border-primary bg-primary/20 text-primary shadow-warm-sm ring-1 ring-primary/40';
+                        } else if (c.includes('food') || c.includes('coffee') || c.includes('dine')) {
+                          colorStyle = 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20';
+                        } else if (c.includes('groc') || c.includes('shop') || c.includes('market')) {
+                          colorStyle = 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20';
+                        } else if (c.includes('fuel') || c.includes('travel') || c.includes('cab')) {
+                          colorStyle = 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20';
+                        } else if (c.includes('rent') || c.includes('bill') || c.includes('house')) {
+                          colorStyle = 'border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20';
+                        } else if (c.includes('sip') || c.includes('stock') || c.includes('invest') || c.includes('fund')) {
+                          colorStyle = 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20';
+                        } else if (c.includes('sal') || c.includes('bonus') || c.includes('income')) {
+                          colorStyle = 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20';
+                        }
+
+                        return (
+                          <button
+                            key={chip}
+                            type="button"
+                            onClick={() => {
+                              triggerHaptic();
+                              setCategory(chip);
+                            }}
+                            className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition active:scale-95 ${colorStyle}`}
+                          >
+                            {chip}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

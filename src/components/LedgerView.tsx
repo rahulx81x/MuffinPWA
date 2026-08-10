@@ -661,7 +661,11 @@ export function LedgerView({
                 </div>
 
                 {/* Grouped Transactions Card */}
-                <div className="cozy-card overflow-hidden divide-y divide-border/60 p-0">
+                <motion.div
+                  whileHover={{ y: -1 }}
+                  transition={springSoft}
+                  className="cozy-card overflow-hidden divide-y divide-border/60 p-0 shadow-warm-sm border-border/80"
+                >
                   {group.transactions.map((tx) => (
                     <div
                       key={tx.id}
@@ -713,7 +717,7 @@ export function LedgerView({
                       </div>
                     </div>
                   ))}
-                </div>
+                </motion.div>
               </div>
             ))}
           </div>

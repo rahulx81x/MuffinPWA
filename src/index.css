@@ -250,10 +250,10 @@ body {
   .cozy-card {
     border-radius: 1.25rem;
     border: 1px solid var(--color-border);
-    background-color: color-mix(
-      in srgb,
-      var(--color-surface-strong) 92%,
-      transparent
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-surface-strong) 95%, var(--color-primary) 5%) 0%,
+      color-mix(in srgb, var(--color-surface) 95%, var(--color-canvas) 5%) 100%
     );
     box-shadow: var(--shadow-warm-sm);
     backdrop-filter: blur(8px);

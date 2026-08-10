@@ -32,6 +32,15 @@ const toneClass: Record<KpiTone, string> = {
   hero: 'text-primary-foreground',
 };
 
+const glowClass: Record<KpiTone, string> = {
+  default: '',
+  success: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.15),transparent_65%)] before:pointer-events-none',
+  destructive: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(244,63,94,0.15),transparent_65%)] before:pointer-events-none',
+  teal: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(217,119,6,0.15),transparent_65%)] before:pointer-events-none',
+  violet: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(168,85,247,0.15),transparent_65%)] before:pointer-events-none',
+  hero: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.22),transparent_70%)] before:pointer-events-none',
+};
+
 function HintIcon({
   hint,
   hero,
@@ -68,8 +77,8 @@ export function KpiCard({
 }: KpiCardProps) {
   const isHero = tone === 'hero';
   const base = isHero
-    ? 'hero-card p-5'
-    : 'cozy-card border-border p-4';
+    ? `hero-card relative overflow-hidden p-5 ${glowClass[tone]}`
+    : `cozy-card relative overflow-hidden border-border p-4 ${glowClass[tone]}`;
 
   const content = (
     <>

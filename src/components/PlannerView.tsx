@@ -300,12 +300,12 @@ function Stat({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900 ${className}`}
+      className={`cozy-card p-3.5 border-border ${className}`}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
         {label}
       </p>
-      <p className={`mt-1 text-lg font-bold tabular-nums ${tone}`}>{value}</p>
+      <p className={`mt-1 font-display text-xl font-bold tabular-nums ${tone}`}>{value}</p>
     </div>
   );
 }
