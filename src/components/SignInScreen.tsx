@@ -42,6 +42,26 @@ export function SignInScreen({ authError }: SignInScreenProps) {
         <p className="mt-4 text-xs text-text-muted">
           Free Google account required. Your sheet stays in your Drive.
         </p>
+        <p className="mt-6 text-[11px] leading-normal text-text-muted">
+          By signing in, you agree to Muffin’s{' '}
+          <a
+            href="/terms.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-primary hover:underline"
+          >
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a
+            href="/privacy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-primary hover:underline"
+          >
+            Privacy Policy
+          </a>.
+        </p>
       </div>
     </div>
   );

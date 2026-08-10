@@ -71,7 +71,7 @@ export function evaluateAmountExpression(raw: string): EvaluateAmountResult {
     return Number.isFinite(n) ? n : null;
   }
 
-  // factor → number | '(' expr ')' | unary '-' factor | unary '+' factor
+  // factor → number | '(' expr ')' | unary '-' factor | unary '+' factor | number '%'
   function parseFactor(): number | null {
     const ch = peek();
     if (ch === '+' || ch === '-') {
@@ -87,7 +87,12 @@ export function evaluateAmountExpression(raw: string): EvaluateAmountResult {
       consume();
       return v;
     }
-    return parseNumber();
+    let n = parseNumber();
+    if (n !== null && peek() === '%') {
+      consume();
+      n = n / 100;
+    }
+    return n;
   }
 
   // power → factor ('^' factor)*  (right-associative)

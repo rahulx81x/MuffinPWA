@@ -1,4 +1,4 @@
-﻿# Muffin
+# Muffin
 
 A personal finance Progressive Web App (**Muffin**) that turns a Google Sheet into a live dashboard. Track income, expenses, and investments in three familiar spreadsheet tabs; a Netlify-hosted React app connects to that workbook via the Google Sheets API, computes savings and net-worth metrics, and presents them in a warm, mobile-first UI you can install on your phone â€” and edit right from the app.
 
@@ -139,13 +139,18 @@ Currency display defaults to **â‚¹** with Indian digit grouping (e.g. â‚�
 
 Also included:
 
-- **Google Sign-In (multi-user)** — each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token
-- **Six muffin themes** — 3 light (Classic, Blueberry, Pistachio Matcha) and 3 dark (Double Chocolate, Red Velvet, Salted Caramel), with CSS design tokens + themed chart palettes
-- **Header settings (gear)** — one menu for Mask, Theme, About, Recipe (configuration), Download App (PWA install), and Log out
-- **Recipe** — view/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in Netlify Blobs for the signed-in user; local cache for snappy UI)
-- **First-run tour** — short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again
-- **Cozy motion** — soft spring micro-interactions, sliding tab highlight, page transitions, and animated sheet/modals (Framer Motion)
-- Compact branded sticky header (muffin icon + wordmark) + full-width floating bottom nav aligned with cards
+- **Independent Developer Identity** — Muffin is an independently developed personal software project created by Rahul Gouri, NOT an enterprise organization or business entity.
+- **Legal Compliance & Privacy** — Public [Privacy Policy](public/privacy.html) (`/privacy`) and [Terms of Service](public/terms.html) (`/terms`) adhering to official [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy) Limited Use requirements. Contact support: `rahulgouri072@gmail.com`.
+- **Interactive Touch Charts** — Tappable Donut/Pie slices with stroke expansion & glow, crosshair guidelines on trend graphs, pulsing active aura rings, and Month-over-Month (MoM) delta calculation cards.
+- **Date-Grouped Fintech Timeline Ledger** — Grouped timeline headers ("Today", "Yesterday", "Mon, 10 Aug 2026") with daily totals, category-colored icon badges (`ArrowUpRight`, `Utensils`, `Coffee`, `ShoppingBag`, `Zap`), unclipped `createPortal` Action Sheet menu, and View Transaction Details modal.
+- **1-Tap Dynamic Category Chips & Calculator Math** — Auto-extracted top 8 frequent category chips, decimal input mode for phone keypads, micro-haptics (`navigator.vibrate(8)`), and safe math expression evaluator supporting BODMAS arithmetic and `%` percentage calculations (e.g. `1000 * 18%` → `180` for tax/GST).
+- **6 Premium Visual Upgrades** — Ambient FinTech radial aura glows on KPI cards, Shimmer Skeleton Card Loaders (`ShimmerSkeleton.tsx`), pastel category chip pills, ambient motion mesh gradient background blobs, 135° card background gradients (`cozy-card`) unified across all tabs (Home, Ledger, Monthly, Planner), and tactile card press physics.
+- **32-Bit RGBA Transparent PNG Icons** — App icons (`icon_192.png` and `icon_512.png`) with 100% alpha transparency for phone home screens and dark mode.
+- **Six muffin themes** — 3 light (Classic, Blueberry, Pistachio Matcha) and 3 dark (Double Chocolate, Red Velvet, Salted Caramel), with CSS design tokens + themed chart palettes.
+- **Google Sign-In (multi-user)** — Each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token.
+- **Header settings (gear)** — One menu for Mask, Theme, About, Privacy Policy, Terms of Service, Recipe (configuration), Download App (PWA install), and Log out.
+- **Recipe** — View/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in Netlify Blobs for the signed-in user; local cache for snappy UI).
+- **First-run tour** — Short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again.
 
 ### 1.6 Everyday data flow
 
@@ -165,6 +170,8 @@ Also included:
 | Per-user sheet link + Recipe + tour flag | Netlify Blobs (`muffin-users`, keyed by Google user id) |
 | Signed-in session | httpOnly cookie (encrypted refresh token) |
 | Recipe local cache | Browser `localStorage` (`muffinRecipe`) — hydrated from Blobs on sign-in |
+| Legal pages & redirects | Static `public/privacy.html`, `public/terms.html`, and `public/_redirects` |
+| Developer support contact | `rahulgouri072@gmail.com` |
 | Currency display | `src/config.ts` (`CURRENCY`) |
 | Planner "what if" rows | Browser `localStorage` (`plannerTransactions`) |
 | Selected muffin theme | Browser `localStorage` (`muffinTheme`) |
@@ -173,8 +180,8 @@ Also included:
 
 ### 1.8 Limitations
 
-- Google Cloud OAuth consent in **Testing** only allows listed test users until you complete free verification for broader public use.
-- Not a bank aggregator â€” you enter transactions yourself (sheet or in-app forms).
+- Muffin is an independently developed software project created by Rahul Gouri; Google OAuth verification is completed/pending for public production use.
+- Not a bank aggregator — you enter transactions yourself (sheet or in-app forms).
 - Read and write always travel together for the signed-in Google account.
 - The three tabs (`Income`, `Expense`, `Investment`) are fixed by the server; a single combined tab with a `Type` column is not read by the current backend.
 - The Planner does not sync across devices or back into Sheets.
@@ -436,7 +443,7 @@ Optional code defaults (used when no Recipe exists yet) and currency live in `sr
 | Data source | **Google Sheets** | Human-editable ledger / "database" (three tabs: Income, Expense, Investment) |
 | Source control | **GitHub** | Repo hosting; Netlify build trigger on push |
 | Tooling | **npm**, **Node.js**, **TypeScript ~5.7** | Install, typecheck (`tsc -b`), scripts |
-| Showcase (dev) | **Playwright** + **pptxgenjs** | Galaxy A55 screenshots + `Muffin_Showcase.pptx` generator |
+| AI Agent | **Antigravity** | Autonomous agentic coding assistant designed by Google DeepMind |
 | AI IDE | **Cursor** | Agent/IDE-assisted implementation and docs |
 | AI assist | **GitHub Copilot** | Inline pair-programming during development |
 
@@ -646,8 +653,9 @@ From `netlify.toml`:
 
 This codebase was developed with AI-assisted tooling in the loop:
 
-- **Cursor** â€” agent-driven refactors (vanilla PWA â†’ React/Vite, CSV-publish â†’ OAuth Sheets API), feature work, and documentation
-- **GitHub Copilot** â€” inline completions while editing components and libs
+- **Antigravity** — autonomous agentic coding assistant designed by Google DeepMind (end-to-end full-stack feature architecture, refactoring, legal compliance, responsive web design, and interactive guides)
+- **Cursor** — agent-driven refactors (vanilla PWA → React/Vite, CSV-publish → OAuth Sheets API), feature work, and documentation
+- **GitHub Copilot** — inline completions while editing components and libs
 
 These are **development aids**, not runtime dependencies. The production site only needs Node (build time), Netlify, and a browser.
 

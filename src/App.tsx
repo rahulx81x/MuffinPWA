@@ -8,13 +8,16 @@ import { HomeView } from './components/HomeView';
 import { LedgerView } from './components/LedgerView';
 import { ManageTransactionModal } from './components/ManageTransactionModal';
 import { MonthlyView } from './components/MonthlyView';
-import { MuffinIcon } from './components/MuffinIcon';
 import { PlannerView, toPlannerTransaction } from './components/PlannerView';
+import { PrivacyModal } from './components/PrivacyModal';
 import { RecipeModal } from './components/RecipeModal';
 import { SheetOnboarding } from './components/SheetOnboarding';
+import { ShimmerSkeleton } from './components/ShimmerSkeleton';
+import { TermsModal } from './components/TermsModal';
 import { SignInScreen } from './components/SignInScreen';
 import { SoftButton } from './components/SoftButton';
 import { TourModal } from './components/TourModal';
+import { UserGuideModal } from './components/UserGuideModal';
 import { useRecipeConfig } from './hooks/useRecipeConfig';
 import { useTheme } from './hooks/useTheme';
 import {
@@ -147,6 +150,9 @@ export default function App() {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [mutating, setMutating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const needsSheet = Boolean(auth && auth.needsSheet);
   const ready = Boolean(auth && !auth.needsSheet);
@@ -442,7 +448,10 @@ export default function App() {
     setError(null);
 
     try {
-      await deleteTransaction(tx.tabName, tx.rowIndex);
+      await deleteTransaction(tx.tabName, tx.rowIndex, {
+        category: tx.category,
+        amount: tx.amount,
+      });
       await refreshTransactions();
       setStatusMessage('Transaction deleted.');
     } catch (err) {
@@ -460,7 +469,7 @@ export default function App() {
     }
   }
 
-  async function handleTourComplete() {
+  async function handleTourComplete(openRecipe: boolean = false) {
     try {
       await completeTour();
     } catch (err) {
@@ -468,6 +477,9 @@ export default function App() {
     }
     setTourOpen(false);
     setAuth((prev) => (prev ? { ...prev, showTour: false } : prev));
+    if (openRecipe) {
+      setRecipeOpen(true);
+    }
   }
 
   async function handleLogout() {
@@ -509,8 +521,8 @@ export default function App() {
 
   if (authBooting) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-canvas text-sm text-text-muted">
-        Baking your money muffins…
+      <div className="relative min-h-dvh bg-canvas py-8 text-text transition-theme">
+        <ShimmerSkeleton />
       </div>
     );
   }
@@ -529,7 +541,6 @@ export default function App() {
             spreadsheetId: info.spreadsheetId,
             spreadsheetTitle: info.spreadsheetTitle,
             needsSheet: false,
-            // Keep server flag — returning users who unlinked won't get the tour again.
             showTour: Boolean(auth.showTour),
           });
           setStatusMessage(
@@ -547,29 +558,27 @@ export default function App() {
       <motion.div
         key={themeId}
         aria-hidden="true"
-        initial={{ opacity: 0.28 }}
-        animate={{ opacity: 0 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none fixed inset-0 z-[5] bg-[radial-gradient(ellipse_at_top,rgba(var(--accent-rgb),0.18),transparent_60%)]"
-      />
+        initial={{ opacity: 0.3, scale: 0.95 }}
+        animate={{ opacity: 0.8, scale: 1 }}
+        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+      >
+        <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -right-20 top-1/3 h-80 w-80 rounded-full bg-primary-muted/15 blur-3xl" />
+        <div className="absolute bottom-10 left-1/4 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+      </motion.div>
 
       <header className="sticky top-0 z-30 border-b border-border/70 bg-surface/80 backdrop-blur-xl safe-pt transition-theme">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2 sm:max-w-3xl lg:max-w-5xl">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
-              <motion.div
-                whileHover={{ rotate: -6, scale: 1.05 }}
-                transition={springSoft}
-              >
-                <MuffinIcon className="h-6 w-6 shrink-0 text-primary" />
-              </motion.div>
               <h1 className="font-display text-[1.2rem] font-bold leading-none tracking-[-0.03em] text-text">
                 <span className="bg-gradient-to-r from-primary-muted to-primary bg-clip-text text-transparent">
                   Muffin
                 </span>
               </h1>
             </div>
-            <p className="mt-1 flex items-center gap-1.5 pl-[2.125rem] text-[9px] font-medium uppercase tracking-[0.14em] text-text-muted">
+            <p className="mt-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-[0.14em] text-text-muted">
               <span
                 className="inline-block h-1 w-1 shrink-0 rounded-full bg-primary shadow-[0_0_0_2px] shadow-primary/20"
                 aria-hidden="true"
@@ -588,12 +597,15 @@ export default function App() {
             buttonClassName={headerBtnClass}
             onAbout={() => setAboutOpen(true)}
             onRecipe={() => setRecipeOpen(true)}
+            onGuide={() => setGuideOpen(true)}
+            onPrivacy={() => setPrivacyOpen(true)}
+            onTerms={() => setTermsOpen(true)}
             onLogout={() => void handleLogout()}
           />
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-lg px-4 pt-3 main-bottom-pad">
+      <main className="relative z-10 mx-auto max-w-lg px-4 pt-3 main-bottom-pad sm:max-w-3xl lg:max-w-5xl">
         <AnimatePresence mode="wait">
           {error && (
             <motion.div
@@ -690,7 +702,19 @@ export default function App() {
         onAdd={openAddModal}
         showAdd={!loading}
       />
-      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <AboutModal
+        open={aboutOpen}
+        onClose={() => setAboutOpen(false)}
+        onPrivacy={() => setPrivacyOpen(true)}
+        onTerms={() => setTermsOpen(true)}
+      />
+      <PrivacyModal open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
+      <UserGuideModal
+        isOpen={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onReplayTour={() => setTourOpen(true)}
+      />
       <TourModal open={tourOpen} onComplete={handleTourComplete} />
       <RecipeModal
         open={recipeOpen}
@@ -703,6 +727,7 @@ export default function App() {
         open={manageOpen}
         mode={manageMode}
         transaction={editingTx}
+        transactions={sheetTransactions}
         investmentTypeOptions={investmentTypeOptions}
         onClose={() => setManageOpen(false)}
         onSuccess={handleManageSuccess}

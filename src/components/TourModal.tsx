@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
-  ChevronLeft,
   ChevronRight,
   LayoutDashboard,
   Sparkles,
@@ -19,7 +18,7 @@ import { MuffinIcon } from './MuffinIcon';
 
 interface TourModalProps {
   open: boolean;
-  onComplete: () => void | Promise<void>;
+  onComplete: (openRecipe?: boolean) => void | Promise<void>;
 }
 
 const STEPS = [
@@ -39,9 +38,9 @@ const STEPS = [
   },
   {
     id: 'recipe',
-    eyebrow: 'Recipe',
+    eyebrow: 'Recipe Setup',
     title: 'Set your starting balances',
-    body: 'Open gear → Recipe to add your opening cash balance and initial investments (FD, mutual funds, and more). These seed net worth before sheet transactions and sync to your account.',
+    body: 'Add your initial liquid cash balance and starting investments (FDs, mutual funds, etc.). These seed net worth before sheet transactions and sync across your account.',
     Icon: BookOpen,
   },
 ] as const;
@@ -58,11 +57,11 @@ export function TourModal({ open, onComplete }: TourModalProps) {
     }
   }, [open]);
 
-  async function finish() {
+  async function finish(openRecipe: boolean = false) {
     if (busy) return;
     setBusy(true);
     try {
-      await onComplete();
+      await onComplete(openRecipe);
     } finally {
       setBusy(false);
     }
@@ -86,7 +85,7 @@ export function TourModal({ open, onComplete }: TourModalProps) {
             className="absolute inset-0 bg-black/55"
             aria-label="Skip tour"
             disabled={busy}
-            onClick={() => void finish()}
+            onClick={() => void finish(false)}
           />
 
           <motion.div
@@ -106,7 +105,7 @@ export function TourModal({ open, onComplete }: TourModalProps) {
                   <MuffinIcon className="h-9 w-9 text-primary" />
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
-                      Quick tour
+                      Setup tour
                     </p>
                     <p className="text-xs text-text-secondary">
                       Step {step + 1} of {STEPS.length}
@@ -115,7 +114,7 @@ export function TourModal({ open, onComplete }: TourModalProps) {
                 </div>
                 <SoftButton
                   type="button"
-                  onClick={() => void finish()}
+                  onClick={() => void finish(false)}
                   disabled={busy}
                   className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas/90 text-text-secondary shadow-warm-sm disabled:opacity-60"
                   aria-label="Skip tour"
@@ -168,18 +167,23 @@ export function TourModal({ open, onComplete }: TourModalProps) {
                 {step > 0 ? (
                   <SoftButton
                     type="button"
-                    onClick={() => setStep((s) => Math.max(0, s - 1))}
+                    onClick={() => {
+                      if (isLast) {
+                        void finish(false);
+                      } else {
+                        setStep((s) => Math.max(0, s - 1));
+                      }
+                    }}
                     disabled={busy}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary disabled:opacity-60"
-                    aria-label="Previous step"
+                    className="rounded-xl border border-border bg-canvas px-3 py-2.5 text-xs font-medium text-text-secondary disabled:opacity-60"
                     glow={false}
                   >
-                    <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+                    {isLast ? 'Skip Setup' : 'Back'}
                   </SoftButton>
                 ) : (
                   <SoftButton
                     type="button"
-                    onClick={() => void finish()}
+                    onClick={() => void finish(false)}
                     disabled={busy}
                     className="rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm font-medium text-text-secondary disabled:opacity-60"
                     glow={false}
@@ -192,7 +196,7 @@ export function TourModal({ open, onComplete }: TourModalProps) {
                   type="button"
                   onClick={() => {
                     if (isLast) {
-                      void finish();
+                      void finish(true);
                       return;
                     }
                     setStep((s) => Math.min(STEPS.length - 1, s + 1));
@@ -200,7 +204,7 @@ export function TourModal({ open, onComplete }: TourModalProps) {
                   disabled={busy}
                   className="ml-auto inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow disabled:opacity-60"
                 >
-                  {busy ? 'Saving…' : isLast ? 'Got it' : 'Next'}
+                  {busy ? 'Saving…' : isLast ? 'Set Up Recipe Balances 🍳' : 'Next'}
                   {!busy && !isLast ? (
                     <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
                   ) : null}

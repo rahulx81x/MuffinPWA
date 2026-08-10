@@ -38,6 +38,16 @@ function TabIcon({ id, active }: { id: AppTab; active: boolean }) {
   return <ListTodo className={className} strokeWidth={stroke} />;
 }
 
+function triggerHaptic() {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(8);
+    } catch {
+      // ignore
+    }
+  }
+}
+
 function NavTab({
   id,
   label,
@@ -52,7 +62,10 @@ function NavTab({
   return (
     <motion.button
       type="button"
-      onClick={() => onSelect(id)}
+      onClick={() => {
+        triggerHaptic();
+        onSelect(id);
+      }}
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.96 }}
       transition={springSoft}
@@ -89,12 +102,12 @@ export function FloatingNav({
 }: FloatingNavProps) {
   return (
     <nav
-      className="pointer-events-none fixed inset-x-0 bottom-3 z-40 mb-safe sm:bottom-4"
+      className="pointer-events-none fixed inset-x-0 bottom-3 z-40 mb-safe sm:bottom-5"
       aria-label="Primary"
     >
-      <div className="mx-auto max-w-lg px-4">
+      <div className="mx-auto max-w-lg px-4 sm:max-w-xl">
         <LayoutGroup id="muffin-nav">
-          <div className="pointer-events-auto flex w-full items-center gap-1 rounded-full border border-border/80 bg-canvas/80 p-2 shadow-warm backdrop-blur-xl transition-theme sm:gap-1.5 sm:p-2.5">
+          <div className="pointer-events-auto flex w-full items-center gap-1 rounded-full border border-border/70 bg-surface/85 p-2 shadow-elevate backdrop-blur-2xl transition-theme sm:gap-1.5 sm:p-2.5">
             {leftTabs.map((tab) => (
               <NavTab
                 key={tab.id}
@@ -108,15 +121,18 @@ export function FloatingNav({
             {showAdd && onAdd && (
               <motion.button
                 type="button"
-                onClick={onAdd}
-                whileHover={{ scale: 1.06 }}
-                whileTap={{ scale: 0.94 }}
+                onClick={() => {
+                  triggerHaptic();
+                  onAdd();
+                }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
                 transition={springSoft}
-                className="soft-glow mx-0.5 inline-flex h-12 w-12 shrink-0 items-center justify-center self-center rounded-full bg-gradient-to-br from-primary-muted to-primary text-primary-foreground shadow-warm outline-none ring-4 ring-canvas focus-visible:ring-2 focus-visible:ring-primary sm:mx-1"
+                className="soft-glow pulse-glow-btn mx-1 inline-flex h-12 w-12 shrink-0 items-center justify-center self-center rounded-full bg-gradient-to-br from-primary-muted via-primary to-primary text-primary-foreground shadow-glow outline-none ring-4 ring-canvas/90 focus-visible:ring-2 focus-visible:ring-primary sm:mx-1.5"
                 aria-label="Add transaction"
                 title="Add transaction"
               >
-                <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden="true" />
+                <Plus className="h-6 w-6" strokeWidth={2.8} aria-hidden="true" />
               </motion.button>
             )}
 

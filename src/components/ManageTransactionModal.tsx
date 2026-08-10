@@ -34,10 +34,22 @@ interface ManageTransactionModalProps {
   open: boolean;
   mode: 'add' | 'edit';
   transaction?: Transaction | null;
+  /** Sheet transactions to derive top category chips. */
+  transactions?: Transaction[];
   /** Existing investment-type labels from sheet transactions. */
   investmentTypeOptions?: string[];
   onClose: () => void;
   onSuccess: () => Promise<void> | void;
+}
+
+function triggerHaptic() {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(8);
+    } catch {
+      // Ignore vibration errors
+    }
+  }
 }
 
 type InvestmentTypeOption = {
@@ -86,34 +98,7 @@ function buildRowData(
   };
 }
 
-function readThemeVar(name: string, fallback: string): string {
-  if (typeof document === 'undefined') return fallback;
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-  return value || fallback;
-}
-
-function buildSelectStyles(
-  themeId: string
-): StylesConfig<InvestmentTypeOption, false> {
-  // themeId dependency forces rebuild when the palette changes.
-  void themeId;
-
-  const border = readThemeVar('--color-border', '#e5d3b3');
-  const borderFocus = readThemeVar('--color-primary', '#d97706');
-  const surface = readThemeVar('--color-surface-strong', '#fffaf5');
-  const menuBg = readThemeVar('--color-surface-strong', '#fffaf5');
-  const text = readThemeVar('--color-text', '#3d2314');
-  const muted = readThemeVar('--color-text-secondary', '#7c5a43');
-  const optionHover = readThemeVar('--color-surface', '#f3e8dc');
-  const optionSelected = readThemeVar('--color-primary', '#d97706');
-  const onPrimary = readThemeVar('--color-on-primary', '#fffaf5');
-  const shadow = readThemeVar(
-    '--shadow-warm',
-    '0 8px 24px rgba(61,35,20,0.12)'
-  );
-
+function buildSelectStyles(): StylesConfig<InvestmentTypeOption, false> {
   return {
     control: (
       base: CSSObjectWithLabel,
@@ -122,10 +107,10 @@ function buildSelectStyles(
       ...base,
       minHeight: 42,
       borderRadius: 12,
-      borderColor: state.isFocused ? borderFocus : border,
-      backgroundColor: surface,
-      boxShadow: state.isFocused ? `0 0 0 1px ${borderFocus}` : 'none',
-      '&:hover': { borderColor: borderFocus },
+      borderColor: state.isFocused ? 'var(--color-primary)' : 'var(--color-border)',
+      backgroundColor: 'var(--color-surface-strong)',
+      boxShadow: state.isFocused ? '0 0 0 1px var(--color-primary)' : 'none',
+      '&:hover': { borderColor: 'var(--color-primary)' },
     }),
     valueContainer: (base: CSSObjectWithLabel) => ({
       ...base,
@@ -133,25 +118,25 @@ function buildSelectStyles(
     }),
     input: (base: CSSObjectWithLabel) => ({
       ...base,
-      color: text,
+      color: 'var(--color-text)',
       margin: 0,
       padding: 0,
     }),
     singleValue: (base: CSSObjectWithLabel) => ({
       ...base,
-      color: text,
+      color: 'var(--color-text)',
     }),
     placeholder: (base: CSSObjectWithLabel) => ({
       ...base,
-      color: muted,
+      color: 'var(--color-text-secondary)',
     }),
     menu: (base: CSSObjectWithLabel) => ({
       ...base,
       borderRadius: 12,
       overflow: 'hidden',
-      backgroundColor: menuBg,
-      border: `1px solid ${border}`,
-      boxShadow: shadow,
+      backgroundColor: 'var(--color-surface-strong)',
+      border: '1px solid var(--color-border)',
+      boxShadow: 'var(--shadow-warm)',
       zIndex: 60,
     }),
     menuList: (base: CSSObjectWithLabel) => ({
@@ -166,30 +151,30 @@ function buildSelectStyles(
       ...base,
       borderRadius: 8,
       backgroundColor: state.isSelected
-        ? optionSelected
+        ? 'var(--color-primary)'
         : state.isFocused
-          ? optionHover
+          ? 'var(--color-surface)'
           : 'transparent',
-      color: state.isSelected ? onPrimary : text,
+      color: state.isSelected ? 'var(--color-on-primary)' : 'var(--color-text)',
       cursor: 'pointer',
       fontSize: 14,
     }),
     dropdownIndicator: (base: CSSObjectWithLabel) => ({
       ...base,
-      color: muted,
+      color: 'var(--color-text-secondary)',
       padding: 8,
-      '&:hover': { color: text },
+      '&:hover': { color: 'var(--color-text)' },
     }),
     clearIndicator: (base: CSSObjectWithLabel) => ({
       ...base,
-      color: muted,
+      color: 'var(--color-text-secondary)',
       padding: 8,
-      '&:hover': { color: text },
+      '&:hover': { color: 'var(--color-text)' },
     }),
     indicatorSeparator: () => ({ display: 'none' }),
     noOptionsMessage: (base: CSSObjectWithLabel) => ({
       ...base,
-      color: muted,
+      color: 'var(--color-text-secondary)',
       fontSize: 13,
     }),
   };
@@ -199,6 +184,7 @@ export function ManageTransactionModal({
   open,
   mode,
   transaction,
+  transactions = [],
   investmentTypeOptions = [],
   onClose,
   onSuccess,
@@ -214,6 +200,21 @@ export function ManageTransactionModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const dynamicCategoryChips = useMemo(() => {
+    if (!transactions || !transactions.length) return [];
+    const counts: Record<string, number> = {};
+    for (const tx of transactions) {
+      if (tx.type !== type) continue;
+      const cat = tx.category?.trim();
+      if (!cat) continue;
+      counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat]) => cat)
+      .slice(0, 8);
+  }, [transactions, type]);
+
   const typeOptions = useMemo<InvestmentTypeOption[]>(() => {
     const seen = new Set<string>();
     const ordered: InvestmentTypeOption[] = [];
@@ -228,7 +229,7 @@ export function ManageTransactionModal({
     return ordered.sort((a, b) => a.label.localeCompare(b.label));
   }, [investmentTypeOptions]);
 
-  const selectStyles = useMemo(() => buildSelectStyles(themeId), [themeId]);
+  const selectStyles = useMemo(() => buildSelectStyles(), []);
 
   const selectedOption = useMemo(() => {
     const trimmed = investmentType.trim();
@@ -323,9 +324,15 @@ export function ManageTransactionModal({
         await createTransaction(tabName, rowData);
       } else if (transaction?.tabName != null && transaction.rowIndex != null) {
         if (transaction.tabName === tabName) {
-          await updateTransaction(tabName, transaction.rowIndex, rowData);
+          await updateTransaction(tabName, transaction.rowIndex, rowData, {
+            category: transaction.category,
+            amount: transaction.amount,
+          });
         } else {
-          await deleteTransaction(transaction.tabName, transaction.rowIndex);
+          await deleteTransaction(transaction.tabName, transaction.rowIndex, {
+            category: transaction.category,
+            amount: transaction.amount,
+          });
           await createTransaction(tabName, rowData);
         }
       } else {
@@ -374,8 +381,10 @@ export function ManageTransactionModal({
             animate="animate"
             exit="exit"
             transition={springSoft}
-            className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
+            className="relative z-10 w-full max-w-sm rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:rounded-2xl"
           >
+            <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80" />
+
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
@@ -389,7 +398,10 @@ export function ManageTransactionModal({
                 </h2>
               </div>
               <SoftButton
-                onClick={onClose}
+                onClick={() => {
+                  triggerHaptic();
+                  onClose();
+                }}
                 disabled={saving}
                 className={closeBtnClass}
                 aria-label="Close"
@@ -398,80 +410,151 @@ export function ManageTransactionModal({
               </SoftButton>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className={labelClass}>Date</span>
-              <input
-                type="date"
-                required
-                value={date}
-                disabled={saving}
-                onChange={(e) => setDate(e.target.value)}
-                className={fieldClass}
-              />
-            </label>
-            <label className="block">
-              <span className={labelClass}>Type</span>
-              <select
-                value={type}
-                disabled={saving}
-                onChange={(e) => setType(e.target.value as TransactionType)}
-                className={fieldClass}
-              >
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-                <option value="investment">Investment</option>
-              </select>
-            </label>
-          </div>
+            <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
+              <div>
+                <span className={labelClass}>Transaction Type</span>
+                <div className="relative flex rounded-xl border border-border/80 bg-canvas/80 p-1">
+                  {(
+                    [
+                      { id: 'expense', label: 'Expense' },
+                      { id: 'income', label: 'Income' },
+                      { id: 'investment', label: 'Investment' },
+                    ] as const
+                  ).map((item) => {
+                    const active = type === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          triggerHaptic();
+                          setType(item.id);
+                        }}
+                        disabled={saving}
+                        className={`relative flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors duration-200 ${
+                          active ? 'text-primary-foreground' : 'text-text-muted hover:text-text'
+                        }`}
+                      >
+                        {active && (
+                          <motion.span
+                            layoutId="txTypeActive"
+                            className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary-muted to-primary shadow-warm-sm"
+                            transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                          />
+                        )}
+                        <span className="relative z-10">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className={labelClass}>Category</span>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Rent"
-                value={category}
-                disabled={saving}
-                onChange={(e) => setCategory(e.target.value)}
-                className={fieldClass}
-              />
-            </label>
-            <label className="block">
-              <span className={labelClass}>Amount</span>
-              <input
-                type="text"
-                required
-                inputMode="text"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="0 or 1200+350"
-                value={amountText}
-                disabled={saving}
-                onChange={(e) => setAmountText(e.target.value)}
-                onBlur={handleAmountBlur}
-                aria-describedby={
-                  amountPreview != null ? 'amount-expr-preview' : undefined
-                }
-                className={fieldClass}
-              />
-              {amountPreview != null && (
-                <span
-                  id="amount-expr-preview"
-                  className="mt-1 block text-[11px] tabular-nums leading-snug text-text-muted"
-                >
-                  = {amountPreview}
-                </span>
-              )}
-            </label>
-          </div>
+              <label className="block">
+                <span className={labelClass}>Date</span>
+                <input
+                  type="date"
+                  required
+                  value={date}
+                  disabled={saving}
+                  onChange={(e) => setDate(e.target.value)}
+                  className={fieldClass}
+                />
+              </label>
+
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className={labelClass}>Category</span>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Rent, Salary"
+                      value={category}
+                      disabled={saving}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className={fieldClass}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className={labelClass}>Amount</span>
+                    <input
+                      type="text"
+                      required
+                      inputMode="decimal"
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="0 or 1200+350"
+                      value={amountText}
+                      disabled={saving}
+                      onChange={(e) => setAmountText(e.target.value)}
+                      onBlur={handleAmountBlur}
+                      aria-describedby={
+                        amountPreview != null ? 'amount-expr-preview' : undefined
+                      }
+                      className={fieldClass}
+                    />
+                    {amountPreview != null && (
+                      <span
+                        id="amount-expr-preview"
+                        className="mt-1 block text-[11px] font-semibold tabular-nums leading-snug text-primary"
+                      >
+                        = {amountPreview}
+                      </span>
+                    )}
+                  </label>
+                </div>
+
+                {dynamicCategoryChips.length > 0 && (
+                  <div>
+                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                      Frequent Categories (1-Tap)
+                    </span>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {dynamicCategoryChips.map((chip) => {
+                        const active = category.trim().toLowerCase() === chip.toLowerCase();
+                        const c = chip.toLowerCase();
+                        let colorStyle = 'border-border/80 bg-canvas/80 text-text-secondary hover:border-primary/50 hover:text-text';
+                        
+                        if (active) {
+                          colorStyle = 'border-primary bg-primary/20 text-primary shadow-warm-sm ring-1 ring-primary/40';
+                        } else if (c.includes('food') || c.includes('coffee') || c.includes('dine')) {
+                          colorStyle = 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20';
+                        } else if (c.includes('groc') || c.includes('shop') || c.includes('market')) {
+                          colorStyle = 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20';
+                        } else if (c.includes('fuel') || c.includes('travel') || c.includes('cab')) {
+                          colorStyle = 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20';
+                        } else if (c.includes('rent') || c.includes('bill') || c.includes('house')) {
+                          colorStyle = 'border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20';
+                        } else if (c.includes('sip') || c.includes('stock') || c.includes('invest') || c.includes('fund')) {
+                          colorStyle = 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20';
+                        } else if (c.includes('sal') || c.includes('bonus') || c.includes('income')) {
+                          colorStyle = 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20';
+                        }
+
+                        return (
+                          <button
+                            key={chip}
+                            type="button"
+                            onClick={() => {
+                              triggerHaptic();
+                              setCategory(chip);
+                            }}
+                            className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition active:scale-95 ${colorStyle}`}
+                          >
+                            {chip}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
 
           {type === 'investment' && (
             <div className="block">
               <span className={labelClass}>Investment Type</span>
               <CreatableSelect<InvestmentTypeOption, false>
+                key={themeId}
                 inputId="investment-type-select"
                 instanceId="investment-type-select"
                 isClearable

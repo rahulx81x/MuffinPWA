@@ -854,7 +854,7 @@ async function main() {
       fontFace: 'Calibri',
     });
     s.addText(
-      'Install as a PWA on your phone. Keep the sheet. Enjoy the muffins.\n\nBuilt with Cursor & GitHub Copilot.',
+      'Install as a PWA on your phone. Keep the sheet. Enjoy the muffins.\n\nBuilt with Antigravity, Cursor & GitHub Copilot.',
       {
         x: 0.8,
         y: 3.3,
