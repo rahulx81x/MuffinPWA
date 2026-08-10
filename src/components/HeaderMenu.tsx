@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  BookOpen,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -36,6 +37,7 @@ interface HeaderMenuProps {
   buttonClassName: string;
   onAbout: () => void;
   onRecipe: () => void;
+  onGuide?: () => void;
   onPrivacy?: () => void;
   onTerms?: () => void;
   onLogout: () => void;
@@ -67,6 +69,7 @@ export function HeaderMenu({
   buttonClassName,
   onAbout,
   onRecipe,
+  onGuide,
   onPrivacy,
   onTerms,
   onLogout,
@@ -232,6 +235,23 @@ export function HeaderMenu({
                   >
                     <UtensilsCrossed className="h-4 w-4 shrink-0 text-text-secondary" />
                     <span className="min-w-0 flex-1">Recipe</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={itemClass}
+                    onClick={() => {
+                      closeMenu();
+                      if (onGuide) {
+                        onGuide();
+                      } else {
+                        window.open('/guide.html', '_blank');
+                      }
+                    }}
+                  >
+                    <BookOpen className="h-4 w-4 shrink-0 text-text-secondary" />
+                    <span className="min-w-0 flex-1">User Guide</span>
                   </button>
 
                   {onPrivacy && (

@@ -17,6 +17,7 @@ import { TermsModal } from './components/TermsModal';
 import { SignInScreen } from './components/SignInScreen';
 import { SoftButton } from './components/SoftButton';
 import { TourModal } from './components/TourModal';
+import { UserGuideModal } from './components/UserGuideModal';
 import { useRecipeConfig } from './hooks/useRecipeConfig';
 import { useTheme } from './hooks/useTheme';
 import {
@@ -151,6 +152,7 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const needsSheet = Boolean(auth && auth.needsSheet);
   const ready = Boolean(auth && !auth.needsSheet);
@@ -592,6 +594,7 @@ export default function App() {
             buttonClassName={headerBtnClass}
             onAbout={() => setAboutOpen(true)}
             onRecipe={() => setRecipeOpen(true)}
+            onGuide={() => setGuideOpen(true)}
             onPrivacy={() => setPrivacyOpen(true)}
             onTerms={() => setTermsOpen(true)}
             onLogout={() => void handleLogout()}
@@ -704,6 +707,11 @@ export default function App() {
       />
       <PrivacyModal open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
       <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
+      <UserGuideModal
+        isOpen={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onReplayTour={() => setTourOpen(true)}
+      />
       <TourModal open={tourOpen} onComplete={handleTourComplete} />
       <RecipeModal
         open={recipeOpen}

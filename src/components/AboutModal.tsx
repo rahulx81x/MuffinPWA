@@ -90,7 +90,17 @@ export function AboutModal({
               and GitHub Copilot.
             </p>
 
-            <div className="mt-4 flex items-center justify-center gap-4 border-t border-border/60 pt-3 text-xs">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-border/60 pt-3 text-xs">
+              <a
+                href="/guide.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onClose}
+                className="font-semibold text-primary hover:underline"
+              >
+                User Guide
+              </a>
+              <span className="text-text-muted">•</span>
               {onPrivacy && (
                 <button
                   type="button"

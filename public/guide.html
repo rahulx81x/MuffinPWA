@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive User Guide - Muffin PWA</title>
+  <style>
+    :root {
+      --bg: #faf6f0;
+      --text: #3d2314;
+      --muted: #7c5a43;
+      --card: #ffffff;
+      --border: #e5d3b3;
+      --primary: #d97706;
+      --primary-rgb: 217, 119, 6;
+      --accent: #10b981;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #18120c;
+        --text: #f5ebe0;
+        --muted: #b89b88;
+        --card: #241b13;
+        --border: #3d2c1e;
+        --primary: #f59e0b;
+        --primary-rgb: 245, 158, 11;
+        --accent: #34d399;
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(var(--primary-rgb), 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 {
+      font-size: 1.25rem;
+      margin: 0;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    header a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .container {
+      max-width: 860px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.15) 0%, rgba(var(--primary-rgb), 0.05) 100%);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .hero-banner h2 {
+      margin-top: 0;
+      color: var(--primary);
+      font-size: 1.8rem;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-bottom: 24px;
+      padding-bottom: 4px;
+    }
+    .tab-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 18px;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+    }
+    .tab-content {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .accordion {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .accordion-header {
+      background: rgba(var(--primary-rgb), 0.05);
+      padding: 14px 18px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    .accordion-header:hover {
+      background: rgba(var(--primary-rgb), 0.1);
+    }
+    .accordion-content {
+      display: none;
+      padding: 16px 18px;
+      border-top: 1px solid var(--border);
+      font-size: 0.92rem;
+    }
+    .accordion.open .accordion-content {
+      display: block;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: rgba(var(--primary-rgb), 0.15);
+      color: var(--primary);
+    }
+    code {
+      background: rgba(var(--primary-rgb), 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.88rem;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .feature-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      background: rgba(var(--primary-rgb), 0.03);
+    }
+    .feature-card h4 {
+      margin-top: 0;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🧁 Muffin PWA — User Guide</h1>
+    <a href="/">Open App →</a>
+  </header>
+
+  <div class="container">
+    <div class="hero-banner">
+      <h2>Welcome to Muffin</h2>
+      <p>Your cozy personal finance dashboard powered by Google Sheets and fast offline PWA capabilities.</p>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="showTab('quickstart')">⚡ Quick Start</button>
+      <button class="tab-btn" onclick="showTab('sheets')">📊 Google Sheet Setup</button>
+      <button class="tab-btn" onclick="showTab('calculator')">🧮 Amount Calculator</button>
+      <button class="tab-btn" onclick="showTab('faq')">❓ FAQ & Help</button>
+    </div>
+
+    <!-- Quick Start Tab -->
+    <div id="quickstart" class="tab-content active">
+      <h3>⚡ Getting Started in 3 Steps</h3>
+      
+      <div class="accordion open" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>1. Sign In & Link Your Google Sheet</span>
+          <span>▼</span>
+        </div>
+        <div class="accordion-content">
+          Sign in using your Google Account, then paste an existing Google Sheet link/ID or tap <strong>"Create a sheet for me"</strong> to generate a pre-formatted 3-tab workbook automatically.
+        </div>
+      </div>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>2. Log Transactions via In-App Forms or Sheets</span>
+          <span>▼</span>
+        </div>
+        <div class="accordion-content">
+          Tap the <strong>+</strong> button in the bottom floating navigation bar to log an Income, Expense, or Investment entry. You can also edit your Google Sheet directly — Muffin re-fetches automatically.
+        </div>
+      </div>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>3. Explore FinTech Dashboard & Interactive Charts</span>
+          <span>▼</span>
+        </div>
+        <div class="accordion-content">
+          Tap any KPI tile on the Home tab to view interactive breakdown pie charts, monthly line trends with crosshairs, and Month-over-Month (MoM) delta callout cards.
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Sheet Setup Tab -->
+    <div id="sheets" class="tab-content">
+      <h3>📊 Google Sheet Structure</h3>
+      <p>Muffin requires a single Google Sheet workbook with <strong>3 fixed tabs</strong>:</p>
+      
+      <div class="grid-2">
+        <div class="feature-card">
+          <h4>1. <code>Income</code> Tab</h4>
+          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
+          <p><em>Example:</em> 2026-08-01, Salary, 75000, Monthly pay</p>
+        </div>
+        <div class="feature-card">
+          <h4>2. <code>Expense</code> Tab</h4>
+          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
+          <p><em>Example:</em> 2026-08-02, Groceries, 3500, Supermarket</p>
+        </div>
+        <div class="feature-card">
+          <h4>3. <code>Investment</code> Tab</h4>
+          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Investment Type</code>, <code>Comment</code></p>
+          <p><em>Example:</em> 2026-08-05, SIP, 10000, Mutual Fund, Nifty Index</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calculator Tab -->
+    <div id="calculator" class="tab-content">
+      <h3>🧮 Built-In Amount Expression Calculator</h3>
+      <p>Inside the Amount field of the Add/Edit modal, you can type expressions directly:</p>
+
+      <div class="grid-2">
+        <div class="feature-card">
+          <h4>➕ Standard Math</h4>
+          <p>Type <code>1200 + 350 * 2</code> → evaluates to <strong>1900</strong></p>
+        </div>
+        <div class="feature-card">
+          <h4>% Percentage & GST</h4>
+          <p>Type <code>1000 * 18%</code> → evaluates to <strong>180</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Tab -->
+    <div id="faq" class="tab-content">
+      <h3>❓ Frequently Asked Questions</h3>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Is my financial data shared with third parties?</span>
+          <span>▼</span>
+        </div>
+        <div class="accordion-content">
+          No. Your financial data stays inside your own personal Google Account spreadsheet. Muffin does not sell data, target ads, or train AI models.
+        </div>
+      </div>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>How is Provident Fund (PF) handled?</span>
+          <span>▼</span>
+        </div>
+        <div class="accordion-content">
+          Investment rows tagged as <code>Provident Fund</code>, <code>PF</code>, <code>EPF</code>, or <code>PPF</code> are tracked in a dedicated Provident Fund total and excluded from short-term liquid metrics.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(id) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+
+    function toggleAccordion(element) {
+      element.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
