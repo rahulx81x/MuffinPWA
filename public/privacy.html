@@ -2,145 +2,152 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Privacy Policy - Muffin PWA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #faf6f0;
+      color-scheme: light;
+      --bg: #faf5ef;
+      --surface: #f3e8dc;
+      --card: #fffaf5;
       --text: #3d2314;
-      --muted: #7c5a43;
-      --card: #ffffff;
+      --text-secondary: #7c5a43;
+      --text-muted: #8c6d53;
       --border: #e5d3b3;
       --primary: #d97706;
+      --primary-hover: #b45309;
+      --shadow-warm: 0 4px 20px rgba(61, 35, 20, 0.06);
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #18120c;
-        --text: #f5ebe0;
-        --muted: #b89b88;
-        --card: #241b13;
-        --border: #3d2c1e;
-        --primary: #f59e0b;
-      }
+    * {
+      box-sizing: border-box;
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
       background-color: var(--bg);
       color: var(--text);
-      line-height: 1.6;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      color: var(--text);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(250, 245, 239, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 {
+      font-size: 1.1rem;
       margin: 0;
-      padding: 24px 16px;
+      color: var(--primary);
+    }
+    header a {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.82rem;
     }
     .container {
-      max-width: 768px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 16px;
+    }
+    .card {
       background-color: var(--card);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 32px 24px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      padding: 24px 18px;
+      box-shadow: var(--shadow-warm);
     }
-    h1 {
-      font-size: 1.75rem;
+    @media (min-width: 640px) {
+      .card {
+        padding: 36px 30px;
+      }
+    }
+    h1.page-title {
       margin-top: 0;
+      font-size: 1.6rem;
       color: var(--primary);
     }
     h2 {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       margin-top: 24px;
       border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
+      padding-bottom: 6px;
     }
     p, li {
-      color: var(--text);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
     }
     .alert-box {
-      background-color: rgba(217, 119, 6, 0.1);
+      background: rgba(217, 119, 6, 0.08);
       border-left: 4px solid var(--primary);
       padding: 12px 16px;
       border-radius: 8px;
       margin: 16px 0;
-    }
-    a {
-      color: var(--primary);
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    footer {
-      margin-top: 32px;
-      text-align: center;
-      font-size: 0.85rem;
-      color: var(--muted);
+      font-size: 0.88rem;
     }
   </style>
 </head>
 <body>
+  <header>
+    <h1>🧁 Muffin Legal</h1>
+    <a href="/">← Back to App</a>
+  </header>
+
   <div class="container">
-    <h1>Privacy Policy for Muffin</h1>
-    <p><em>Last updated: August 10, 2026</em></p>
+    <div class="card">
+      <h1 class="page-title">Privacy Policy</h1>
+      <p><strong>Effective Date:</strong> August 10, 2026</p>
 
-    <p>
-      At <strong>Muffin</strong> ("the app"), an independently developed personal software project by Rahul Gouri ("the developer"), protecting your privacy is our highest priority. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our web application.
-    </p>
+      <p>Muffin is an independently developed personal software application created and maintained by <strong>Rahul Gouri</strong> ("the Developer"). This Privacy Policy explains how Muffin accesses, uses, stores, and protects user information when you connect your Google Account to the Muffin Progressive Web App.</p>
 
-    <h2>1. Information We Collect</h2>
-    <p>When you authenticate and interact with Muffin using your Google Account, we request access to limited data necessary to provide personal finance dashboard features:</p>
-    <ul>
-      <li><strong>Google Account Profile Information</strong>: Your email address and basic profile display name for user authentication.</li>
-      <li><strong>Google Sheets Data</strong>: Read and write access restricted strictly to the Google Sheets spreadsheet(s) you explicitly authorize for tracking your manual transactions, income, expenses, and investments.</li>
-    </ul>
+      <h2>1. Information We Access and Process</h2>
+      <p>Muffin requests access to your Google Account solely to enable core personal finance features:</p>
+      <ul>
+        <li><strong>Google Account Information:</strong> Your email address and basic profile identifier (used to create and identify your private session).</li>
+        <li><strong>Google Sheets Data:</strong> Read and write access to the specific Google Sheet workbook you connect to Muffin (to log Income, Expense, and Investment transactions).</li>
+      </ul>
 
-    <h2>2. How We Use Your Information</h2>
-    <p>We use the data accessed from your Google Account solely to:</p>
-    <ul>
-      <li>Display your live financial metrics (Net Worth, Income, Expenses, Investments, Provident Fund).</li>
-      <li>Sync manual transactions added or edited in Muffin directly to your personal Google Sheet.</li>
-      <li>Calculate monthly budget comparisons and scenario planner estimations locally on your device.</li>
-    </ul>
+      <div class="alert-box">
+        <strong>Google API Limited Use Disclosure:</strong> Muffin's use and transfer to any other app of information received from Google APIs will adhere to <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.
+      </div>
 
-    <div class="alert-box">
-      <h2>Google API Limited Use Disclosure</h2>
-      <p>
-        Muffin's use and transfer to any other app of information received from Google APIs will adhere to 
-        <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>, 
-        including the Limited Use requirements.
-      </p>
+      <h2>2. Data Storage & Privacy</h2>
+      <p>Your financial transaction records remain stored inside your personal Google Account spreadsheet in Google Drive. Muffin does not operate a central external database storing your bank statements, income, or transaction history. Recipe opening balances and linked spreadsheet IDs are saved to your user record in Netlify Blobs for multi-device sync.</p>
+
+      <h2>3. Data Sharing & Third Parties</h2>
+      <p>Muffin does not sell, rent, trade, or share user data with third-party advertisers, data brokers, or marketing partners. Data accessed from Google APIs is never used to train generalized AI or machine learning models.</p>
+
+      <h2>4. Developer Contact Information</h2>
+      <p>If you have any questions or privacy concerns regarding Muffin, please contact the developer directly:</p>
+      <p><strong>Developer:</strong> Rahul Gouri<br>
+      <strong>Support Email:</strong> <a href="mailto:rahulgouri072@gmail.com" style="color: var(--primary);">rahulgouri072@gmail.com</a></p>
     </div>
-
-    <h2>3. Data Protection & Sharing</h2>
-    <ul>
-      <li><strong>No Selling or Monetization</strong>: We do NOT sell, rent, trade, or commercialize your personal data or Google Sheets financial entries to any third party under any circumstances.</li>
-      <li><strong>No Advertising Usage</strong>: Your financial data and Google API information are never used for advertising, marketing, or promotional targeting.</li>
-      <li><strong>No AI Model Training</strong>: Your Google Sheets financial data is never used to train generalized artificial intelligence (AI) or machine learning models.</li>
-      <li><strong>Local & Transient Processing</strong>: Muffin does not maintain an external server database of your personal financial records. Your data resides securely within your own personal Google Account spreadsheet. Session access tokens are processed transiently over encrypted HTTPS connections.</li>
-    </ul>
-
-    <h2>4. Data Retention & Control</h2>
-    <p>
-      Because your financial transactions are stored directly in your personal Google Sheet, you maintain 100% control over your data at all times.
-    </p>
-    <p>
-      You may revoke Muffin's access to your Google Account at any time by visiting your 
-      <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">Google Account Permissions Settings</a>.
-    </p>
-
-    <h2>5. Security</h2>
-    <p>
-      We implement industry-standard security measures, including HTTPS encryption and secure OAuth 2.0 authorization protocols, to protect your interaction with Google API services.
-    </p>
-
-    <h2>6. Contact Us</h2>
-    <p>
-      If you have any questions or concerns regarding this Privacy Policy, please contact the developer directly at 
-      <a href="mailto:rahulgouri072@gmail.com">rahulgouri072@gmail.com</a>.
-    </p>
-
-    <footer>
-      &copy; 2026 Rahul Gouri. All rights reserved.
-    </footer>
   </div>
 </body>
 </html>

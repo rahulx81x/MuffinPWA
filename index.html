@@ -46,11 +46,7 @@
         if (!themes.hasOwnProperty(id)) {
           var legacy = localStorage.getItem('themeMode');
           if (legacy === 'dark') id = 'chocolate';
-          else if (legacy === 'light') id = 'classic';
-          else
-            id = window.matchMedia('(prefers-color-scheme: dark)').matches
-              ? 'chocolate'
-              : 'classic';
+          else id = 'classic';
         }
         document.documentElement.setAttribute('data-theme', id);
         document.documentElement.classList.toggle('dark', !!themes[id]);

@@ -176,10 +176,10 @@ export function RecipeModal({
                   id={titleId}
                   className="mt-1 font-display text-base font-bold text-text"
                 >
-                  Recipe
+                  Recipe Starting Balances
                 </h2>
                 <p className="mt-0.5 text-xs text-text-secondary">
-                  Starting balances synced to your account (all devices).
+                  Configure initial cash & investments synced to your account across all devices.
                 </p>
               </div>
               <SoftButton
@@ -189,6 +189,13 @@ export function RecipeModal({
               >
                 <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
               </SoftButton>
+            </div>
+
+            <div className="mt-3.5 rounded-2xl border border-primary/25 bg-primary/10 p-3 text-xs text-text">
+              <p className="font-semibold text-primary">🍳 Welcome to Recipe Setup!</p>
+              <p className="mt-0.5 text-[11px] text-text-secondary leading-snug">
+                Enter your starting liquid cash balance and initial investments below to seed your Net Worth dashboard.
+              </p>
             </div>
 
             <form onSubmit={handleSave} className="mt-4 space-y-4">

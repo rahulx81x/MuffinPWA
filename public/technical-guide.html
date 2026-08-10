@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Technical Guide - Muffin PWA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #faf5ef;
+      --surface: #f3e8dc;
+      --card: #fffaf5;
+      --card-muted: #f5eada;
+      --text: #3d2314;
+      --text-secondary: #7c5a43;
+      --text-muted: #8c6d53;
+      --border: #e5d3b3;
+      --primary: #d97706;
+      --primary-hover: #b45309;
+      --primary-rgb: 217, 119, 6;
+      --code-bg: #291d15;
+      --code-text: #f3e8dc;
+      --shadow-warm: 0 4px 20px rgba(61, 35, 20, 0.06);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: rgba(250, 245, 239, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    header h1 {
+      font-size: 1.1rem;
+      margin: 0;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-links a {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.82rem;
+      transition: background 0.2s ease;
+    }
+    .header-links a:hover {
+      background: var(--border);
+    }
+    .container {
+      width: 100%;
+      max-width: 860px;
+      margin: 20px auto;
+      padding: 0 16px;
+    }
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.12) 0%, rgba(var(--primary-rgb), 0.04) 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px 18px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-warm);
+    }
+    .hero-banner h2 {
+      margin: 0 0 6px 0;
+      color: var(--primary);
+      font-size: 1.5rem;
+    }
+    .hero-banner p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 6px;
+      margin-bottom: 20px;
+      scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar {
+      display: none;
+    }
+    .tab-btn {
+      flex-shrink: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.25);
+    }
+    .tab-content {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px 16px;
+      box-shadow: var(--shadow-warm);
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    @media (min-width: 640px) {
+      .grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .tab-content {
+        padding: 28px 24px;
+      }
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: var(--card-muted);
+    }
+    .card h4 {
+      margin: 0 0 6px 0;
+      color: var(--primary);
+      font-size: 0.95rem;
+    }
+    .card p {
+      margin: 0;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+    }
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background: rgba(var(--primary-rgb), 0.1);
+      color: var(--primary);
+      font-weight: 700;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 14px;
+      border-radius: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      max-width: 100%;
+      font-family: monospace;
+      font-size: 0.82rem;
+      margin-top: 14px;
+    }
+    code {
+      background: var(--surface);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🛠️ Muffin — Technical Guide</h1>
+    <div class="header-links">
+      <a href="/guide.html">User Guide</a>
+      <a href="/">Open App →</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="hero-banner">
+      <h2>Technical Solution & Architecture</h2>
+      <p>Developer specs, data flows, serverless API contracts, and runtime metrics engine documentation.</p>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="showTab(event, 'stack')">💻 Tech Stack</button>
+      <button class="tab-btn" onclick="showTab(event, 'flow')">🔄 Runtime Flow</button>
+      <button class="tab-btn" onclick="showTab(event, 'env')">🔑 Environment</button>
+      <button class="tab-btn" onclick="showTab(event, 'metrics')">🧮 Metrics</button>
+    </div>
+
+    <!-- Tech Stack Tab -->
+    <div id="stack" class="tab-content active">
+      <h3 style="margin-top: 0; color: var(--primary);">💻 Core Technology Stack</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Frontend Core</h4>
+          <p><strong>React 19 + TypeScript + Vite 6</strong></p>
+          <p style="margin-top: 4px;">Typed React SPA built with Vite for fast HMR dev server and optimized production bundles.</p>
+        </div>
+        <div class="card">
+          <h4>Styling & Animation</h4>
+          <p><strong>Tailwind CSS 3 + Framer Motion</strong></p>
+          <p style="margin-top: 4px;">6 muffin theme tokens (`data-theme`), soft spring micro-interactions, layout pills, and portaled sheets.</p>
+        </div>
+        <div class="card">
+          <h4>Backend Serverless</h4>
+          <p><strong>Netlify Functions + Netlify Blobs</strong></p>
+          <p style="margin-top: 4px;">Serverless Google Sheets API proxy keeping OAuth secrets secure; Blobs stores per-user sheet links & Recipe balances.</p>
+        </div>
+        <div class="card">
+          <h4>PWA Capabilities</h4>
+          <p><strong>Vite PWA + Workbox</strong></p>
+          <p style="margin-top: 4px;">Standalone PWA manifest, custom icons, and automatic service worker asset precaching.</p>
+        </div>
+        <div class="card">
+          <h4>AI & Agent Tooling</h4>
+          <p><strong>Antigravity, Cursor & GitHub Copilot</strong></p>
+          <p style="margin-top: 4px;">Autonomous agentic pair programming by Antigravity (Google DeepMind team), Cursor AI IDE, and Copilot.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Flow Tab -->
+    <div id="flow" class="tab-content">
+      <h3 style="margin-top: 0; color: var(--primary);">🔄 Runtime Architecture & Data Flow</h3>
+      <p style="font-size: 0.86rem; color: var(--text-secondary);">Data moves through a secure serverless proxy architecture:</p>
+      
+      <pre>
+1. React SPA (Browser)
+   └── GET /.netlify/functions/transactions
+       └── Netlify Function (Auth verification)
+           └── Google Sheets API (OAuth2Client)
+               └── Read/Write Income, Expense, Investment tabs
+
+2. Metric Engine (Client-Side)
+   └── buildFinancialMetrics(transactions)
+       ├── Calculates Net Worth, Liquid Savings & Investments
+       └── Isolate Provident Fund rows to dedicated More Details card
+
+3. Recipe & User Store
+   └── Netlify Blobs (store: muffin-users)
+       └── Encrypted httpOnly session cookie for OAuth refresh tokens
+      </pre>
+    </div>
+
+    <!-- Environment & Security Tab -->
+    <div id="env" class="tab-content">
+      <h3 style="margin-top: 0; color: var(--primary);">🔑 Required Environment Variables</h3>
+      <p style="font-size: 0.86rem; color: var(--text-secondary);">Configured in Netlify Site Settings / local <code>.env</code> file:</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Variable Name</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>GOOGLE_CLIENT_ID</code></td>
+              <td>Google OAuth Web Client ID from Google Cloud Console</td>
+            </tr>
+            <tr>
+              <td><code>GOOGLE_CLIENT_SECRET</code></td>
+              <td>Google OAuth Web Client Secret</td>
+            </tr>
+            <tr>
+              <td><code>GOOGLE_REDIRECT_URI</code></td>
+              <td>OAuth redirect URI (e.g. <code>https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback</code>)</td>
+            </tr>
+            <tr>
+              <td><code>SESSION_SECRET</code></td>
+              <td>Random secret string used for httpOnly session cookie encryption</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Metrics Engine Tab -->
+    <div id="metrics" class="tab-content">
+      <h3 style="margin-top: 0; color: var(--primary);">🧮 Metrics Engine Specifications</h3>
+      <p style="font-size: 0.86rem; color: var(--text-secondary);">Mathematical calculations implemented in <code>src/lib/metrics.ts</code>:</p>
+
+      <pre>
+investmentBalance = initialInvestments + SUM(countedInvestment)
+trackedLiquid     = SUM(income) - SUM(expense) - SUM(countedInvestment)
+liquidBalance     = openingBalance + trackedLiquid
+netWorth          = investmentBalance + liquidBalance
+providentFund     = SUM(PF / EPF / PPF rows) [Isolated on More Details]
+      </pre>
+    </div>
+  </div>
+
+  <script>
+    function showTab(event, id) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
+</body>
+</html>

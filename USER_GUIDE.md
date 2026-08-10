@@ -62,3 +62,4 @@ My Finances Workbook (Google Sheet)
 - **Developer Contact**: `rahulgouri072@gmail.com`
 - **Privacy Policy**: [public/privacy.html](public/privacy.html) (`/privacy`)
 - **Terms of Service**: [public/terms.html](public/terms.html) (`/terms`)
+- **Development Tooling**: Built by **Rahul Gouri** with **Antigravity** (Google DeepMind team), **Cursor**, and **GitHub Copilot**.

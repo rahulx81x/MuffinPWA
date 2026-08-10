@@ -86,8 +86,8 @@ export function AboutModal({
 
             <p className="mt-3 text-sm leading-relaxed text-text-secondary">
               Stack: React, TypeScript, Vite, Tailwind CSS, Framer Motion, Lucide,
-              Netlify Functions, Google Sheets, and Workbox PWA. Built with Cursor
-              and GitHub Copilot.
+              Netlify Functions, Google Sheets, and Workbox PWA. Built with Antigravity,
+              Cursor, and GitHub Copilot.
             </p>
 
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-border/60 pt-3 text-xs">

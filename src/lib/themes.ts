@@ -176,9 +176,7 @@ export function resolveInitialThemeId(): ThemeId {
   if (legacy === 'dark') return DEFAULT_DARK_THEME;
   if (legacy === 'light') return DEFAULT_LIGHT_THEME;
 
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? DEFAULT_DARK_THEME
-    : DEFAULT_LIGHT_THEME;
+  return DEFAULT_LIGHT_THEME;
 }
 
 export function applyThemeToDocument(themeId: ThemeId): void {

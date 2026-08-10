@@ -469,7 +469,7 @@ export default function App() {
     }
   }
 
-  async function handleTourComplete() {
+  async function handleTourComplete(openRecipe: boolean = false) {
     try {
       await completeTour();
     } catch (err) {
@@ -477,6 +477,9 @@ export default function App() {
     }
     setTourOpen(false);
     setAuth((prev) => (prev ? { ...prev, showTour: false } : prev));
+    if (openRecipe) {
+      setRecipeOpen(true);
+    }
   }
 
   async function handleLogout() {

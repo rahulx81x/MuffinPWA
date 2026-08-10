@@ -443,7 +443,7 @@ Optional code defaults (used when no Recipe exists yet) and currency live in `sr
 | Data source | **Google Sheets** | Human-editable ledger / "database" (three tabs: Income, Expense, Investment) |
 | Source control | **GitHub** | Repo hosting; Netlify build trigger on push |
 | Tooling | **npm**, **Node.js**, **TypeScript ~5.7** | Install, typecheck (`tsc -b`), scripts |
-| Showcase (dev) | **Playwright** + **pptxgenjs** | Galaxy A55 screenshots + `Muffin_Showcase.pptx` generator |
+| AI Agent | **Antigravity** | Autonomous agentic coding assistant designed by Google DeepMind |
 | AI IDE | **Cursor** | Agent/IDE-assisted implementation and docs |
 | AI assist | **GitHub Copilot** | Inline pair-programming during development |
 
@@ -653,8 +653,9 @@ From `netlify.toml`:
 
 This codebase was developed with AI-assisted tooling in the loop:
 
-- **Cursor** â€” agent-driven refactors (vanilla PWA â†’ React/Vite, CSV-publish â†’ OAuth Sheets API), feature work, and documentation
-- **GitHub Copilot** â€” inline completions while editing components and libs
+- **Antigravity** — autonomous agentic coding assistant designed by Google DeepMind (end-to-end full-stack feature architecture, refactoring, legal compliance, responsive web design, and interactive guides)
+- **Cursor** — agent-driven refactors (vanilla PWA → React/Vite, CSV-publish → OAuth Sheets API), feature work, and documentation
+- **GitHub Copilot** — inline completions while editing components and libs
 
 These are **development aids**, not runtime dependencies. The production site only needs Node (build time), Netlify, and a browser.
 
