@@ -44,6 +44,7 @@ const MODAL_KIND: Partial<Record<MetricKey, ModalKind>> = {
   investmentBreakup: 'pie',
   totalLiquid: 'line',
   netWorth: 'line',
+  avgMonthlySavings: 'line',
   currentMonthSavingsPct: 'line',
 };
 
@@ -54,16 +55,6 @@ function resolveListType(
   if (metricKey === 'currentMonthExpense') return 'expense';
   if (metricKey === 'currentMonthInvestment') return 'investment';
   return null;
-}
-
-function triggerHaptic() {
-  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-    try {
-      navigator.vibrate(8);
-    } catch {
-      // ignore
-    }
-  }
 }
 
 function PieChart({ data }: { data: Record<string, number> }) {
@@ -145,7 +136,6 @@ function PieChart({ data }: { data: Record<string, number> }) {
                   filter: isSelected ? `drop-shadow(0 0 6px ${color}80)` : 'none',
                 }}
                 onClick={() => {
-                  triggerHaptic();
                   setSelectedIndex(index);
                 }}
               />
@@ -174,7 +164,6 @@ function PieChart({ data }: { data: Record<string, number> }) {
               <button
                 type="button"
                 onClick={() => {
-                  triggerHaptic();
                   setSelectedIndex(index);
                 }}
                 className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-xs transition-colors duration-200 ${
@@ -419,11 +408,9 @@ function LineChart({
                   fill="transparent"
                   className="cursor-pointer"
                   onClick={() => {
-                    triggerHaptic();
                     setSelectedIndex(index);
                   }}
                   onTouchStart={() => {
-                    triggerHaptic();
                     setSelectedIndex(index);
                   }}
                 />
@@ -468,7 +455,9 @@ function buildClosingSeries(
     let value = 0;
     if (metricKey === 'totalLiquid') value = liquid;
     else if (metricKey === 'netWorth') value = liquid + investment;
-    else if (metricKey === 'currentMonthSavingsPct') {
+    else if (metricKey === 'avgMonthlySavings') {
+      value = month.investment + month.liquidSavings;
+    } else if (metricKey === 'currentMonthSavingsPct') {
       value = month.totalSavingsPct;
     }
 
@@ -493,9 +482,14 @@ function buildClosingSeries(
   }
 
   const latest = points[points.length - 1] ?? 0;
-  const footer = asPercent
+  let footer = asPercent
     ? `Latest month: ${latest.toFixed(1)}%`
     : `Latest close: ${formatCurrencyRaw(latest)}`;
+
+  if (metricKey === 'avgMonthlySavings' && points.length > 0 && !asPercent) {
+    const avg = points.reduce((sum, p) => sum + p, 0) / points.length;
+    footer = `Average: ${formatCurrencyRaw(avg)} · latest ${formatCurrencyRaw(latest)}`;
+  }
 
   return { points, labels, footer, asPercent };
 }
