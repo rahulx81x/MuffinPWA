@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Muffin PWA</title>
+  <style>
+    :root {
+      --bg: #faf6f0;
+      --text: #3d2314;
+      --muted: #7c5a43;
+      --card: #ffffff;
+      --border: #e5d3b3;
+      --primary: #d97706;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #18120c;
+        --text: #f5ebe0;
+        --muted: #b89b88;
+        --card: #241b13;
+        --border: #3d2c1e;
+        --primary: #f59e0b;
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 768px;
+      margin: 0 auto;
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    h1 {
+      font-size: 1.75rem;
+      margin-top: 0;
+      color: var(--primary);
+    }
+    h2 {
+      font-size: 1.25rem;
+      margin-top: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    p, li {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    .alert-box {
+      background-color: rgba(217, 119, 6, 0.1);
+      border-left: 4px solid var(--primary);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Privacy Policy for Muffin</h1>
+    <p><em>Last updated: August 10, 2026</em></p>
+
+    <p>
+      At <strong>Muffin</strong> ("the app"), an independently developed personal software project by Rahul Gouri ("the developer"), protecting your privacy is our highest priority. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our web application.
+    </p>
+
+    <h2>1. Information We Collect</h2>
+    <p>When you authenticate and interact with Muffin using your Google Account, we request access to limited data necessary to provide personal finance dashboard features:</p>
+    <ul>
+      <li><strong>Google Account Profile Information</strong>: Your email address and basic profile display name for user authentication.</li>
+      <li><strong>Google Sheets Data</strong>: Read and write access restricted strictly to the Google Sheets spreadsheet(s) you explicitly authorize for tracking your manual transactions, income, expenses, and investments.</li>
+    </ul>
+
+    <h2>2. How We Use Your Information</h2>
+    <p>We use the data accessed from your Google Account solely to:</p>
+    <ul>
+      <li>Display your live financial metrics (Net Worth, Income, Expenses, Investments, Provident Fund).</li>
+      <li>Sync manual transactions added or edited in Muffin directly to your personal Google Sheet.</li>
+      <li>Calculate monthly budget comparisons and scenario planner estimations locally on your device.</li>
+    </ul>
+
+    <div class="alert-box">
+      <h2>Google API Limited Use Disclosure</h2>
+      <p>
+        Muffin's use and transfer to any other app of information received from Google APIs will adhere to 
+        <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>, 
+        including the Limited Use requirements.
+      </p>
+    </div>
+
+    <h2>3. Data Protection & Sharing</h2>
+    <ul>
+      <li><strong>No Selling or Monetization</strong>: We do NOT sell, rent, trade, or commercialize your personal data or Google Sheets financial entries to any third party under any circumstances.</li>
+      <li><strong>No Advertising Usage</strong>: Your financial data and Google API information are never used for advertising, marketing, or promotional targeting.</li>
+      <li><strong>No AI Model Training</strong>: Your Google Sheets financial data is never used to train generalized artificial intelligence (AI) or machine learning models.</li>
+      <li><strong>Local & Transient Processing</strong>: Muffin does not maintain an external server database of your personal financial records. Your data resides securely within your own personal Google Account spreadsheet. Session access tokens are processed transiently over encrypted HTTPS connections.</li>
+    </ul>
+
+    <h2>4. Data Retention & Control</h2>
+    <p>
+      Because your financial transactions are stored directly in your personal Google Sheet, you maintain 100% control over your data at all times.
+    </p>
+    <p>
+      You may revoke Muffin's access to your Google Account at any time by visiting your 
+      <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">Google Account Permissions Settings</a>.
+    </p>
+
+    <h2>5. Security</h2>
+    <p>
+      We implement industry-standard security measures, including HTTPS encryption and secure OAuth 2.0 authorization protocols, to protect your interaction with Google API services.
+    </p>
+
+    <h2>6. Contact Us</h2>
+    <p>
+      If you have any questions or concerns regarding this Privacy Policy, please contact the developer directly at 
+      <a href="mailto:rahulgouri072@gmail.com">rahulgouri072@gmail.com</a>.
+    </p>
+
+    <footer>
+      &copy; 2026 Rahul Gouri. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>

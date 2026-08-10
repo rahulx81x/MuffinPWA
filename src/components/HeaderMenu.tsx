@@ -6,10 +6,12 @@ import {
   Download,
   Eye,
   EyeOff,
+  FileText,
   Info,
   LogOut,
   Palette,
   Settings2,
+  ShieldCheck,
   UtensilsCrossed,
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -34,6 +36,8 @@ interface HeaderMenuProps {
   buttonClassName: string;
   onAbout: () => void;
   onRecipe: () => void;
+  onPrivacy?: () => void;
+  onTerms?: () => void;
   onLogout: () => void;
 }
 
@@ -63,6 +67,8 @@ export function HeaderMenu({
   buttonClassName,
   onAbout,
   onRecipe,
+  onPrivacy,
+  onTerms,
   onLogout,
 }: HeaderMenuProps) {
   const [open, setOpen] = useState(false);
@@ -227,6 +233,36 @@ export function HeaderMenu({
                     <UtensilsCrossed className="h-4 w-4 shrink-0 text-text-secondary" />
                     <span className="min-w-0 flex-1">Recipe</span>
                   </button>
+
+                  {onPrivacy && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={itemClass}
+                      onClick={() => {
+                        closeMenu();
+                        onPrivacy();
+                      }}
+                    >
+                      <ShieldCheck className="h-4 w-4 shrink-0 text-text-secondary" />
+                      <span className="min-w-0 flex-1">Privacy Policy</span>
+                    </button>
+                  )}
+
+                  {onTerms && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={itemClass}
+                      onClick={() => {
+                        closeMenu();
+                        onTerms();
+                      }}
+                    >
+                      <FileText className="h-4 w-4 shrink-0 text-text-secondary" />
+                      <span className="min-w-0 flex-1">Terms of Service</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"

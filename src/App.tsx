@@ -8,10 +8,11 @@ import { HomeView } from './components/HomeView';
 import { LedgerView } from './components/LedgerView';
 import { ManageTransactionModal } from './components/ManageTransactionModal';
 import { MonthlyView } from './components/MonthlyView';
-import { MuffinIcon } from './components/MuffinIcon';
 import { PlannerView, toPlannerTransaction } from './components/PlannerView';
+import { PrivacyModal } from './components/PrivacyModal';
 import { RecipeModal } from './components/RecipeModal';
 import { SheetOnboarding } from './components/SheetOnboarding';
+import { TermsModal } from './components/TermsModal';
 import { SignInScreen } from './components/SignInScreen';
 import { SoftButton } from './components/SoftButton';
 import { TourModal } from './components/TourModal';
@@ -147,6 +148,8 @@ export default function App() {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [mutating, setMutating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const needsSheet = Boolean(auth && auth.needsSheet);
   const ready = Boolean(auth && !auth.needsSheet);
@@ -554,22 +557,16 @@ export default function App() {
       />
 
       <header className="sticky top-0 z-30 border-b border-border/70 bg-surface/80 backdrop-blur-xl safe-pt transition-theme">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2 sm:max-w-3xl lg:max-w-5xl">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
-              <motion.div
-                whileHover={{ rotate: -6, scale: 1.05 }}
-                transition={springSoft}
-              >
-                <MuffinIcon className="h-6 w-6 shrink-0 text-primary" />
-              </motion.div>
               <h1 className="font-display text-[1.2rem] font-bold leading-none tracking-[-0.03em] text-text">
                 <span className="bg-gradient-to-r from-primary-muted to-primary bg-clip-text text-transparent">
                   Muffin
                 </span>
               </h1>
             </div>
-            <p className="mt-1 flex items-center gap-1.5 pl-[2.125rem] text-[9px] font-medium uppercase tracking-[0.14em] text-text-muted">
+            <p className="mt-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-[0.14em] text-text-muted">
               <span
                 className="inline-block h-1 w-1 shrink-0 rounded-full bg-primary shadow-[0_0_0_2px] shadow-primary/20"
                 aria-hidden="true"
@@ -588,12 +585,14 @@ export default function App() {
             buttonClassName={headerBtnClass}
             onAbout={() => setAboutOpen(true)}
             onRecipe={() => setRecipeOpen(true)}
+            onPrivacy={() => setPrivacyOpen(true)}
+            onTerms={() => setTermsOpen(true)}
             onLogout={() => void handleLogout()}
           />
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-lg px-4 pt-3 main-bottom-pad">
+      <main className="relative z-10 mx-auto max-w-lg px-4 pt-3 main-bottom-pad sm:max-w-3xl lg:max-w-5xl">
         <AnimatePresence mode="wait">
           {error && (
             <motion.div
@@ -690,7 +689,14 @@ export default function App() {
         onAdd={openAddModal}
         showAdd={!loading}
       />
-      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <AboutModal
+        open={aboutOpen}
+        onClose={() => setAboutOpen(false)}
+        onPrivacy={() => setPrivacyOpen(true)}
+        onTerms={() => setTermsOpen(true)}
+      />
+      <PrivacyModal open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
       <TourModal open={tourOpen} onComplete={handleTourComplete} />
       <RecipeModal
         open={recipeOpen}
@@ -703,6 +709,7 @@ export default function App() {
         open={manageOpen}
         mode={manageMode}
         transaction={editingTx}
+        transactions={sheetTransactions}
         investmentTypeOptions={investmentTypeOptions}
         onClose={() => setManageOpen(false)}
         onSuccess={handleManageSuccess}

@@ -164,8 +164,9 @@ export function RecipeModal({
             animate="animate"
             exit="exit"
             transition={springSoft}
-            className="relative z-10 max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
+            className="relative z-10 max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:rounded-2xl"
           >
+            <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80" />
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-text-muted">

@@ -110,7 +110,7 @@ export function PlannerView({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
         <Stat label="Income" value={formatCurrency(income)} tone="text-emerald-600 dark:text-emerald-400" />
         <Stat label="Expenses" value={formatCurrency(expenses)} tone="text-rose-600 dark:text-rose-400" />
         <Stat label="Investment" value={formatCurrency(investment)} tone="text-violet-600 dark:text-violet-400" />
