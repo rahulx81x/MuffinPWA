@@ -38,16 +38,6 @@ function TabIcon({ id, active }: { id: AppTab; active: boolean }) {
   return <ListTodo className={className} strokeWidth={stroke} />;
 }
 
-function triggerHaptic() {
-  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-    try {
-      navigator.vibrate(8);
-    } catch {
-      // ignore
-    }
-  }
-}
-
 function NavTab({
   id,
   label,
@@ -63,7 +53,6 @@ function NavTab({
     <motion.button
       type="button"
       onClick={() => {
-        triggerHaptic();
         onSelect(id);
       }}
       whileHover={{ scale: 1.03 }}
@@ -122,7 +111,6 @@ export function FloatingNav({
               <motion.button
                 type="button"
                 onClick={() => {
-                  triggerHaptic();
                   onAdd();
                 }}
                 whileHover={{ scale: 1.08 }}

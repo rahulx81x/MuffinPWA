@@ -59,16 +59,6 @@ interface DateGroup {
   transactions: Transaction[];
 }
 
-function triggerHaptic() {
-  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-    try {
-      navigator.vibrate(8);
-    } catch {
-      // ignore
-    }
-  }
-}
-
 function amountClass(type: Transaction['type']): string {
   if (type === 'income') return 'text-emerald-600 dark:text-emerald-400';
   if (type === 'expense') return 'text-rose-600 dark:text-rose-400';
@@ -351,7 +341,6 @@ export function LedgerView({
   }, [typeFilter, dateMode, monthFilter, customRangeActive, fromDate, toDate]);
 
   function clearFilters() {
-    triggerHaptic();
     setTypeFilter('all');
     setDateMode('all');
     setMonthFilter('');
@@ -360,7 +349,6 @@ export function LedgerView({
   }
 
   function selectAllDates() {
-    triggerHaptic();
     setDateMode('all');
     setMonthFilter('');
     setFromDate('');
@@ -368,7 +356,6 @@ export function LedgerView({
   }
 
   function selectMonth(key: string) {
-    triggerHaptic();
     setDateMode('month');
     setMonthFilter(key);
     setFromDate('');
@@ -376,7 +363,6 @@ export function LedgerView({
   }
 
   function selectCustom() {
-    triggerHaptic();
     setDateMode('custom');
     setMonthFilter('');
   }
@@ -410,7 +396,6 @@ export function LedgerView({
               <button
                 type="button"
                 onClick={() => {
-                  triggerHaptic();
                   setQuery('');
                 }}
                 className="absolute right-2.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-text-muted transition active:scale-95 hover:bg-surface-muted/60"
@@ -438,7 +423,6 @@ export function LedgerView({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              triggerHaptic();
               setFiltersOpen((open) => !open);
             }}
             className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition active:scale-95 ${
@@ -526,7 +510,6 @@ export function LedgerView({
                       key={filter.id}
                       type="button"
                       onClick={() => {
-                        triggerHaptic();
                         setTypeFilter(filter.id);
                       }}
                       className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 ${
@@ -670,7 +653,6 @@ export function LedgerView({
                     <div
                       key={tx.id}
                       onClick={() => {
-                        triggerHaptic();
                         setViewingTx(tx);
                       }}
                       className="group flex cursor-pointer items-center justify-between gap-3 p-3.5 transition-colors hover:bg-surface-muted/30"
@@ -705,7 +687,6 @@ export function LedgerView({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            triggerHaptic();
                             setActiveMenuTx(tx);
                           }}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-text-muted transition active:scale-95 hover:bg-surface-muted/80 hover:text-text"
@@ -766,7 +747,6 @@ export function LedgerView({
                   <button
                     type="button"
                     onClick={() => {
-                      triggerHaptic();
                       const tx = activeMenuTx;
                       setActiveMenuTx(null);
                       setViewingTx(tx);
@@ -780,7 +760,6 @@ export function LedgerView({
                   <button
                     type="button"
                     onClick={() => {
-                      triggerHaptic();
                       const tx = activeMenuTx;
                       setActiveMenuTx(null);
                       onEdit(tx);
@@ -799,7 +778,6 @@ export function LedgerView({
                   <button
                     type="button"
                     onClick={() => {
-                      triggerHaptic();
                       const tx = activeMenuTx;
                       setActiveMenuTx(null);
                       onDelete(tx);
@@ -866,7 +844,6 @@ export function LedgerView({
                   </div>
                   <SoftButton
                     onClick={() => {
-                      triggerHaptic();
                       setViewingTx(null);
                     }}
                     className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
@@ -947,7 +924,6 @@ export function LedgerView({
                     <button
                       type="button"
                       onClick={() => {
-                        triggerHaptic();
                         const tx = viewingTx;
                         setViewingTx(null);
                         onEdit(tx);
@@ -965,7 +941,6 @@ export function LedgerView({
                     <button
                       type="button"
                       onClick={() => {
-                        triggerHaptic();
                         const tx = viewingTx;
                         setViewingTx(null);
                         onDelete(tx);

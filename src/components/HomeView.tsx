@@ -105,6 +105,15 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
         iconHint: 'chart',
         interactive: true,
       },
+      {
+        key: 'avgMonthlySavings',
+        label: 'Avg Monthly Net Savings',
+        value: formatCurrency(metrics.avgMonthlySavings),
+        tone: 'hero',
+        className: 'col-span-2 sm:col-span-3 md:col-span-2',
+        iconHint: 'chart',
+        interactive: true,
+      },
     ],
     [metrics, formatCurrency]
   );
@@ -154,12 +163,6 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
         label: 'Growth Since Start %',
         value: `${metrics.growthSinceStart >= 0 ? '+' : ''}${metrics.growthSinceStartPct.toFixed(1)}%`,
         tone: metrics.growthSinceStart >= 0 ? 'success' : 'destructive',
-      },
-      {
-        key: 'avgMonthlySavings',
-        label: 'Avg Monthly Net Savings',
-        value: formatCurrency(metrics.avgMonthlySavings),
-        tone: metrics.avgMonthlySavings >= 0 ? 'teal' : 'destructive',
       },
       {
         key: 'monthsTracked',
