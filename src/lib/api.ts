@@ -189,24 +189,26 @@ export async function createTransaction(
 export async function updateTransaction(
   tabName: SheetTabName,
   rowIndex: number,
-  rowData: SheetRowData
+  rowData: SheetRowData,
+  expectedRow?: { category?: string; amount?: number }
 ): Promise<void> {
   const response = await apiFetch(TRANSACTIONS, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tabName, rowIndex, rowData }),
+    body: JSON.stringify({ tabName, rowIndex, rowData, expectedRow }),
   });
   await assertOk(response);
 }
 
 export async function deleteTransaction(
   tabName: SheetTabName,
-  rowIndex: number
+  rowIndex: number,
+  expectedRow?: { category?: string; amount?: number }
 ): Promise<void> {
   const response = await apiFetch(TRANSACTIONS, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tabName, rowIndex }),
+    body: JSON.stringify({ tabName, rowIndex, expectedRow }),
   });
   await assertOk(response);
 }

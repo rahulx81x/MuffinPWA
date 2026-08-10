@@ -13,10 +13,20 @@ const TYPE_BY_TAB = {
 };
 
 function parseDate(raw) {
-  if (!raw) return new Date(NaN);
+  if (raw === null || raw === undefined || raw === '') return new Date(NaN);
+
+  // If raw is a numeric Google Sheets serial date number (e.g. 45000)
+  if (typeof raw === 'number' || (typeof raw === 'string' && /^\d{5}(\.\d+)?$/.test(raw.trim()))) {
+    const num = Number(raw);
+    const sheetsEpoch = new Date(Date.UTC(1899, 11, 30));
+    const millis = sheetsEpoch.getTime() + num * 86400000;
+    return new Date(millis);
+  }
+
   const str = String(raw).trim();
 
-  let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  // 1. ISO format: YYYY-MM-DD or YYYY/MM/DD
+  let m = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
   if (m) {
     return new Date(
       parseInt(m[1], 10),
@@ -25,15 +35,28 @@ function parseDate(raw) {
     );
   }
 
+  // 2. Text dates with month names (e.g. 10 Aug 2026, Aug 10, 2026)
+  const parsedTs = Date.parse(str);
+  if (!Number.isNaN(parsedTs)) {
+    const d = new Date(parsedTs);
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+
+  // 3. Numeric slash/dash format: DD/MM/YYYY or MM/DD/YYYY
   m = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (m) {
-    const day = parseInt(m[1], 10);
-    const month = parseInt(m[2], 10);
+    const first = parseInt(m[1], 10);
+    const second = parseInt(m[2], 10);
     const year = parseInt(m[3], 10);
-    if (month > 12 && day <= 12) {
-      return new Date(year, day - 1, month);
+
+    if (first > 12) {
+      return new Date(year, second - 1, first);
     }
-    return new Date(year, month - 1, day);
+    if (second > 12) {
+      return new Date(year, first - 1, second);
+    }
+    // Default to DD/MM/YYYY
+    return new Date(year, second - 1, first);
   }
 
   return new Date(str);
@@ -144,7 +167,7 @@ async function handlePost(doc, body) {
 }
 
 async function handlePut(doc, body) {
-  const { tabName, rowIndex, rowData } = body || {};
+  const { tabName, rowIndex, rowData, expectedRow } = body || {};
   if (!tabName || rowIndex === undefined || rowIndex === null || !rowData) {
     throw Object.assign(
       new Error('PUT requires tabName, rowIndex, and rowData.'),
@@ -166,17 +189,39 @@ async function handlePut(doc, body) {
 
   const sheet = getSheet(doc, tabName);
   const rows = await sheet.getRows();
-  if (index >= rows.length) {
+  if (index >= rows.length && !expectedRow) {
     throw Object.assign(new Error('Row not found.'), { statusCode: 404 });
   }
 
-  rows[index].assign(rowData);
-  await rows[index].save();
+  let targetRow = rows[index];
+  if (expectedRow && rows.length > 0) {
+    const expCat = String(expectedRow.category ?? '').trim();
+    const expAmt = String(expectedRow.amount ?? '').trim();
+    const curCat = targetRow ? String(targetRow.get('Category') ?? '').trim() : '';
+    const curAmt = targetRow ? String(targetRow.get('Amount') ?? '').trim() : '';
+
+    if (curCat !== expCat || curAmt !== expAmt) {
+      const found = rows.find((r) => {
+        return (
+          String(r.get('Category') ?? '').trim() === expCat &&
+          String(r.get('Amount') ?? '').trim() === expAmt
+        );
+      });
+      if (found) targetRow = found;
+    }
+  }
+
+  if (!targetRow) {
+    throw Object.assign(new Error('Row not found.'), { statusCode: 404 });
+  }
+
+  targetRow.assign(rowData);
+  await targetRow.save();
   return { ok: true };
 }
 
 async function handleDelete(doc, body) {
-  const { tabName, rowIndex } = body || {};
+  const { tabName, rowIndex, expectedRow } = body || {};
   if (!tabName || rowIndex === undefined || rowIndex === null) {
     throw Object.assign(new Error('DELETE requires tabName and rowIndex.'), {
       statusCode: 400,
@@ -197,11 +242,33 @@ async function handleDelete(doc, body) {
 
   const sheet = getSheet(doc, tabName);
   const rows = await sheet.getRows();
-  if (index >= rows.length) {
+  if (index >= rows.length && !expectedRow) {
     throw Object.assign(new Error('Row not found.'), { statusCode: 404 });
   }
 
-  await rows[index].delete();
+  let targetRow = rows[index];
+  if (expectedRow && rows.length > 0) {
+    const expCat = String(expectedRow.category ?? '').trim();
+    const expAmt = String(expectedRow.amount ?? '').trim();
+    const curCat = targetRow ? String(targetRow.get('Category') ?? '').trim() : '';
+    const curAmt = targetRow ? String(targetRow.get('Amount') ?? '').trim() : '';
+
+    if (curCat !== expCat || curAmt !== expAmt) {
+      const found = rows.find((r) => {
+        return (
+          String(r.get('Category') ?? '').trim() === expCat &&
+          String(r.get('Amount') ?? '').trim() === expAmt
+        );
+      });
+      if (found) targetRow = found;
+    }
+  }
+
+  if (!targetRow) {
+    throw Object.assign(new Error('Row not found.'), { statusCode: 404 });
+  }
+
+  await targetRow.delete();
   return { ok: true };
 }
 

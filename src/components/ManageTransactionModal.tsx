@@ -324,9 +324,15 @@ export function ManageTransactionModal({
         await createTransaction(tabName, rowData);
       } else if (transaction?.tabName != null && transaction.rowIndex != null) {
         if (transaction.tabName === tabName) {
-          await updateTransaction(tabName, transaction.rowIndex, rowData);
+          await updateTransaction(tabName, transaction.rowIndex, rowData, {
+            category: transaction.category,
+            amount: transaction.amount,
+          });
         } else {
-          await deleteTransaction(transaction.tabName, transaction.rowIndex);
+          await deleteTransaction(transaction.tabName, transaction.rowIndex, {
+            category: transaction.category,
+            amount: transaction.amount,
+          });
           await createTransaction(tabName, rowData);
         }
       } else {

@@ -445,7 +445,10 @@ export default function App() {
     setError(null);
 
     try {
-      await deleteTransaction(tx.tabName, tx.rowIndex);
+      await deleteTransaction(tx.tabName, tx.rowIndex, {
+        category: tx.category,
+        amount: tx.amount,
+      });
       await refreshTransactions();
       setStatusMessage('Transaction deleted.');
     } catch (err) {
