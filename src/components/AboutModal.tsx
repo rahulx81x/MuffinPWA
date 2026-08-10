@@ -11,9 +11,16 @@ import { SoftButton } from './SoftButton';
 interface AboutModalProps {
   open: boolean;
   onClose: () => void;
+  onPrivacy?: () => void;
+  onTerms?: () => void;
 }
 
-export function AboutModal({ open, onClose }: AboutModalProps) {
+export function AboutModal({
+  open,
+  onClose,
+  onPrivacy,
+  onTerms,
+}: AboutModalProps) {
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -39,7 +46,7 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
             animate="animate"
             exit="exit"
             transition={springSoft}
-            className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
+            className="relative z-10 w-full max-w-sm sm:max-w-md rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -79,9 +86,47 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
 
             <p className="mt-3 text-sm leading-relaxed text-text-secondary">
               Stack: React, TypeScript, Vite, Tailwind CSS, Framer Motion, Lucide,
-              Netlify Functions, Google Sheets, and Workbox PWA. Built with Cursor
-              and GitHub Copilot.
+              Netlify Functions, Google Sheets, and Workbox PWA. Built with Antigravity,
+              Cursor, and GitHub Copilot.
             </p>
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-border/60 pt-3 text-xs">
+              <a
+                href="/guide.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onClose}
+                className="font-semibold text-primary hover:underline"
+              >
+                User Guide
+              </a>
+              <span className="text-text-muted">•</span>
+              {onPrivacy && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onPrivacy();
+                  }}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Privacy Policy
+                </button>
+              )}
+              {onPrivacy && onTerms && <span className="text-text-muted">•</span>}
+              {onTerms && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onTerms();
+                  }}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Terms of Service
+                </button>
+              )}
+            </div>
           </motion.div>
         </div>
       )}

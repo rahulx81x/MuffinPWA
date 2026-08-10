@@ -26,21 +26,21 @@ export function MonthlyView({ transactions }: MonthlyViewProps) {
       </div>
 
       {monthly.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-zinc-300 p-4 text-sm text-zinc-500 dark:border-zinc-700">
+        <p className="rounded-2xl border border-dashed border-border bg-surface-strong/80 p-6 text-center text-sm text-text-muted">
           No monthly history yet.
         </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-3.5 space-y-0">
           {monthly.map((m) => (
             <li
               key={m.key}
-              className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+              className="cozy-card p-4 transition-all duration-200"
             >
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
+              <div className="mb-2.5 flex items-center justify-between gap-3">
+                <h3 className="font-display text-base font-bold text-text">
                   {m.label}
                 </h3>
-                <span className="shrink-0 text-xs font-semibold text-zinc-500">
+                <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
                   Save {m.totalSavingsPct.toFixed(1)}%
                 </span>
               </div>

@@ -4,9 +4,10 @@ import { createPortal } from 'react-dom';
 import {
   formatCurrency as formatCurrencyRaw,
   getInitialInvestmentTotal,
-  INITIAL_LIQUID_BALANCE,
+  getOpeningBalance,
 } from '../config';
 import { useMask, MASKED_VALUE } from '../hooks/useMask';
+import { useRecipeConfig } from '../hooks/useRecipeConfig';
 import { useTheme } from '../hooks/useTheme';
 import {
   buildMonthlyKPIs,
@@ -55,6 +56,16 @@ function resolveListType(
   return null;
 }
 
+function triggerHaptic() {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(8);
+    } catch {
+      // ignore
+    }
+  }
+}
+
 function PieChart({ data }: { data: Record<string, number> }) {
   const { masked, formatCurrency } = useMask();
   const { theme } = useTheme();
@@ -64,6 +75,8 @@ function PieChart({ data }: { data: Record<string, number> }) {
     .sort((a, b) => b[1] - a[1]);
   const total = entries.reduce((sum, [, amount]) => sum + amount, 0);
 
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+
   if (!entries.length || total <= 0) {
     return (
       <p className="py-10 text-center text-sm text-text-muted">
@@ -72,57 +85,117 @@ function PieChart({ data }: { data: Record<string, number> }) {
     );
   }
 
+  const activeIndex = Math.min(selectedIndex, entries.length - 1);
+  const activeEntry = entries[activeIndex] ?? entries[0];
+  const activeColor = pieColors[activeIndex % pieColors.length];
+  const activeShare = ((activeEntry[1] / total) * 100).toFixed(1);
+
   const radius = 72;
   const circumference = 2 * Math.PI * radius;
   let offset = 0;
 
   return (
-    <div className="flex flex-col items-center gap-5">
-      <svg viewBox="0 0 180 180" className="h-44 w-44 -rotate-90">
-        {entries.map(([name, amount], index) => {
-          const fraction = amount / total;
-          const dash = fraction * circumference;
-          const color = pieColors[index % pieColors.length];
-          const segment = (
-            <circle
-              key={name}
-              cx="90"
-              cy="90"
-              r={radius}
-              fill="none"
-              stroke={color}
-              strokeWidth="28"
-              strokeDasharray={`${dash} ${circumference - dash}`}
-              strokeDashoffset={-offset}
-            />
-          );
-          offset += dash;
-          return segment;
-        })}
-      </svg>
+    <div className="flex flex-col items-center gap-4">
+      {/* Selected Item Callout Card */}
+      <div className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border bg-surface-strong p-3.5 shadow-warm-sm transition-all duration-200">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span
+            className="h-3.5 w-3.5 shrink-0 rounded-full shadow-warm-sm"
+            style={{ backgroundColor: activeColor }}
+          />
+          <div className="min-w-0">
+            <p className="truncate font-display text-sm font-bold text-text">
+              {activeEntry[0]}
+            </p>
+            <p className="text-[11px] font-semibold text-text-muted">
+              {activeShare}% of total allocation
+            </p>
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="font-display text-base font-bold tabular-nums text-text">
+            {masked ? MASKED_VALUE : formatCurrency(activeEntry[1])}
+          </p>
+        </div>
+      </div>
 
-      <ul className="w-full space-y-2">
+      {/* Donut SVG with Touch Slices */}
+      <div className="relative flex items-center justify-center">
+        <svg viewBox="0 0 180 180" className="h-48 w-48 -rotate-90">
+          {entries.map(([name, amount], index) => {
+            const fraction = amount / total;
+            const dash = fraction * circumference;
+            const color = pieColors[index % pieColors.length];
+            const isSelected = index === activeIndex;
+
+            const segment = (
+              <circle
+                key={name}
+                cx="90"
+                cy="90"
+                r={radius}
+                fill="none"
+                stroke={color}
+                strokeWidth={isSelected ? 34 : 26}
+                strokeDasharray={`${dash} ${circumference - dash}`}
+                strokeDashoffset={-offset}
+                className="cursor-pointer transition-all duration-300 ease-out"
+                style={{
+                  opacity: isSelected ? 1 : 0.75,
+                  filter: isSelected ? `drop-shadow(0 0 6px ${color}80)` : 'none',
+                }}
+                onClick={() => {
+                  triggerHaptic();
+                  setSelectedIndex(index);
+                }}
+              />
+            );
+            offset += dash;
+            return segment;
+          })}
+        </svg>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+            Total
+          </span>
+          <span className="font-display text-xs font-bold text-text tabular-nums">
+            {masked ? MASKED_VALUE : formatCurrency(total)}
+          </span>
+        </div>
+      </div>
+
+      {/* Legend List */}
+      <ul className="w-full space-y-1.5 pt-1">
         {entries.map(([name, amount], index) => {
           const share = ((amount / total) * 100).toFixed(0);
+          const isSelected = index === activeIndex;
           return (
-            <li
-              key={name}
-              className="flex items-center justify-between gap-3 text-sm"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{
-                    backgroundColor: pieColors[index % pieColors.length],
-                  }}
-                />
-                <span className="truncate font-medium text-text">
-                  {name}
+            <li key={name}>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic();
+                  setSelectedIndex(index);
+                }}
+                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-xs transition-colors duration-200 ${
+                  isSelected
+                    ? 'border border-primary/40 bg-primary/10 font-bold text-text'
+                    : 'hover:bg-surface-muted/50 text-text-secondary'
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor: pieColors[index % pieColors.length],
+                    }}
+                  />
+                  <span className="truncate">{name}</span>
                 </span>
-              </span>
-              <span className="shrink-0 tabular-nums text-text-muted">
-                {masked ? `${share}%` : `${formatCurrency(amount)} · ${share}%`}
-              </span>
+                <span className="shrink-0 tabular-nums">
+                  {masked ? `${share}%` : `${formatCurrency(amount)} · ${share}%`}
+                </span>
+              </button>
             </li>
           );
         })}
@@ -169,6 +242,11 @@ function LineChart({
   asPercent?: boolean;
   masked?: boolean;
 }) {
+  const { formatCurrency } = useMask();
+  const [selectedIndex, setSelectedIndex] = useState<number>(
+    points.length > 0 ? points.length - 1 : 0
+  );
+
   if (points.length < 2) {
     return (
       <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-surface-strong p-6 transition-colors duration-200">
@@ -181,7 +259,7 @@ function LineChart({
   }
 
   const width = 340;
-  const height = 220;
+  const height = 210;
   const padX = 28;
   const padTop = 28;
   const padBottom = 36;
@@ -190,8 +268,7 @@ function LineChart({
   const range = max - min || 1;
 
   const coords = points.map((value, index) => {
-    const x =
-      padX + (index / (points.length - 1)) * (width - padX * 2);
+    const x = padX + (index / (points.length - 1)) * (width - padX * 2);
     const y =
       height -
       padBottom -
@@ -199,19 +276,86 @@ function LineChart({
     return { x, y, value, label: labels[index] ?? '' };
   });
 
+  const activeIdx = Math.min(selectedIndex, coords.length - 1);
+  const activeCoord = coords[activeIdx] ?? coords[coords.length - 1];
+
+  // Month-over-Month Delta calculation
+  let deltaText = '';
+  let isPositive = true;
+
+  if (activeIdx > 0) {
+    const prevValue = points[activeIdx - 1];
+    const diff = activeCoord.value - prevValue;
+    const pct = prevValue !== 0 ? (diff / Math.abs(prevValue)) * 100 : 0;
+    isPositive = diff >= 0;
+
+    if (asPercent) {
+      deltaText = `${isPositive ? '+' : ''}${diff.toFixed(1)}% MoM`;
+    } else if (masked) {
+      deltaText = `${isPositive ? '+' : ''}${pct.toFixed(1)}% MoM`;
+    } else {
+      deltaText = `${isPositive ? '+' : '−'}${formatCurrency(Math.abs(diff))} (${isPositive ? '+' : ''}${pct.toFixed(1)}%) MoM`;
+    }
+  } else {
+    deltaText = 'Baseline month';
+  }
+
   const path = coords
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
     .join(' ');
 
+  const stepWidth = width / coords.length;
+
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-border bg-surface-strong p-3 shadow-warm-sm transition-colors duration-200">
+      {/* Interactive Month Callout Header Card */}
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-strong p-3.5 shadow-warm-sm transition-all duration-200">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+            Selected Month
+          </span>
+          <p className="font-display text-sm font-bold text-text">
+            {activeCoord.label}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-display text-base font-bold tabular-nums text-text">
+            {formatChartValue(activeCoord.value, asPercent, masked)}
+          </p>
+          <p
+            className={`text-[11px] font-semibold tabular-nums ${
+              activeIdx === 0
+                ? 'text-text-muted'
+                : isPositive
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-rose-600 dark:text-rose-400'
+            }`}
+          >
+            {deltaText}
+          </p>
+        </div>
+      </div>
+
+      <div className="relative rounded-2xl border border-border bg-surface-strong p-3 shadow-warm-sm transition-colors duration-200">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="h-56 w-full"
+          className="h-56 w-full touch-none"
           role="img"
-          aria-label="Monthly trend with values at each point"
+          aria-label="Monthly trend trajectory graph"
         >
+          {/* Vertical Crosshair Line for active point */}
+          <line
+            x1={activeCoord.x}
+            y1={padTop - 10}
+            x2={activeCoord.x}
+            y2={height - padBottom}
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeDasharray="3 3"
+            className="text-primary/60"
+          />
+
+          {/* Line Path */}
           <path
             d={path}
             fill="none"
@@ -221,9 +365,10 @@ function LineChart({
             strokeLinejoin="round"
             className="text-primary"
           />
+
+          {/* Point Circles & Month Labels */}
           {coords.map((point, index) => {
-            const labelAbove = index % 2 === 0;
-            const valueY = labelAbove ? point.y - 12 : point.y + 16;
+            const isSelected = index === activeIdx;
             const monthY = height - 10;
             const anchor =
               index === 0
@@ -234,35 +379,60 @@ function LineChart({
 
             return (
               <g key={`${point.label}-${index}`}>
+                {/* Active Outer Ring */}
+                {isSelected && (
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="12"
+                    className="fill-primary/20 animate-pulse"
+                  />
+                )}
+                {/* Main Circle */}
                 <circle
                   cx={point.x}
                   cy={point.y}
-                  r="4"
-                  className="fill-primary"
+                  r={isSelected ? 6 : 4}
+                  className={`transition-all duration-200 ${
+                    isSelected
+                      ? 'fill-primary stroke-white dark:stroke-zinc-900'
+                      : 'fill-primary'
+                  }`}
+                  strokeWidth={isSelected ? 2 : 0}
                 />
-                <text
-                  x={point.x}
-                  y={valueY}
-                  textAnchor={anchor}
-                  className="fill-text"
-                  style={{ fontSize: '10px', fontWeight: 700 }}
-                >
-                  {formatChartValue(point.value, asPercent, masked)}
-                </text>
                 <text
                   x={point.x}
                   y={monthY}
                   textAnchor={anchor}
-                  className="fill-text-muted"
-                  style={{ fontSize: '9px', fontWeight: 500 }}
+                  className={isSelected ? 'fill-primary font-bold' : 'fill-text-muted'}
+                  style={{ fontSize: isSelected ? '10px' : '9px' }}
                 >
                   {point.label}
                 </text>
+
+                {/* Wide Touch Catchers for 1-Tap & Drag selection */}
+                <rect
+                  x={point.x - stepWidth / 2}
+                  y={0}
+                  width={stepWidth}
+                  height={height}
+                  fill="transparent"
+                  className="cursor-pointer"
+                  onClick={() => {
+                    triggerHaptic();
+                    setSelectedIndex(index);
+                  }}
+                  onTouchStart={() => {
+                    triggerHaptic();
+                    setSelectedIndex(index);
+                  }}
+                />
               </g>
             );
           })}
         </svg>
       </div>
+
       {footer && (
         <p className="text-center text-xs text-text-muted">{footer}</p>
       )}
@@ -285,7 +455,7 @@ function buildClosingSeries(
     return { points: [], labels: [], footer: '', asPercent: false };
   }
 
-  let liquid = INITIAL_LIQUID_BALANCE;
+  let liquid = getOpeningBalance();
   let investment = getInitialInvestmentTotal();
   const points: number[] = [];
   const labels: string[] = [];
@@ -340,6 +510,7 @@ export function ChartModal({
   onClose,
 }: ChartModalProps) {
   const { masked } = useMask();
+  const { config: recipeConfig } = useRecipeConfig();
 
   // Keep last open payload so exit animation still has content to show.
   const [snapshot, setSnapshot] = useState<{
@@ -385,7 +556,7 @@ export function ChartModal({
       return { points: [], labels: [], footer: '', asPercent: false };
     }
     return buildClosingSeries(transactions, activeKey, masked);
-  }, [activeKey, kind, transactions, masked]);
+  }, [activeKey, kind, transactions, masked, recipeConfig]);
 
   useEffect(() => {
     if (!open) return;

@@ -1,5 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { INITIAL_LIQUID_BALANCE } from '../config';
+import { getOpeningBalance } from '../config';
+import { useRecipeConfig } from '../hooks/useRecipeConfig';
 import { useMask } from '../hooks/useMask';
 import { createId } from '../lib/parseSheet';
 import { buildMonthlyKPIs, currentMonthKey, monthKey } from '../lib/metrics';
@@ -32,6 +33,7 @@ export function PlannerView({
   onClear,
 }: PlannerViewProps) {
   const { masked, formatCurrency } = useMask();
+  const { config: recipeConfig } = useRecipeConfig();
   const thisMonth = currentMonthKey();
   const [date, setDate] = useState(todayIso());
   const [type, setType] = useState<TransactionType>('expense');
@@ -61,8 +63,8 @@ export function PlannerView({
     const prior = monthly.filter((m) => m.key < thisMonth);
     return prior.length > 0
       ? prior[prior.length - 1].closingLiquid
-      : INITIAL_LIQUID_BALANCE;
-  }, [sheetTransactions, thisMonth]);
+      : getOpeningBalance();
+  }, [sheetTransactions, thisMonth, recipeConfig]);
   const closingBalance = previousClose + liquid;
 
   const plannerThisMonth = plannerTransactions.filter(
@@ -108,7 +110,7 @@ export function PlannerView({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
         <Stat label="Income" value={formatCurrency(income)} tone="text-emerald-600 dark:text-emerald-400" />
         <Stat label="Expenses" value={formatCurrency(expenses)} tone="text-rose-600 dark:text-rose-400" />
         <Stat label="Investment" value={formatCurrency(investment)} tone="text-violet-600 dark:text-violet-400" />
@@ -298,12 +300,12 @@ function Stat({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900 ${className}`}
+      className={`cozy-card p-3.5 border-border ${className}`}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
         {label}
       </p>
-      <p className={`mt-1 text-lg font-bold tabular-nums ${tone}`}>{value}</p>
+      <p className={`mt-1 font-display text-xl font-bold tabular-nums ${tone}`}>{value}</p>
     </div>
   );
 }

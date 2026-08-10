@@ -92,7 +92,7 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
         label: 'Investment Breakup',
         value: '',
         breakup: metrics.investmentBreakup,
-        className: 'col-span-2',
+        className: 'col-span-2 sm:col-span-3 md:col-span-2',
         iconHint: 'chart',
         interactive: true,
       },
@@ -101,7 +101,7 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
         label: 'Net Worth',
         value: formatCurrency(metrics.netWorth),
         tone: 'hero',
-        className: 'col-span-2',
+        className: 'col-span-2 sm:col-span-3 md:col-span-2',
         iconHint: 'chart',
         interactive: true,
       },
@@ -175,8 +175,8 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
     detailCards.find((c) => c.key === activeMetric);
 
   return (
-    <section className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+    <section className="space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
         {defaultCards.map((card) => (
           <KpiCard
             key={card.key}
@@ -189,9 +189,9 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
             onClick={() => setActiveMetric(card.key)}
           >
             {card.breakup && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-3 space-y-2.5">
                 {Object.keys(card.breakup).length === 0 ? (
-                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <span className="text-sm text-text-muted">
                     No investments yet
                   </span>
                 ) : (
@@ -200,20 +200,25 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
                     .slice(0, 3)
                     .map(([name, amount]) => {
                       const share = breakupTotal
-                        ? ((amount / breakupTotal) * 100).toFixed(0)
-                        : '0';
+                        ? Math.round((amount / breakupTotal) * 100)
+                        : 0;
                       return (
-                        <span
-                          key={name}
-                          className="inline-flex max-w-full items-center rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                        >
-                          <span className="truncate">{name}</span>
-                          <span className="ml-1.5 tabular-nums text-zinc-500 dark:text-zinc-400">
-                            {masked
-                              ? `${share}%`
-                              : `${formatCurrency(amount)} · ${share}%`}
-                          </span>
-                        </span>
+                        <div key={name} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs font-semibold">
+                            <span className="truncate text-text">{name}</span>
+                            <span className="shrink-0 tabular-nums text-text-secondary">
+                              {masked
+                                ? `${share}%`
+                                : `${formatCurrency(amount)} (${share}%)`}
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted/50">
+                            <div
+                              className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+                              style={{ width: `${Math.min(100, Math.max(4, share))}%` }}
+                            />
+                          </div>
+                        </div>
                       );
                     })
                 )}
@@ -250,7 +255,7 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
             transition={springSoft}
             className="overflow-hidden"
           >
-            <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pt-1">
               {detailCards.map((card) => (
                 <KpiCard
                   key={card.key}

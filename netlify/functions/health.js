@@ -1,31 +1,40 @@
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Cache-Control': 'no-store',
-  'Content-Type': 'application/json; charset=utf-8',
-};
+import { oauthConfigured } from '../lib/googleAuth.js';
+import { json, noContent } from '../lib/http.js';
+import { readSession } from '../lib/session.js';
 
 /**
- * Lightweight session probe. Reaching this handler means the request passed
- * Netlify Private Access at the CDN edge — no Google Sheets work.
+ * Lightweight session probe for signed-in Google sessions.
  */
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers, body: '' };
+    return noContent(event);
   }
 
   if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
+    return json(event, 405, { error: 'Method not allowed' });
   }
 
-  return {
-    statusCode: 200,
-    headers,
-    body: JSON.stringify({ ok: true }),
-  };
+  try {
+    if (!oauthConfigured()) {
+      return json(event, 500, {
+        error: 'Google OAuth is not configured.',
+        code: 'misconfigured',
+      });
+    }
+
+    const session = readSession(event);
+    if (!session) {
+      return json(event, 401, {
+        error: 'Not signed in.',
+        code: 'unauthenticated',
+      });
+    }
+
+    return json(event, 200, { ok: true });
+  } catch (error) {
+    return json(event, error?.statusCode || 500, {
+      error: error?.message || 'Health check failed.',
+    });
+  }
 }
+

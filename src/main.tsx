@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import { MaskProvider } from './hooks/useMask';
+import { RecipeConfigProvider } from './hooks/useRecipeConfig';
 import { ThemeProvider } from './hooks/useTheme';
 import {
   applyThemeToDocument,
@@ -21,7 +22,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <MaskProvider>
-        <App />
+        <RecipeConfigProvider>
+          <App />
+        </RecipeConfigProvider>
       </MaskProvider>
     </ThemeProvider>
   </StrictMode>

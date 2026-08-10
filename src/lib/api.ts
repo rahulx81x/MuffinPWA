@@ -1,161 +1,176 @@
 import type { SheetRowData, SheetTabName, Transaction } from '../types';
 
-const ENDPOINT = '/.netlify/functions/transactions';
-const HEALTH_ENDPOINT = '/.netlify/functions/health';
+const TRANSACTIONS = '/.netlify/functions/transactions';
+const HEALTH = '/.netlify/functions/health';
+const AUTH_ME = '/.netlify/functions/auth-me';
+const AUTH_LOGOUT = '/.netlify/functions/auth-logout';
+const SHEET_LINK = '/.netlify/functions/sheet-link';
+const SHEET_CREATE = '/.netlify/functions/sheet-create';
+const SHEET_UNLINK = '/.netlify/functions/sheet-unlink';
+const RECIPE = '/.netlify/functions/recipe';
+const TOUR_COMPLETE = '/.netlify/functions/tour-complete';
 
-/** Prevents a mis-detect from spinning re-auth navigation loops. */
-const REAUTH_GUARD_KEY = 'muffin:netlify-session-reauth';
-const REAUTH_GUARD_MS = 10_000;
+export const AUTH_START_URL = '/.netlify/functions/auth-start';
 
-export class NetlifySessionExpiredError extends Error {
-  readonly code = 'NETLIFY_SESSION_EXPIRED' as const;
+export class AuthRequiredError extends Error {
+  readonly code = 'unauthenticated' as const;
 
-  constructor(message = 'Netlify site session expired') {
+  constructor(message = 'Not signed in') {
     super(message);
-    this.name = 'NetlifySessionExpiredError';
+    this.name = 'AuthRequiredError';
   }
 }
 
-/**
- * Extract Netlify Edge Access login URL from the Login Redirect HTML body.
- * Rewrites requested_path to `/` so post-login returns to the app, not the
- * raw function URL that triggered the challenge.
- */
-function parseEdgeAccessLoginUrl(html: string): string | null {
-  const match = html.match(
-    /https:\\\/\\\/app\.netlify\.com\\\/edge-access\?[^'"]+/i
-  );
-  if (!match) {
-    const plain = html.match(
-      /https:\/\/app\.netlify\.com\/edge-access\?[^'"\s<>]+/i
-    );
-    if (!plain) return null;
-    try {
-      const url = new URL(plain[0].replace(/&amp;/g, '&'));
-      url.searchParams.set('requested_path', '/');
-      return url.toString();
-    } catch {
-      return null;
-    }
-  }
+export class NeedsSheetError extends Error {
+  readonly code = 'needsSheet' as const;
 
+  constructor(message = 'No spreadsheet linked yet') {
+    super(message);
+    this.name = 'NeedsSheetError';
+  }
+}
+
+export interface AuthUser {
+  sub: string;
+  email: string;
+  name: string;
+  picture: string;
+}
+
+export interface RecipeInvestmentPayload {
+  id: string;
+  type: string;
+  amount: number;
+}
+
+export interface RecipePayload {
+  openingBalance: number;
+  investments: RecipeInvestmentPayload[];
+}
+
+export interface AuthMeResponse {
+  user: AuthUser;
+  spreadsheetId: string | null;
+  spreadsheetTitle: string | null;
+  needsSheet: boolean;
+  /** Null when the user has never saved a recipe to Blobs. */
+  recipe: RecipePayload | null;
+  /** True only for first-time users who have not finished / skipped the tour. */
+  showTour: boolean;
+}
+
+async function readErrorPayload(
+  response: Response
+): Promise<{ error?: string; code?: string }> {
   try {
-    const unescaped = match[0]
-      .replace(/\\\//g, '/')
-      .replace(/\\u0026/g, '&');
-    const url = new URL(unescaped);
-    url.searchParams.set('requested_path', '/');
-    return url.toString();
+    return (await response.json()) as { error?: string; code?: string };
   } catch {
-    return null;
+    return {};
   }
-}
-
-function beginNetlifyReauth(loginUrl?: string | null): void {
-  try {
-    const last = sessionStorage.getItem(REAUTH_GUARD_KEY);
-    const now = Date.now();
-    if (last && now - Number(last) < REAUTH_GUARD_MS) {
-      return;
-    }
-    sessionStorage.setItem(REAUTH_GUARD_KEY, String(now));
-  } catch {
-    // sessionStorage may be unavailable; still attempt navigation
-  }
-
-  const target =
-    loginUrl ||
-    `${window.location.origin}/?reauth=${Date.now()}`;
-
-  console.warn(
-    '[muffin] Netlify Edge Access session expired. Navigating to login gate.',
-    target
-  );
-  window.location.replace(target);
-}
-
-/**
- * Netlify Edge Access / Private Access intercepts unauthenticated requests to
- * `/.netlify/functions/*` with 401 + Login Redirect HTML. That HTML only works
- * as a document navigation (its script never runs inside fetch), so we must
- * top-level navigate to Edge Access instead of reloading the SW app shell.
- */
-async function assertNetlifySession(response: Response): Promise<void> {
-  const contentType = response.headers.get('content-type') ?? '';
-  const isHtml = contentType.includes('text/html');
-  const isAuthStatus = response.status === 401 || response.status === 403;
-  const isOpaqueRedirect =
-    response.type === 'opaqueredirect' ||
-    (response.status >= 300 && response.status < 400);
-
-  if (!response.redirected && !isHtml && !isAuthStatus && !isOpaqueRedirect) {
-    return;
-  }
-
-  let loginUrl: string | null = null;
-  if (isHtml || isAuthStatus) {
-    try {
-      const clone = response.clone();
-      const text = await clone.text();
-      if (
-        text.includes('edge-access') ||
-        text.includes('Login Redirect') ||
-        isHtml
-      ) {
-        loginUrl = parseEdgeAccessLoginUrl(text);
-      }
-      // Auth status with non-login JSON body is a real API error — don't reauth.
-      if (isAuthStatus && !isHtml && !loginUrl && !text.includes('Login Redirect')) {
-        const looksLikeJson =
-          contentType.includes('application/json') || text.trim().startsWith('{');
-        if (looksLikeJson) {
-          return;
-        }
-      }
-    } catch {
-      // ignore body read failures; still attempt re-auth on auth/HTML signals
-    }
-  }
-
-  beginNetlifyReauth(loginUrl);
-  throw new NetlifySessionExpiredError();
 }
 
 async function apiFetch(
   input: string,
   init: RequestInit = {}
 ): Promise<Response> {
-  const response = await fetch(input, {
+  return fetch(input, {
     ...init,
     credentials: 'include',
     redirect: 'follow',
   });
-  await assertNetlifySession(response);
-  return response;
 }
 
-async function readError(response: Response): Promise<string> {
-  try {
-    const data = (await response.json()) as { error?: string };
-    if (data?.error) return data.error;
-  } catch {
-    // ignore JSON parse errors
+async function assertOk(response: Response): Promise<void> {
+  if (response.ok) return;
+
+  const data = await readErrorPayload(response);
+  if (response.status === 401 || data.code === 'unauthenticated') {
+    throw new AuthRequiredError(data.error || 'Not signed in');
   }
-  return `Request failed (${response.status})`;
+  if (data.code === 'needsSheet') {
+    throw new NeedsSheetError(data.error || 'No spreadsheet linked yet');
+  }
+  throw new Error(data.error || `Request failed (${response.status})`);
+}
+
+export async function getMe(): Promise<AuthMeResponse | null> {
+  const response = await apiFetch(AUTH_ME);
+  if (response.status === 401) return null;
+  await assertOk(response);
+  return (await response.json()) as AuthMeResponse;
 }
 
 export async function checkSessionHealth(): Promise<void> {
-  const response = await apiFetch(HEALTH_ENDPOINT);
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
+  const response = await apiFetch(HEALTH);
+  await assertOk(response);
+}
+
+export async function logout(): Promise<void> {
+  const response = await apiFetch(AUTH_LOGOUT, { method: 'POST' });
+  await assertOk(response);
+}
+
+export async function linkSheet(spreadsheetIdOrUrl: string): Promise<{
+  spreadsheetId: string;
+  spreadsheetTitle: string;
+}> {
+  const response = await apiFetch(SHEET_LINK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ spreadsheetId: spreadsheetIdOrUrl }),
+  });
+  await assertOk(response);
+  return (await response.json()) as {
+    spreadsheetId: string;
+    spreadsheetTitle: string;
+  };
+}
+
+export async function createSheet(): Promise<{
+  spreadsheetId: string;
+  spreadsheetTitle: string;
+}> {
+  const response = await apiFetch(SHEET_CREATE, { method: 'POST' });
+  await assertOk(response);
+  return (await response.json()) as {
+    spreadsheetId: string;
+    spreadsheetTitle: string;
+  };
+}
+
+export async function unlinkSheet(): Promise<void> {
+  const response = await apiFetch(SHEET_UNLINK, { method: 'POST' });
+  await assertOk(response);
+}
+
+export async function getRecipe(): Promise<RecipePayload> {
+  const response = await apiFetch(RECIPE);
+  await assertOk(response);
+  const data = (await response.json()) as { recipe: RecipePayload };
+  return data.recipe;
+}
+
+export async function saveRecipe(
+  recipe: RecipePayload
+): Promise<RecipePayload> {
+  const response = await apiFetch(RECIPE, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe }),
+  });
+  await assertOk(response);
+  const data = (await response.json()) as { recipe: RecipePayload };
+  return data.recipe;
+}
+
+export async function completeTour(): Promise<void> {
+  const response = await apiFetch(TOUR_COMPLETE, { method: 'POST' });
+  await assertOk(response);
 }
 
 export async function getTransactions(): Promise<Transaction[]> {
-  const response = await apiFetch(ENDPOINT);
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
+  const response = await apiFetch(TRANSACTIONS);
+  await assertOk(response);
   return (await response.json()) as Transaction[];
 }
 
@@ -163,41 +178,37 @@ export async function createTransaction(
   tabName: SheetTabName,
   rowData: SheetRowData
 ): Promise<void> {
-  const response = await apiFetch(ENDPOINT, {
+  const response = await apiFetch(TRANSACTIONS, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tabName, rowData }),
   });
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
+  await assertOk(response);
 }
 
 export async function updateTransaction(
   tabName: SheetTabName,
   rowIndex: number,
-  rowData: SheetRowData
+  rowData: SheetRowData,
+  expectedRow?: { category?: string; amount?: number }
 ): Promise<void> {
-  const response = await apiFetch(ENDPOINT, {
+  const response = await apiFetch(TRANSACTIONS, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tabName, rowIndex, rowData }),
+    body: JSON.stringify({ tabName, rowIndex, rowData, expectedRow }),
   });
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
+  await assertOk(response);
 }
 
 export async function deleteTransaction(
   tabName: SheetTabName,
-  rowIndex: number
+  rowIndex: number,
+  expectedRow?: { category?: string; amount?: number }
 ): Promise<void> {
-  const response = await apiFetch(ENDPOINT, {
+  const response = await apiFetch(TRANSACTIONS, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tabName, rowIndex }),
+    body: JSON.stringify({ tabName, rowIndex, expectedRow }),
   });
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
+  await assertOk(response);
 }

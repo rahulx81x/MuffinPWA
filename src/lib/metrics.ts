@@ -1,6 +1,7 @@
 import {
-  getInitialInvestmentBreakdown,
-  INITIAL_LIQUID_BALANCE,
+  getInitialInvestmentTotal,
+  getInitialInvestments,
+  getOpeningBalance,
 } from '../config';
 import type { FinancialMetrics, MonthlyKPI, Transaction } from '../types';
 import {
@@ -83,7 +84,7 @@ export function buildMonthlyKPIs(transactions: Transaction[]): MonthlyKPI[] {
       const previousClose =
         rows.length > 0
           ? rows[rows.length - 1].closingLiquid
-          : INITIAL_LIQUID_BALANCE;
+          : getOpeningBalance();
       const closingLiquid = previousClose + liquidSavings;
 
       rows.push({
@@ -107,12 +108,13 @@ export function buildMonthlyKPIs(transactions: Transaction[]): MonthlyKPI[] {
 export function buildInvestmentBreakup(
   transactions: Transaction[]
 ): Record<string, number> {
-  const initial = getInitialInvestmentBreakdown();
   const breakdown: Record<string, number> = {};
 
-  if (initial.regular) breakdown['Regular Deposits'] = initial.regular;
-  if (initial.fixed) breakdown['Fixed Deposits'] = initial.fixed;
-  if (initial.mutual) breakdown['Mutual Funds'] = initial.mutual;
+  for (const row of getInitialInvestments()) {
+    const key = row.type.trim() || 'Initial Investment';
+    if (!row.amount) continue;
+    breakdown[key] = (breakdown[key] || 0) + row.amount;
+  }
 
   // Counted investments only — PF has its own card and is omitted from breakup/pie.
   transactions.filter(isCountedInvestment).forEach((t) => {
@@ -139,8 +141,8 @@ export function buildFinancialMetrics(
     .reduce((sum, t) => sum + t.amount, 0);
   const providentFundBalance = sumProvidentFund(transactions);
 
-  const initInv = getInitialInvestmentBreakdown().total;
-  const initLiq = INITIAL_LIQUID_BALANCE;
+  const initInv = getInitialInvestmentTotal();
+  const initLiq = getOpeningBalance();
 
   const investmentBalance = initInv + trackedInvestment;
   const trackedLiquid = totalIncome - totalSpends - trackedInvestment;
