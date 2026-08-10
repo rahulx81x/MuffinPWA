@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Technical Guide - Muffin PWA</title>
+  <meta name="description" content="Architecture, API contracts, auth model, metrics engine, and extensibility notes for Muffin — for software engineers and architects.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light;
@@ -21,13 +22,18 @@
       --primary: #d97706;
       --primary-hover: #b45309;
       --primary-rgb: 217, 119, 6;
-      --code-bg: #291d15;
+      --ok: #15803d;
+      --warn: #b45309;
+      --danger: #b91c1c;
+      --info: #1d4ed8;
+      --code-bg: #1f1610;
       --code-text: #f3e8dc;
+      --code-muted: #c4a484;
+      --code-accent: #fbbf24;
       --shadow-warm: 0 4px 20px rgba(61, 35, 20, 0.06);
     }
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     html, body {
       width: 100%;
       overflow-x: hidden;
@@ -42,6 +48,7 @@
     h1, h2, h3, h4 {
       font-family: 'Outfit', sans-serif;
       font-weight: 700;
+      letter-spacing: -0.02em;
     }
     header {
       position: sticky;
@@ -62,9 +69,6 @@
       font-size: 1.1rem;
       margin: 0;
       color: var(--primary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
     .header-links {
       display: flex;
@@ -84,13 +88,11 @@
       font-size: 0.82rem;
       transition: background 0.2s ease;
     }
-    .header-links a:hover {
-      background: var(--border);
-    }
+    .header-links a:hover { background: var(--border); }
     .container {
       width: 100%;
-      max-width: 860px;
-      margin: 20px auto;
+      max-width: 920px;
+      margin: 20px auto 48px;
       padding: 0 16px;
     }
     .hero-banner {
@@ -98,32 +100,66 @@
       border: 1px solid var(--border);
       border-radius: 20px;
       padding: 24px 18px;
-      text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       box-shadow: var(--shadow-warm);
     }
     .hero-banner h2 {
-      margin: 0 0 6px 0;
+      margin: 0 0 8px 0;
       color: var(--primary);
-      font-size: 1.5rem;
+      font-size: 1.55rem;
     }
     .hero-banner p {
       margin: 0;
-      font-size: 0.88rem;
+      font-size: 0.92rem;
       color: var(--text-secondary);
+      max-width: 62ch;
     }
+    .audience-pill {
+      display: inline-flex;
+      margin-top: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .toc-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .toc-strip button {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-secondary);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .toc-strip button:hover { border-color: var(--primary); color: var(--primary); }
     .nav-tabs {
       display: flex;
       gap: 6px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       padding-bottom: 6px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       scrollbar-width: none;
+      position: sticky;
+      top: 56px;
+      z-index: 40;
+      background: linear-gradient(to bottom, var(--bg) 70%, transparent);
+      padding-top: 4px;
     }
-    .nav-tabs::-webkit-scrollbar {
-      display: none;
-    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
     .tab-btn {
       flex-shrink: 0;
       background: var(--card);
@@ -131,11 +167,12 @@
       color: var(--text);
       padding: 8px 14px;
       border-radius: 12px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.2s ease;
+      font-family: inherit;
     }
     .tab-btn.active {
       background: var(--primary);
@@ -151,22 +188,27 @@
       padding: 20px 16px;
       box-shadow: var(--shadow-warm);
     }
-    .tab-content.active {
-      display: block;
+    .tab-content.active { display: block; }
+    @media (min-width: 640px) {
+      .tab-content { padding: 28px 24px; }
+      .grid-2 { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: repeat(3, 1fr); }
     }
-    .grid-2 {
+    .section-title {
+      margin: 0 0 6px 0;
+      color: var(--primary);
+      font-size: 1.2rem;
+    }
+    .lede {
+      margin: 0 0 16px 0;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .grid-2, .grid-3 {
       display: grid;
       grid-template-columns: 1fr;
       gap: 12px;
       margin-top: 14px;
-    }
-    @media (min-width: 640px) {
-      .grid-2 {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .tab-content {
-        padding: 28px 24px;
-      }
     }
     .card {
       border: 1px solid var(--border);
@@ -179,11 +221,33 @@
       color: var(--primary);
       font-size: 0.95rem;
     }
-    .card p {
+    .card p, .card li {
       margin: 0;
       font-size: 0.84rem;
       color: var(--text-secondary);
     }
+    .card ul {
+      margin: 8px 0 0;
+      padding-left: 1.1rem;
+    }
+    .card li { margin-bottom: 4px; }
+    .badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .badge.ok { color: var(--ok); border-color: #bbf7d0; background: #f0fdf4; }
+    .badge.warn { color: var(--warn); border-color: #fde68a; background: #fffbeb; }
+    .badge.info { color: var(--info); border-color: #bfdbfe; background: #eff6ff; }
+    .badge.danger { color: var(--danger); border-color: #fecaca; background: #fef2f2; }
     .table-wrapper {
       width: 100%;
       overflow-x: auto;
@@ -195,17 +259,27 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
     }
     th, td {
       border: 1px solid var(--border);
       padding: 8px 12px;
       text-align: left;
+      vertical-align: top;
     }
     th {
       background: rgba(var(--primary-rgb), 0.1);
       color: var(--primary);
       font-weight: 700;
+      white-space: nowrap;
+    }
+    td code, p code, li code, .lede code, .accordion-content code {
+      background: var(--surface);
+      padding: 1px 5px;
+      border-radius: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8em;
+      color: var(--text);
     }
     pre {
       background: var(--code-bg);
@@ -215,23 +289,330 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       max-width: 100%;
-      font-family: monospace;
-      font-size: 0.82rem;
-      margin-top: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 12px 0 0;
     }
-    code {
+    pre .c { color: var(--code-muted); }
+    pre .k { color: var(--code-accent); }
+    .accordion {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      background: var(--card);
+    }
+    .accordion-header {
+      background: rgba(var(--primary-rgb), 0.05);
+      padding: 12px 14px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+    }
+    .accordion-header .meta {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+    .accordion-header .chev { color: var(--primary); transition: transform 0.2s; }
+    .accordion.open .accordion-header .chev { transform: rotate(180deg); }
+    .accordion-content {
+      display: none;
+      padding: 14px;
+      border-top: 1px solid var(--border);
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+    }
+    .accordion.open .accordion-content { display: block; }
+    .callout {
+      border-left: 3px solid var(--primary);
+      background: rgba(var(--primary-rgb), 0.06);
+      border-radius: 0 10px 10px 0;
+      padding: 10px 12px;
+      margin: 14px 0;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+    }
+    .callout strong { color: var(--text); }
+    .h-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 22px 0;
+      border: 0;
+    }
+
+    /* Architecture layers */
+    .arch-layers {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .arch-layer {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: var(--card-muted);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      text-align: left;
+      font-family: inherit;
+      width: 100%;
+      color: inherit;
+    }
+    .arch-layer:hover, .arch-layer.active {
+      border-color: var(--primary);
+      background: rgba(var(--primary-rgb), 0.08);
+    }
+    .arch-layer .layer-name {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--primary);
+      margin-bottom: 2px;
+    }
+    .arch-layer .layer-tech {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .arch-detail {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: var(--card);
+      min-height: 96px;
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+    }
+    .arch-detail h4 {
+      margin: 0 0 6px;
+      color: var(--primary);
+      font-size: 0.95rem;
+    }
+
+    /* Sequence stepper */
+    .flow-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 12px 0;
+    }
+    .flow-controls button {
+      border: 1px solid var(--border);
       background: var(--surface);
-      padding: 2px 6px;
-      border-radius: 6px;
-      font-family: monospace;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 7px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .flow-controls button:hover { background: var(--border); }
+    .flow-controls button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .flow-step-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .flow-track {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .flow-dot {
+      flex: 1;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--border);
+      transition: background 0.2s;
+    }
+    .flow-dot.done, .flow-dot.current { background: var(--primary); }
+    .flow-dot.current { box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.25); }
+    .flow-panel {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: var(--card-muted);
+    }
+    .flow-panel .actors {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .actor-chip {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-muted);
+    }
+    .actor-chip.hot {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(var(--primary-rgb), 0.1);
+    }
+    .flow-panel h4 {
+      margin: 0 0 6px;
+      color: var(--primary);
+      font-size: 0.95rem;
+    }
+    .flow-panel p {
+      margin: 0;
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+    }
+    .flow-panel pre { margin-top: 10px; }
+
+    /* Metrics lab */
+    .lab-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 12px;
+    }
+    @media (min-width: 720px) {
+      .lab-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .lab-inputs label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    .lab-inputs .field { margin-bottom: 10px; }
+    .lab-inputs input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
+      background: var(--card);
       color: var(--text);
+    }
+    .lab-inputs input:focus {
+      outline: 2px solid rgba(var(--primary-rgb), 0.35);
+      border-color: var(--primary);
+    }
+    .metric-out {
+      display: grid;
+      gap: 8px;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .metric-row .name {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .metric-row .val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .metric-row.accent {
+      border-color: rgba(var(--primary-rgb), 0.45);
+      background: rgba(var(--primary-rgb), 0.08);
+    }
+    .metric-row.accent .val { color: var(--primary); }
+    .metric-row.muted .val { color: var(--text-muted); }
+    .formula-box {
+      margin-top: 14px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+    .formula-box code {
+      display: block;
+      margin-top: 6px;
+      white-space: pre-wrap;
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 12px;
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.6;
+    }
+
+    /* Residency map */
+    .residency {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .residency-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 4px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card-muted);
+      font-size: 0.84rem;
+    }
+    @media (min-width: 640px) {
+      .residency-row {
+        grid-template-columns: minmax(140px, 0.9fr) 1.4fr minmax(110px, 0.7fr);
+        align-items: center;
+        gap: 12px;
+      }
+    }
+    .residency-row .what { font-weight: 700; color: var(--text); }
+    .residency-row .where {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .residency-row .scope { font-size: 0.75rem; font-weight: 700; }
+
+    .kbd {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 5px;
+      padding: 1px 5px;
+    }
+    .footer-note {
+      margin-top: 18px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>🛠️ Muffin — Technical Guide</h1>
+    <h1>Muffin — Technical Guide</h1>
     <div class="header-links">
       <a href="/guide.html">User Guide</a>
       <a href="/">Open App →</a>
@@ -240,129 +621,1097 @@
 
   <div class="container">
     <div class="hero-banner">
-      <h2>Technical Solution & Architecture</h2>
-      <p>Developer specs, data flows, serverless API contracts, and runtime metrics engine documentation.</p>
+      <h2>System Architecture &amp; Engineering Spec</h2>
+      <p>
+        Deep-dive reference for software engineers and architects: trust boundaries, OAuth session model,
+        serverless API contracts, client metrics engine, data residency, and extension points.
+        Source of truth remains the repo — this page is the interactive companion to README §3.
+      </p>
+      <span class="audience-pill">Audience: Developer · Engineer · Architect</span>
     </div>
 
-    <div class="nav-tabs">
-      <button class="tab-btn active" onclick="showTab(event, 'stack')">💻 Tech Stack</button>
-      <button class="tab-btn" onclick="showTab(event, 'flow')">🔄 Runtime Flow</button>
-      <button class="tab-btn" onclick="showTab(event, 'env')">🔑 Environment</button>
-      <button class="tab-btn" onclick="showTab(event, 'metrics')">🧮 Metrics</button>
+    <div class="toc-strip" aria-label="Jump to section">
+      <button type="button" onclick="showTabById('overview')">Overview</button>
+      <button type="button" onclick="showTabById('arch')">Architecture</button>
+      <button type="button" onclick="showTabById('api')">API</button>
+      <button type="button" onclick="showTabById('domain')">Domain</button>
+      <button type="button" onclick="showTabById('security')">Security</button>
+      <button type="button" onclick="showTabById('metrics')">Metrics Lab</button>
+      <button type="button" onclick="showTabById('frontend')">Frontend</button>
+      <button type="button" onclick="showTabById('ops')">Ops &amp; Extend</button>
     </div>
 
-    <!-- Tech Stack Tab -->
-    <div id="stack" class="tab-content active">
-      <h3 style="margin-top: 0; color: var(--primary);">💻 Core Technology Stack</h3>
+    <div class="nav-tabs" role="tablist">
+      <button class="tab-btn active" role="tab" data-tab="overview" onclick="showTab(event, 'overview')">Overview</button>
+      <button class="tab-btn" role="tab" data-tab="arch" onclick="showTab(event, 'arch')">Architecture</button>
+      <button class="tab-btn" role="tab" data-tab="api" onclick="showTab(event, 'api')">API Surface</button>
+      <button class="tab-btn" role="tab" data-tab="domain" onclick="showTab(event, 'domain')">Domain</button>
+      <button class="tab-btn" role="tab" data-tab="security" onclick="showTab(event, 'security')">Security</button>
+      <button class="tab-btn" role="tab" data-tab="metrics" onclick="showTab(event, 'metrics')">Metrics Lab</button>
+      <button class="tab-btn" role="tab" data-tab="frontend" onclick="showTab(event, 'frontend')">Frontend</button>
+      <button class="tab-btn" role="tab" data-tab="ops" onclick="showTab(event, 'ops')">Ops &amp; Extend</button>
+    </div>
+
+    <!-- ========== OVERVIEW ========== -->
+    <div id="overview" class="tab-content active" role="tabpanel">
+      <h3 class="section-title">System Context</h3>
+      <p class="lede">
+        Muffin is a personal-finance Progressive Web App that treats a user’s Google Sheet as the
+        system of record. A thin Netlify Functions BFF proxies the Sheets API so OAuth secrets never
+        reach the browser; all KPI math runs client-side in a pure TypeScript module.
+      </p>
+
       <div class="grid-2">
         <div class="card">
-          <h4>Frontend Core</h4>
-          <p><strong>React 19 + TypeScript + Vite 6</strong></p>
-          <p style="margin-top: 4px;">Typed React SPA built with Vite for fast HMR dev server and optimized production bundles.</p>
+          <span class="badge info">Architectural style</span>
+          <h4>BFF + Spreadsheet-as-DB</h4>
+          <p>
+            Browser SPA → same-origin serverless functions → Google Sheets API.
+            Per-user metadata (sheet link, Recipe, tour flag) lives in Netlify Blobs.
+            No traditional app database for transactions.
+          </p>
         </div>
         <div class="card">
-          <h4>Styling & Animation</h4>
-          <p><strong>Tailwind CSS 3 + Framer Motion</strong></p>
-          <p style="margin-top: 4px;">6 muffin theme tokens (`data-theme`), soft spring micro-interactions, layout pills, and portaled sheets.</p>
+          <span class="badge ok">Trust model</span>
+          <h4>User-owned data plane</h4>
+          <p>
+            Each Google account authenticates itself; sheet access is scoped to that user’s
+            linked workbook. Financial rows never leave Google’s sheet + the request path through
+            your Netlify function.
+          </p>
         </div>
         <div class="card">
-          <h4>Backend Serverless</h4>
-          <p><strong>Netlify Functions + Netlify Blobs</strong></p>
-          <p style="margin-top: 4px;">Serverless Google Sheets API proxy keeping OAuth secrets secure; Blobs stores per-user sheet links & Recipe balances.</p>
+          <span class="badge warn">Non-goals</span>
+          <h4>Not a bank aggregator</h4>
+          <ul>
+            <li>No Plaid / open-banking feeds</li>
+            <li>No multi-tenant shared ledgers</li>
+            <li>No server-side metrics persistence</li>
+            <li>Planner rows are browser-local only</li>
+          </ul>
         </div>
         <div class="card">
-          <h4>PWA Capabilities</h4>
-          <p><strong>Vite PWA + Workbox</strong></p>
-          <p style="margin-top: 4px;">Standalone PWA manifest, custom icons, and automatic service worker asset precaching.</p>
+          <span class="badge">Key invariants</span>
+          <h4>Contract the UI depends on</h4>
+          <ul>
+            <li>Three fixed sheet tabs: <code>Income</code>, <code>Expense</code>, <code>Investment</code></li>
+            <li>Transaction type = tab membership (not a column)</li>
+            <li>PF rows are display-only carve-outs from net worth</li>
+            <li>Recipe balances seed opening liquid + initial investments</li>
+          </ul>
         </div>
-        <div class="card">
-          <h4>AI & Agent Tooling</h4>
-          <p><strong>Antigravity, Cursor & GitHub Copilot</strong></p>
-          <p style="margin-top: 4px;">Autonomous agentic pair programming by Antigravity (Google DeepMind team), Cursor AI IDE, and Copilot.</p>
+      </div>
+
+      <hr class="h-divider">
+
+      <h3 class="section-title" style="font-size:1.05rem;">Technology stack</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Layer</th><th>Technology</th><th>Role</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>UI</td><td>React 19 + TypeScript</td><td>Component tree, typed domain model, client state</td></tr>
+            <tr><td>Build</td><td>Vite 6 + <code>tsc -b</code></td><td>HMR, production bundle, project references</td></tr>
+            <tr><td>Styling</td><td>Tailwind 3 + CSS tokens</td><td>Six muffin themes via <code>data-theme</code></td></tr>
+            <tr><td>Motion</td><td>Framer Motion</td><td>Springs, layout pill, portaled sheet enter/exit</td></tr>
+            <tr><td>PWA</td><td>vite-plugin-pwa + Workbox</td><td>Manifest, SW precache, autoUpdate</td></tr>
+            <tr><td>BFF</td><td>Netlify Functions</td><td>Auth, sheet link/create, CRUD proxy, recipe, tour</td></tr>
+            <tr><td>Sheets</td><td>google-spreadsheet + google-auth-library</td><td>OAuth2Client + workbook row I/O</td></tr>
+            <tr><td>User store</td><td>Netlify Blobs (<code>muffin-users</code>)</td><td>spreadsheetId, recipe, tourCompletedAt</td></tr>
+            <tr><td>Hosting</td><td>Netlify CDN</td><td><code>dist</code> + functions + SPA redirects</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <strong>Runtime vs build-time:</strong> Antigravity, Cursor, Copilot, Playwright, and pptxgenjs
+        are development / showcase tooling only. Production needs Node (build), Netlify, and a browser.
+      </div>
+    </div>
+
+    <!-- ========== ARCHITECTURE ========== -->
+    <div id="arch" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Runtime Architecture</h3>
+      <p class="lede">
+        Click a layer to inspect its responsibilities and failure modes. Then step through a
+        read → mutate → refresh sequence the way a request actually travels.
+      </p>
+
+      <div class="arch-layers" id="archLayers">
+        <button type="button" class="arch-layer active" data-layer="spa" onclick="selectLayer(this)">
+          <div class="layer-name">1 · React SPA (Browser)</div>
+          <div class="layer-tech">src/App.tsx · src/lib/api.ts · src/lib/metrics.ts</div>
+        </button>
+        <button type="button" class="arch-layer" data-layer="edge" onclick="selectLayer(this)">
+          <div class="layer-name">2 · Netlify Edge / CDN</div>
+          <div class="layer-tech">dist assets · SPA /* → index.html · SW precache</div>
+        </button>
+        <button type="button" class="arch-layer" data-layer="fn" onclick="selectLayer(this)">
+          <div class="layer-name">3 · Netlify Functions (BFF)</div>
+          <div class="layer-tech">auth-* · sheet-* · transactions · recipe · tour-complete</div>
+        </button>
+        <button type="button" class="arch-layer" data-layer="session" onclick="selectLayer(this)">
+          <div class="layer-name">4 · Session + User Store</div>
+          <div class="layer-tech">muffin_session cookie · Blobs muffin-users · AES-256-GCM</div>
+        </button>
+        <button type="button" class="arch-layer" data-layer="sheets" onclick="selectLayer(this)">
+          <div class="layer-name">5 · Google Sheets API</div>
+          <div class="layer-tech">OAuth2Client refresh → access · Income/Expense/Investment</div>
+        </button>
+      </div>
+      <div class="arch-detail" id="archDetail"></div>
+
+      <hr class="h-divider">
+
+      <h3 class="section-title" style="font-size:1.05rem;">Interactive request flow</h3>
+      <p class="lede" style="margin-bottom:0;">
+        Walk the happy path for loading the dashboard and mutating a row.
+      </p>
+
+      <div class="flow-controls">
+        <button type="button" onclick="flowPrev()">← Prev</button>
+        <button type="button" class="primary" onclick="flowNext()">Next →</button>
+        <button type="button" onclick="flowPlay()">Auto-play</button>
+        <span class="flow-step-label" id="flowStepLabel">Step 1 / 8</span>
+      </div>
+      <div class="flow-track" id="flowTrack" aria-hidden="true"></div>
+      <div class="flow-panel" id="flowPanel"></div>
+
+      <div class="accordion" style="margin-top:16px;" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Why the proxy exists (design rationale)</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          <ul style="margin:0; padding-left:1.1rem;">
+            <li>Browser only calls same-origin <code>/.netlify/functions/*</code> — no CORS to Google.</li>
+            <li><code>GOOGLE_CLIENT_ID</code> / <code>GOOGLE_CLIENT_SECRET</code> stay in Netlify / local env.</li>
+            <li>Refresh tokens live in an encrypted httpOnly cookie, never in <code>localStorage</code> or JS bundles.</li>
+            <li>Sheet ID + Recipe + tour completion are keyed by Google <code>sub</code> in Blobs — portable across devices.</li>
+            <li>Read and write share one transactions surface so optimistic-UI refresh stays simple.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Repository layout (hot paths)</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+<pre><span class="c">// Primary touch points when extending the system</span>
+src/
+  App.tsx                 <span class="c"># auth lifecycle, tour, tabs, metrics recompute</span>
+  lib/api.ts              <span class="c"># typed client → functions</span>
+  lib/metrics.ts          <span class="c"># pure KPI engine</span>
+  lib/providentFund.ts    <span class="c"># PF carve-out rules</span>
+  types.ts                <span class="c"># Transaction, FinancialMetrics, MetricKey</span>
+netlify/
+  functions/              <span class="c"># HTTP entrypoints</span>
+  lib/
+    session.js            <span class="c"># AES-GCM cookie seal/unseal</span>
+    userStore.js          <span class="c"># Blobs + local FS fallback</span>
+    googleAuth.js         <span class="c"># OAuth2Client from refresh token</span>
+    sheetBootstrap.js     <span class="c"># tab names / template headers</span>
+</pre>
         </div>
       </div>
     </div>
 
-    <!-- Data Flow Tab -->
-    <div id="flow" class="tab-content">
-      <h3 style="margin-top: 0; color: var(--primary);">🔄 Runtime Architecture & Data Flow</h3>
-      <p style="font-size: 0.86rem; color: var(--text-secondary);">Data moves through a secure serverless proxy architecture:</p>
-      
-      <pre>
-1. React SPA (Browser)
-   └── GET /.netlify/functions/transactions
-       └── Netlify Function (Auth verification)
-           └── Google Sheets API (OAuth2Client)
-               └── Read/Write Income, Expense, Investment tabs
+    <!-- ========== API ========== -->
+    <div id="api" class="tab-content" role="tabpanel">
+      <h3 class="section-title">API Surface</h3>
+      <p class="lede">
+        All routes are same-origin Netlify Functions. Client wrappers live in <code>src/lib/api.ts</code>
+        and always send <code>credentials: 'include'</code>. Expand an endpoint for method, body, and error codes.
+      </p>
 
-2. Metric Engine (Client-Side)
-   └── buildFinancialMetrics(transactions)
-       ├── Calculates Net Worth, Liquid Savings & Investments
-       └── Isolate Provident Fund rows to dedicated More Details card
+      <div class="accordion open" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Auth bootstrap</span>
+          <span class="meta">auth-start · auth-callback · auth-me · auth-logout</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Endpoint</th><th>Method</th><th>Contract</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><code>/.netlify/functions/auth-start</code></td>
+                  <td>GET (redirect)</td>
+                  <td>Starts Google OAuth; browser navigates here via <code>AUTH_START_URL</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>/.netlify/functions/auth-callback</code></td>
+                  <td>GET</td>
+                  <td>Exchanges code → tokens; sets <code>muffin_session</code>; redirects to app with short error codes on failure.</td>
+                </tr>
+                <tr>
+                  <td><code>/.netlify/functions/auth-me</code></td>
+                  <td>GET</td>
+                  <td>Returns <code>AuthMeResponse</code> or 401. Hydrates user, sheet link, recipe, <code>showTour</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>/.netlify/functions/auth-logout</code></td>
+                  <td>POST</td>
+                  <td>Clears session cookie.</td>
+                </tr>
+                <tr>
+                  <td><code>/.netlify/functions/health</code></td>
+                  <td>GET</td>
+                  <td>Session health probe used by the SPA.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+<pre><span class="c">// AuthMeResponse (src/lib/api.ts)</span>
+{
+  <span class="k">user</span>: { sub, email, name, picture },
+  spreadsheetId: string | null,
+  spreadsheetTitle: string | null,
+  needsSheet: boolean,
+  recipe: { openingBalance, investments[] } | null,
+  showTour: boolean
+}</pre>
+        </div>
+      </div>
 
-3. Recipe & User Store
-   └── Netlify Blobs (store: muffin-users)
-       └── Encrypted httpOnly session cookie for OAuth refresh tokens
-      </pre>
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Sheet onboarding</span>
+          <span class="meta">sheet-link · sheet-create · sheet-unlink</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          <ul style="margin:0 0 10px; padding-left:1.1rem;">
+            <li><code>POST sheet-link</code> — body <code>{ spreadsheetId }</code> (raw ID or Sheets URL). Validates access, persists to Blobs.</li>
+            <li><code>POST sheet-create</code> — creates a workbook with the three required tabs / headers, then links it.</li>
+            <li><code>POST sheet-unlink</code> — clears <code>spreadsheetId</code> on the user record (does not delete the Google Sheet).</li>
+          </ul>
+          <p>Missing sheet yields client <code>NeedsSheetError</code> (<code>code: 'needsSheet'</code>) so the SPA can show onboarding.</p>
+        </div>
+      </div>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Transactions CRUD</span>
+          <span class="meta">GET · POST · PUT · DELETE /transactions</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p style="margin-top:0;">Implements the ledger. Auth via session; spreadsheet from Blobs; OAuth refresh → Sheets.</p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Method</th><th>Body</th><th>Behavior</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>GET</td>
+                  <td>—</td>
+                  <td>Reads all rows from three tabs → <code>Transaction[]</code>. <code>Cache-Control: no-store</code>.</td>
+                </tr>
+                <tr>
+                  <td>POST</td>
+                  <td><code>{ tabName, rowData }</code></td>
+                  <td>Appends a row on the named tab.</td>
+                </tr>
+                <tr>
+                  <td>PUT</td>
+                  <td><code>{ tabName, rowIndex, rowData, expectedRow? }</code></td>
+                  <td>Updates row; optional optimistic concurrency via <code>expectedRow</code>.</td>
+                </tr>
+                <tr>
+                  <td>DELETE</td>
+                  <td><code>{ tabName, rowIndex, expectedRow? }</code></td>
+                  <td>Deletes row; same optional guard.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+<pre><span class="c">// SheetRowData keys match sheet headers</span>
+{
+  Date: "2026-08-10",
+  Category: "Groceries",
+  Amount: 3500,
+  Comment: "Supermarket",
+  "Investment Type": "Mutual Fund"  <span class="c">// Investment tab only</span>
+}</pre>
+          <p><strong>Typical status codes:</strong> 401 unauthenticated · 400 missing tab / needsSheet · 404 missing row · 200/204 success.</p>
+        </div>
+      </div>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Recipe &amp; tour</span>
+          <span class="meta">recipe · tour-complete</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          <ul style="margin:0; padding-left:1.1rem;">
+            <li><code>GET /recipe</code> · <code>PUT /recipe</code> with <code>{ recipe: { openingBalance, investments[] } }</code> — persisted on Blobs user record; SPA also caches <code>muffinRecipe</code> in localStorage.</li>
+            <li><code>POST /tour-complete</code> — sets <code>tourCompletedAt</code> so returning users skip the first-run tour.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Client error taxonomy:</strong> <code>AuthRequiredError</code> (401 / <code>unauthenticated</code>) vs
+        <code>NeedsSheetError</code> (<code>needsSheet</code>) vs generic <code>Error</code> with server message.
+        Prefer branching on these in UI rather than string-matching messages.
+      </div>
     </div>
 
-    <!-- Environment & Security Tab -->
-    <div id="env" class="tab-content">
-      <h3 style="margin-top: 0; color: var(--primary);">🔑 Required Environment Variables</h3>
-      <p style="font-size: 0.86rem; color: var(--text-secondary);">Configured in Netlify Site Settings / local <code>.env</code> file:</p>
+    <!-- ========== DOMAIN ========== -->
+    <div id="domain" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Domain Model &amp; Data Residency</h3>
+      <p class="lede">
+        Core types live in <code>src/types.ts</code>. Transaction <em>type</em> is derived from sheet tab —
+        never stored as a user-editable column.
+      </p>
 
+      <div class="grid-2">
+        <div class="card">
+          <h4>Transaction</h4>
+<pre style="margin-top:8px;">{
+id: string
+date: YYYY-MM-DD
+category: string
+type: income|expense|investment
+amount: number
+comment: string
+investmentType?: string
+tabName?: SheetTabName
+rowIndex?: number</pre>
+          <p style="margin-top:8px;"><code>tabName</code> / <code>rowIndex</code> are sheet-backed write handles. Planner entries omit them.</p>
+        </div>
+        <div class="card">
+          <h4>FinancialMetrics (subset)</h4>
+<pre style="margin-top:8px;">{
+netWorth, liquidBalance,
+investmentBalance,
+providentFundBalance,
+currentMonth*,
+growthSinceStart*,
+avgMonthlySavings,
+monthsTracked,
+investmentBreakup: Record&lt;string, number&gt;</pre>
+          <p style="margin-top:8px;">Built by <code>buildFinancialMetrics(transactions)</code> — pure, no I/O.</p>
+        </div>
+      </div>
+
+      <h4 style="margin:18px 0 6px; color:var(--primary); font-size:0.95rem;">Sheet schema</h4>
       <div class="table-wrapper">
         <table>
           <thead>
-            <tr>
-              <th>Variable Name</th>
-              <th>Description</th>
-            </tr>
+            <tr><th>Tab</th><th>Required columns</th><th>Maps to <code>type</code></th></tr>
           </thead>
+          <tbody>
+            <tr><td><code>Income</code></td><td>Date, Category, Amount, Comment</td><td><code>income</code></td></tr>
+            <tr><td><code>Expense</code></td><td>Date, Category, Amount, Comment</td><td><code>expense</code></td></tr>
+            <tr><td><code>Investment</code></td><td>+ Investment Type</td><td><code>investment</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="accordion" style="margin-top:14px;" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Provident Fund carve-out</span>
+          <span class="meta">src/lib/providentFund.ts</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p style="margin-top:0;">
+            An investment row is PF when <code>investmentType</code> or <code>category</code> matches
+            <code>pf</code> / <code>epf</code> / <code>ppf</code> (exact) or contains “provident fund”
+            (case-insensitive). Those rows:
+          </p>
+          <ul style="padding-left:1.1rem;">
+            <li>Still appear in Ledger</li>
+            <li>Are <strong>excluded</strong> from net worth, liquid, investment totals, breakup pie, monthly investment, planner investment</li>
+            <li>Surface only as <code>providentFundBalance</code> on Home → More Details</li>
+          </ul>
+          <p>Use <code>isCountedInvestment</code> anywhere you aggregate “real” investments.</p>
+        </div>
+      </div>
+
+      <h4 style="margin:18px 0 6px; color:var(--primary); font-size:0.95rem;">Where data lives</h4>
+      <div class="residency">
+        <div class="residency-row">
+          <div class="what">Transactions</div>
+          <div class="where">Google Sheet tabs</div>
+          <div class="scope"><span class="badge ok">Source of truth</span></div>
+        </div>
+        <div class="residency-row">
+          <div class="what">OAuth app secrets</div>
+          <div class="where">Netlify / .env (never client)</div>
+          <div class="scope"><span class="badge danger">Server only</span></div>
+        </div>
+        <div class="residency-row">
+          <div class="what">Refresh token</div>
+          <div class="where">httpOnly muffin_session (AES-256-GCM)</div>
+          <div class="scope"><span class="badge danger">Server + cookie</span></div>
+        </div>
+        <div class="residency-row">
+          <div class="what">Sheet link + Recipe + tour</div>
+          <div class="where">Blobs store muffin-users[sub]</div>
+          <div class="scope"><span class="badge info">Cross-device</span></div>
+        </div>
+        <div class="residency-row">
+          <div class="what">Recipe cache / theme / mask / planner</div>
+          <div class="where">localStorage keys muffinRecipe, muffinTheme, valuesMasked, plannerTransactions</div>
+          <div class="scope"><span class="badge warn">Device-local</span></div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Date parsing note:</strong> <code>transactions.js</code> accepts ISO, Sheets serial numbers,
+        month-name text, and slash dates (defaults ambiguous numeric to DD/MM/YYYY). Normalized output is always ISO <code>YYYY-MM-DD</code>.
+      </div>
+    </div>
+
+    <!-- ========== SECURITY ========== -->
+    <div id="security" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Auth, Session &amp; Security Model</h3>
+      <p class="lede">
+        Google OAuth 2.0 with offline access; refresh token sealed into a 30-day cookie.
+        Click through the auth sequence, then review crypto and privacy constraints.
+      </p>
+
+      <div class="flow-controls">
+        <button type="button" onclick="authPrev()">← Prev</button>
+        <button type="button" class="primary" onclick="authNext()">Next →</button>
+        <span class="flow-step-label" id="authStepLabel">Step 1 / 6</span>
+      </div>
+      <div class="flow-track" id="authTrack"></div>
+      <div class="flow-panel" id="authPanel"></div>
+
+      <hr class="h-divider">
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="badge danger">Crypto</span>
+          <h4>Session cookie seal</h4>
+          <ul>
+            <li>Cookie name: <code>muffin_session</code></li>
+            <li>AES-256-GCM; key = SHA-256(<code>SESSION_SECRET</code>)</li>
+            <li>Payload: <code>sub</code>, profile fields, <code>refreshToken</code>, <code>exp</code></li>
+            <li>TTL: 30 days; Secure flag when redirect URI is non-localhost</li>
+            <li>Impl: <code>netlify/lib/session.js</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="badge warn">Hardening</span>
+          <h4>Operational controls</h4>
+          <ul>
+            <li>Function responses: <code>Cache-Control: no-store</code></li>
+            <li>Auth errors use short codes (clean address bar)</li>
+            <li>SPA strips leftover OAuth query params on load</li>
+            <li><code>.gitignore</code> excludes <code>.env</code> (keeps <code>.env.example</code>)</li>
+            <li><code>SECRETS_SCAN_OMIT_KEYS=GOOGLE_REDIRECT_URI</code> (public by design)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion" style="margin-top:14px;" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Threat notes for architects</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          <ul style="margin:0; padding-left:1.1rem;">
+            <li><strong>XSS → cookie theft:</strong> httpOnly mitigates JS reads; still treat XSS as critical because same-origin fetch with credentials works from injected scripts. CSP would be a natural next control.</li>
+            <li><strong>SESSION_SECRET rotation:</strong> invalidates all sessions immediately — plan a coordinated redeploy.</li>
+            <li><strong>Blobs keying:</strong> records keyed by Google <code>sub</code>; unlink sheet does not wipe Recipe unless you clear the record.</li>
+            <li><strong>Local Blobs fallback:</strong> unlinked <code>netlify dev</code> writes to <code>.netlify/muffin-users/</code> on disk — fine for solo dev, not a multi-machine store.</li>
+            <li><strong>Limited Use:</strong> Privacy/Terms pages assert Google API Services User Data Policy Limited Use compliance.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== METRICS LAB ========== -->
+    <div id="metrics" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Metrics Engine Lab</h3>
+      <p class="lede">
+        Live recreation of <code>buildFinancialMetrics</code> formulas. Adjust Recipe seeds and lifetime
+        sums — PF is excluded from counted investment, exactly as in <code>providentFund.ts</code>.
+      </p>
+
+      <div class="lab-grid">
+        <div class="lab-inputs card" style="background:var(--card-muted);">
+          <h4 style="margin-top:0;">Inputs</h4>
+          <div class="field">
+            <label for="mOpening">openingBalance (Recipe)</label>
+            <input id="mOpening" type="number" value="50000" oninput="recalcMetrics()">
+          </div>
+          <div class="field">
+            <label for="mInitInv">initialInvestments total (Recipe)</label>
+            <input id="mInitInv" type="number" value="100000" oninput="recalcMetrics()">
+          </div>
+          <div class="field">
+            <label for="mIncome">Σ income (sheet)</label>
+            <input id="mIncome" type="number" value="240000" oninput="recalcMetrics()">
+          </div>
+          <div class="field">
+            <label for="mExpense">Σ expense (sheet)</label>
+            <input id="mExpense" type="number" value="120000" oninput="recalcMetrics()">
+          </div>
+          <div class="field">
+            <label for="mInv">Σ counted investment (excludes PF)</label>
+            <input id="mInv" type="number" value="60000" oninput="recalcMetrics()">
+          </div>
+          <div class="field">
+            <label for="mPf">Σ provident fund rows (display only)</label>
+            <input id="mPf" type="number" value="36000" oninput="recalcMetrics()">
+          </div>
+          <button type="button" class="tab-btn" style="margin-top:4px;" onclick="resetMetricsDefaults()">Reset sample</button>
+        </div>
+
+        <div>
+          <div class="metric-out" id="metricOut"></div>
+          <div class="formula-box">
+            <strong>Canonical formulas</strong>
+            <code>investmentBalance = initialInvestments + Σ countedInvestment
+trackedLiquid     = Σ income − Σ expense − Σ countedInvestment
+liquidBalance     = openingBalance + trackedLiquid
+netWorth          = investmentBalance + liquidBalance
+providentFund     = Σ PF rows          // NOT in netWorth
+growthSinceStart  = netWorth − (initialInvestments + openingBalance)</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" style="margin-top:16px;" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Monthly KPIs &amp; closing liquid</span>
+          <span class="meta">buildMonthlyKPIs</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p style="margin-top:0;">
+            Groups by <code>YYYY-MM</code>. Per month: income, spends, counted investment, expense-by-category.
+            Closing liquid rolls forward from Recipe opening balance:
+          </p>
+<pre>liquidSavings_m = income_m − spends_m − investment_m
+closingLiquid_0 = openingBalance + liquidSavings_0
+closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
+          <p>Savings % helpers use income as the denominator (0 → 0%). PF never enters monthly investment.</p>
+        </div>
+      </div>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Investment breakup</span>
+          <span class="meta">buildInvestmentBreakup</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          Seeds from Recipe <code>getInitialInvestments()</code>, then adds counted sheet rows keyed by
+          <code>investmentType || category || 'Uncategorized'</code>. Home shows top 3; ChartModal pie shows full map.
+          PF omitted entirely.
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== FRONTEND ========== -->
+    <div id="frontend" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Frontend Application Structure</h3>
+      <p class="lede">
+        Mobile-first shell (<code>max-w-lg</code>). <code>App.tsx</code> owns auth + sheet lifecycle,
+        tour, metrics recompute, planner localStorage, and modal orchestration.
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>Views</h4>
+          <ul>
+            <li><code>HomeView</code> — KPI grid, ChartModal, More Details / PF</li>
+            <li><code>PlannerView</code> — ephemeral what-if rows</li>
+            <li><code>LedgerView</code> — searchable timeline + manage modal</li>
+            <li><code>MonthlyView</code> — per-month KPI breakdown</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Cross-cutting</h4>
+          <ul>
+            <li><code>HeaderMenu</code> — mask, theme, legal, recipe, install, logout</li>
+            <li><code>FloatingNav</code> — layout-animated active pill</li>
+            <li><code>ChartModal</code> — list / pie / line; portaled sheet</li>
+            <li>Hooks: theme, mask, recipe, PWA install</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion" style="margin-top:14px;" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Theme system</span>
+          <span class="meta">src/lib/themes.ts</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          Six variants (3 light / 3 dark): Classic, Blueberry, Pistachio Matcha, Double Chocolate,
+          Red Velvet, Salted Caramel. Applied via <code>data-theme</code> + optional <code>dark</code> class;
+          persisted as <code>muffinTheme</code>. Charts pull per-theme <code>chartColors</code>.
+          Motion springs/variants centralized in <code>src/lib/motion.ts</code>.
+        </div>
+      </div>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>PWA behavior</span>
+          <span class="meta">vite.config.ts · VitePWA</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          <ul style="margin:0; padding-left:1.1rem;">
+            <li><code>registerType: 'autoUpdate'</code></li>
+            <li>Workbox precaches js/css/html/ico/png/svg/woff2</li>
+            <li><code>navigateFallback: '/index.html'</code> for SPA routing</li>
+            <li>Shell can load offline; live KPIs require network → function → Sheets</li>
+            <li>Install prompt via <code>usePwaInstall</code> / <code>beforeinstallprompt</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Amount expression evaluator</span>
+          <span class="meta">src/lib/evaluateAmount.ts</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          Manage-transaction amount field accepts BODMAS arithmetic and <code>%</code>
+          (e.g. <code>1000 * 18%</code> → 180). Safe evaluator — not <code>eval</code> of arbitrary JS.
+          Micro-haptics via <code>navigator.vibrate(8)</code> where supported.
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Recompute trigger:</strong> metrics rebuild when sheet transactions or Recipe config change.
+        Planner overlays are view-local and never write to Sheets.
+      </div>
+    </div>
+
+    <!-- ========== OPS ========== -->
+    <div id="ops" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Deployment, Env &amp; Extensibility</h3>
+      <p class="lede">
+        Build → Netlify publish <code>dist</code> + functions. Local loop uses <code>netlify dev</code>
+        (Vite :5173 proxied behind :8888).
+      </p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Variable</th><th>Required</th><th>Notes</th></tr></thead>
           <tbody>
             <tr>
               <td><code>GOOGLE_CLIENT_ID</code></td>
-              <td>Google OAuth Web Client ID from Google Cloud Console</td>
+              <td>Yes</td>
+              <td>OAuth Web client ID</td>
             </tr>
             <tr>
               <td><code>GOOGLE_CLIENT_SECRET</code></td>
-              <td>Google OAuth Web Client Secret</td>
+              <td>Yes</td>
+              <td>Server-only; never ship to Vite</td>
             </tr>
             <tr>
               <td><code>GOOGLE_REDIRECT_URI</code></td>
-              <td>OAuth redirect URI (e.g. <code>https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback</code>)</td>
+              <td>Yes</td>
+              <td>Local: <code>http://localhost:8888/.netlify/functions/auth-callback</code><br>
+                  Prod: <code>https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback</code></td>
             </tr>
             <tr>
               <td><code>SESSION_SECRET</code></td>
-              <td>Random secret string used for httpOnly session cookie encryption</td>
+              <td>Yes</td>
+              <td>Long random (<code>openssl rand -hex 32</code>); rotate = logout everyone</td>
+            </tr>
+            <tr>
+              <td><code>NETLIFY_SITE_ID</code> / <code>NETLIFY_AUTH_TOKEN</code></td>
+              <td>Optional</td>
+              <td>Point local Blobs at the real site store instead of FS fallback</td>
             </tr>
           </tbody>
         </table>
       </div>
+
+<pre style="margin-top:14px;"><span class="c"># netlify.toml (essentials)</span>
+[build]
+  command = "npm run build"   <span class="c"># tsc -b && vite build</span>
+  publish = "dist"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200</pre>
+
+      <div class="grid-2" style="margin-top:14px;">
+        <div class="card">
+          <h4>Dev commands</h4>
+          <ul>
+            <li><code>npm install</code></li>
+            <li><code>npm run dev</code> — Netlify Dev + Vite</li>
+            <li><code>npm run build</code> / <code>preview</code></li>
+            <li><code>npm run showcase</code> — Playwright + PPT deck</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>After env changes</h4>
+          <p>Trigger a new Netlify deploy so functions pick up updated secrets. Keep production redirect URLs out of committed docs that secret-scanning may flag.</p>
+        </div>
+      </div>
+
+      <h4 style="margin:18px 0 8px; color:var(--primary); font-size:0.95rem;">Extension playbook</h4>
+      <div class="accordion open" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Add a new KPI</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          Extend <code>FinancialMetrics</code> / <code>MetricKey</code> → compute in <code>metrics.ts</code> →
+          card in <code>HomeView</code> → optional <code>ChartModal</code> kind.
+        </div>
+      </div>
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Add a sheet column</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          Update row mapping in <code>netlify/functions/transactions.js</code>, templates under
+          <code>templates/</code>, and <code>SheetRowData</code>. Document header-row assumptions.
+        </div>
+      </div>
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>Swap the backend</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          Keep <code>src/lib/api.ts</code> shapes stable; replace the transactions function with any
+          store that returns the same <code>Transaction[]</code> contract. Service-account auth is a
+          viable alternative to per-user refresh tokens (share the sheet with the SA email).
+        </div>
+      </div>
+      <div class="accordion" onclick="toggleAccordion(this)">
+        <div class="accordion-header">
+          <span>PF-like display-only buckets</span>
+          <span class="chev">▼</span>
+        </div>
+        <div class="accordion-content">
+          Extend matching in <code>providentFund.ts</code> (or generalize it) and keep carve-outs out of
+          <code>isCountedInvestment</code> consumers.
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Known gaps (honest backlog):</strong> no automated tests/linters configured yet;
+        functions are JS (TS migration would improve DX); CSP / rate limits are natural hardening next steps.
+      </div>
     </div>
 
-    <!-- Metrics Engine Tab -->
-    <div id="metrics" class="tab-content">
-      <h3 style="margin-top: 0; color: var(--primary);">🧮 Metrics Engine Specifications</h3>
-      <p style="font-size: 0.86rem; color: var(--text-secondary);">Mathematical calculations implemented in <code>src/lib/metrics.ts</code>:</p>
-
-      <pre>
-investmentBalance = initialInvestments + SUM(countedInvestment)
-trackedLiquid     = SUM(income) - SUM(expense) - SUM(countedInvestment)
-liquidBalance     = openingBalance + trackedLiquid
-netWorth          = investmentBalance + liquidBalance
-providentFund     = SUM(PF / EPF / PPF rows) [Isolated on More Details]
-      </pre>
-    </div>
+    <p class="footer-note">
+      Companion to README §3 · Live site muffin-ledger.netlify.app · Vibe coded by Rahul Gouri, 2026
+    </p>
   </div>
 
   <script>
+    const LAYER_DETAIL = {
+      spa: {
+        title: 'React SPA',
+        body: `Owns auth bootstrap (getMe), sheet onboarding gates, first-run tour, tab routing, and metric recomputation.
+Client never holds Google client secrets. Planner / theme / mask stay in localStorage.
+Failure modes: AuthRequiredError → sign-in screen; NeedsSheetError → SheetOnboarding; soft banner if sheet tabs missing.`
+      },
+      edge: {
+        title: 'Netlify CDN + PWA shell',
+        body: `Serves hashed assets from dist. SPA redirect /* → /index.html (status 200).
+Service worker precaches the shell (autoUpdate). Finance payloads are never treated as durable offline truth —
+KPIs need a live function hop to Sheets.`
+      },
+      fn: {
+        title: 'Netlify Functions BFF',
+        body: `Thin adapters: verify session → load Blobs user record → OAuth2Client(refresh) → Sheets or mutate Blobs.
+Shared helpers under netlify/lib/*. Keep business math out of this layer; prefer returning raw Transaction[] for the client engine.`
+      },
+      session: {
+        title: 'Session + user store',
+        body: `muffin_session: AES-256-GCM sealed JSON (sub, refreshToken, exp). Blobs store muffin-users keyed by Google sub holds spreadsheetId, recipe, tourCompletedAt.
+Local netlify dev without Blobs context falls back to .netlify/muffin-users/ on disk.`
+      },
+      sheets: {
+        title: 'Google Sheets',
+        body: `Human-editable ledger / database. Fixed tabs Income, Expense, Investment. google-spreadsheet wraps the API.
+Type is inferred from tab name (TYPE_BY_TAB). Mutating APIs identify rows by tabName + rowIndex (+ optional expectedRow guard).`
+      }
+    };
+
+    const FLOW_STEPS = [
+      {
+        title: 'User opens dashboard',
+        actors: ['User', 'React'],
+        hot: ['User', 'React'],
+        detail: 'SPA boots Theme/Mask/Recipe providers, then calls getMe() with credentials included.',
+        code: 'GET /.netlify/functions/auth-me'
+      },
+      {
+        title: 'Session validated',
+        actors: ['React', 'auth-me', 'session'],
+        hot: ['auth-me', 'session'],
+        detail: 'Function unseals muffin_session. If missing/expired → 401 → SignInScreen.',
+        code: 'readSession(event) → { sub, refreshToken, … }'
+      },
+      {
+        title: 'Load sheet transactions',
+        actors: ['React', 'transactions', 'Blobs', 'Sheets'],
+        hot: ['transactions', 'Sheets'],
+        detail: 'GET transactions: Blobs → spreadsheetId; refresh token → access token; read three tabs.',
+        code: 'GET /.netlify/functions/transactions → Transaction[]'
+      },
+      {
+        title: 'Client metrics engine',
+        actors: ['React', 'metrics.ts'],
+        hot: ['metrics.ts'],
+        detail: 'buildFinancialMetrics(tx) + Recipe seeds. PF isolated. Home/Ledger/Monthly render.',
+        code: 'const metrics = buildFinancialMetrics(transactions)'
+      },
+      {
+        title: 'User mutates a row',
+        actors: ['User', 'React'],
+        hot: ['User', 'React'],
+        detail: 'ManageTransactionModal → create/update/delete via api.ts with tabName + rowData/rowIndex.',
+        code: 'POST|PUT|DELETE /.netlify/functions/transactions'
+      },
+      {
+        title: 'Sheets write',
+        actors: ['transactions', 'Sheets'],
+        hot: ['transactions', 'Sheets'],
+        detail: 'Function mutates the matching tab row. Optional expectedRow detects stale edits (404/conflict paths).',
+        code: 'GoogleSpreadsheet sheet.addRow / save / delete'
+      },
+      {
+        title: 'Refresh ledger',
+        actors: ['React', 'transactions'],
+        hot: ['React'],
+        detail: 'SPA re-GETs transactions and recomputes metrics. No server-side KPI cache.',
+        code: 'await getTransactions(); setMetrics(buildFinancialMetrics(…))'
+      },
+      {
+        title: 'Planner path (local only)',
+        actors: ['User', 'React', 'localStorage'],
+        hot: ['localStorage'],
+        detail: 'Planner CRUD never hits functions. Key: plannerTransactions. Overlay math for what-if scenarios.',
+        code: 'localStorage.setItem("plannerTransactions", JSON.stringify(…))'
+      }
+    ];
+
+    const AUTH_STEPS = [
+      {
+        title: 'Start OAuth',
+        actors: ['Browser', 'auth-start', 'Google'],
+        hot: ['auth-start', 'Google'],
+        detail: 'User hits Sign in → navigate to AUTH_START_URL. Function redirects to Google consent with offline access.',
+        code: 'GET /.netlify/functions/auth-start → 302 Google'
+      },
+      {
+        title: 'Consent & redirect',
+        actors: ['Google', 'auth-callback'],
+        hot: ['Google', 'auth-callback'],
+        detail: 'Google redirects to GOOGLE_REDIRECT_URI with authorization code (or error).',
+        code: 'GET …/auth-callback?code=…'
+      },
+      {
+        title: 'Code exchange',
+        actors: ['auth-callback', 'Google'],
+        hot: ['auth-callback'],
+        detail: 'Server exchanges code using CLIENT_ID/SECRET. Receives refresh (+ access) tokens. Secrets never touch the SPA.',
+        code: 'OAuth2Client.getToken(code)'
+      },
+      {
+        title: 'Seal session cookie',
+        actors: ['auth-callback', 'Browser'],
+        hot: ['auth-callback'],
+        detail: 'createSessionToken({ sub, email, name, picture, refreshToken }) → Set-Cookie: muffin_session=…; HttpOnly',
+        code: 'AES-256-GCM(SHA256(SESSION_SECRET), payload)'
+      },
+      {
+        title: 'SPA session hydrate',
+        actors: ['Browser', 'auth-me', 'Blobs'],
+        hot: ['auth-me', 'Blobs'],
+        detail: 'App loads; getMe returns user + needsSheet + recipe + showTour. Recipe hydrated into local cache.',
+        code: 'GET /.netlify/functions/auth-me'
+      },
+      {
+        title: 'Link or create sheet',
+        actors: ['User', 'sheet-link|create', 'Sheets', 'Blobs'],
+        hot: ['sheet-link|create', 'Blobs'],
+        detail: 'Onboarding persists spreadsheetId on Blobs user record. Subsequent transactions calls require it.',
+        code: 'POST sheet-link | sheet-create'
+      }
+    ];
+
+    let flowIndex = 0;
+    let authIndex = 0;
+    let flowTimer = null;
+
     function showTab(event, id) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
-      event.target.classList.add('active');
-      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach((btn) => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach((content) => content.classList.remove('active'));
+      const btn = event?.currentTarget || document.querySelector(`.tab-btn[data-tab="${id}"]`);
+      if (btn) btn.classList.add('active');
+      const panel = document.getElementById(id);
+      if (panel) panel.classList.add('active');
+      history.replaceState(null, '', '#' + id);
+      if (id === 'metrics') recalcMetrics();
+      if (id === 'arch') renderFlow();
+      if (id === 'security') renderAuth();
+    }
+
+    function showTabById(id) {
+      const btn = document.querySelector(`.tab-btn[data-tab="${id}"]`);
+      showTab({ currentTarget: btn }, id);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleAccordion(element) {
+      element.classList.toggle('open');
+    }
+
+    function selectLayer(el) {
+      document.querySelectorAll('.arch-layer').forEach((n) => n.classList.remove('active'));
+      el.classList.add('active');
+      const key = el.getAttribute('data-layer');
+      const d = LAYER_DETAIL[key];
+      const box = document.getElementById('archDetail');
+      box.innerHTML = `<h4>${d.title}</h4><p style="margin:0; white-space:pre-wrap;">${d.body}</p>`;
+    }
+
+    function renderStep(steps, index, trackId, panelId, labelId) {
+      const step = steps[index];
+      document.getElementById(labelId).textContent = `Step ${index + 1} / ${steps.length}`;
+      const track = document.getElementById(trackId);
+      track.innerHTML = steps
+        .map((_, i) => {
+          const cls = i < index ? 'done' : i === index ? 'current' : '';
+          return `<div class="flow-dot ${cls}"></div>`;
+        })
+        .join('');
+      const chips = step.actors
+        .map((a) => `<span class="actor-chip ${step.hot.includes(a) ? 'hot' : ''}">${a}</span>`)
+        .join('');
+      document.getElementById(panelId).innerHTML = `
+        <div class="actors">${chips}</div>
+        <h4>${step.title}</h4>
+        <p>${step.detail}</p>
+        <pre>${step.code}</pre>
+      `;
+    }
+
+    function renderFlow() {
+      renderStep(FLOW_STEPS, flowIndex, 'flowTrack', 'flowPanel', 'flowStepLabel');
+    }
+    function renderAuth() {
+      renderStep(AUTH_STEPS, authIndex, 'authTrack', 'authPanel', 'authStepLabel');
+    }
+
+    function flowNext() {
+      flowIndex = (flowIndex + 1) % FLOW_STEPS.length;
+      renderFlow();
+    }
+    function flowPrev() {
+      flowIndex = (flowIndex - 1 + FLOW_STEPS.length) % FLOW_STEPS.length;
+      renderFlow();
+    }
+    function flowPlay() {
+      if (flowTimer) {
+        clearInterval(flowTimer);
+        flowTimer = null;
+        return;
+      }
+      flowTimer = setInterval(() => {
+        flowNext();
+        if (flowIndex === 0) {
+          clearInterval(flowTimer);
+          flowTimer = null;
+        }
+      }, 1600);
+    }
+
+    function authNext() {
+      authIndex = (authIndex + 1) % AUTH_STEPS.length;
+      renderAuth();
+    }
+    function authPrev() {
+      authIndex = (authIndex - 1 + AUTH_STEPS.length) % AUTH_STEPS.length;
+      renderAuth();
+    }
+
+    function inr(n) {
+      const sign = n < 0 ? '-' : '';
+      const abs = Math.abs(Math.round(n));
+      return sign + '₹' + abs.toLocaleString('en-IN');
+    }
+
+    function recalcMetrics() {
+      const opening = Number(document.getElementById('mOpening').value) || 0;
+      const initInv = Number(document.getElementById('mInitInv').value) || 0;
+      const income = Number(document.getElementById('mIncome').value) || 0;
+      const expense = Number(document.getElementById('mExpense').value) || 0;
+      const inv = Number(document.getElementById('mInv').value) || 0;
+      const pf = Number(document.getElementById('mPf').value) || 0;
+
+      const investmentBalance = initInv + inv;
+      const trackedLiquid = income - expense - inv;
+      const liquidBalance = opening + trackedLiquid;
+      const netWorth = investmentBalance + liquidBalance;
+      const starting = initInv + opening;
+      const growth = netWorth - starting;
+      const growthPct = starting === 0 ? 0 : (growth / Math.abs(starting)) * 100;
+      const savingsRate = income === 0 ? 0 : ((inv + trackedLiquid) / income) * 100;
+
+      const rows = [
+        { name: 'investmentBalance', val: inr(investmentBalance) },
+        { name: 'trackedLiquid', val: inr(trackedLiquid) },
+        { name: 'liquidBalance', val: inr(liquidBalance) },
+        { name: 'netWorth', val: inr(netWorth), accent: true },
+        { name: 'providentFundBalance', val: inr(pf), muted: true },
+        { name: 'growthSinceStart', val: inr(growth) },
+        { name: 'growthSinceStartPct', val: growthPct.toFixed(1) + '%' },
+        { name: 'savingsRate (lifetime)', val: savingsRate.toFixed(1) + '%' },
+        { name: 'netWorth if PF were included (counterfactual)', val: inr(netWorth + pf), muted: true },
+      ];
+
+      document.getElementById('metricOut').innerHTML = rows
+        .map(
+          (r) =>
+            `<div class="metric-row ${r.accent ? 'accent' : ''} ${r.muted ? 'muted' : ''}">
+              <span class="name">${r.name}</span>
+              <span class="val">${r.val}</span>
+            </div>`
+        )
+        .join('');
+    }
+
+    function resetMetricsDefaults() {
+      document.getElementById('mOpening').value = 50000;
+      document.getElementById('mInitInv').value = 100000;
+      document.getElementById('mIncome').value = 240000;
+      document.getElementById('mExpense').value = 120000;
+      document.getElementById('mInv').value = 60000;
+      document.getElementById('mPf').value = 36000;
+      recalcMetrics();
+    }
+
+    // Init
+    selectLayer(document.querySelector('.arch-layer.active'));
+    renderFlow();
+    renderAuth();
+    recalcMetrics();
+
+    const hash = (location.hash || '').replace('#', '');
+    if (hash && document.getElementById(hash)) {
+      showTabById(hash);
     }
   </script>
 </body>
