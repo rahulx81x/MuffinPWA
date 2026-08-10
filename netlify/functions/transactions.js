@@ -162,7 +162,11 @@ async function handlePost(doc, body) {
   }
 
   const sheet = getSheet(doc, tabName);
-  await sheet.addRow(rowData);
+  // Use { insert: true } so the Sheets API uses INSERT_ROWS mode instead of
+  // OVERWRITE. Without it, values.append uses table-boundary detection, which
+  // mis-fires when trailing columns (Comment, Investment Type) are empty and
+  // causes a second sequential add to overwrite the row that was just written.
+  await sheet.addRow(rowData, { insert: true });
   return { ok: true };
 }
 

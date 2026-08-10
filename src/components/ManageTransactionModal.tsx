@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -40,16 +40,6 @@ interface ManageTransactionModalProps {
   investmentTypeOptions?: string[];
   onClose: () => void;
   onSuccess: () => Promise<void> | void;
-}
-
-function triggerHaptic() {
-  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-    try {
-      navigator.vibrate(8);
-    } catch {
-      // Ignore vibration errors
-    }
-  }
 }
 
 type InvestmentTypeOption = {
@@ -199,6 +189,24 @@ export function ManageTransactionModal({
   const [investmentTypeInput, setInvestmentTypeInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const amountInputRef = useRef<HTMLInputElement>(null);
+
+  function insertOperator(op: string) {
+    const input = amountInputRef.current;
+    if (!input) {
+      setAmountText((prev) => prev + op);
+      return;
+    }
+    const start = input.selectionStart ?? amountText.length;
+    const end = input.selectionEnd ?? amountText.length;
+    const next = amountText.slice(0, start) + op + amountText.slice(end);
+    setAmountText(next);
+    // Restore cursor after React re-render
+    requestAnimationFrame(() => {
+      input.focus();
+      input.setSelectionRange(start + op.length, start + op.length);
+    });
+  }
 
   const dynamicCategoryChips = useMemo(() => {
     if (!transactions || !transactions.length) return [];
@@ -398,10 +406,7 @@ export function ManageTransactionModal({
                 </h2>
               </div>
               <SoftButton
-                onClick={() => {
-                  triggerHaptic();
-                  onClose();
-                }}
+                onClick={onClose}
                 disabled={saving}
                 className={closeBtnClass}
                 aria-label="Close"
@@ -426,10 +431,7 @@ export function ManageTransactionModal({
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => {
-                          triggerHaptic();
-                          setType(item.id);
-                        }}
+                        onClick={() => setType(item.id)}
                         disabled={saving}
                         className={`relative flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors duration-200 ${
                           active ? 'text-primary-foreground' : 'text-text-muted hover:text-text'
@@ -478,6 +480,7 @@ export function ManageTransactionModal({
                   <label className="block">
                     <span className={labelClass}>Amount</span>
                     <input
+                      ref={amountInputRef}
                       type="text"
                       required
                       inputMode="decimal"
@@ -493,6 +496,20 @@ export function ManageTransactionModal({
                       }
                       className={fieldClass}
                     />
+                    <div className="mt-1.5 flex gap-1">
+                      {(['+', '-', '*', '/'] as const).map((op) => (
+                        <button
+                          key={op}
+                          type="button"
+                          disabled={saving}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => insertOperator(op)}
+                          className="flex-1 rounded-lg border border-border/70 bg-canvas/70 py-1 text-sm font-bold text-text-secondary transition active:scale-95 hover:border-primary/50 hover:bg-primary/10 hover:text-primary disabled:opacity-40"
+                        >
+                          {op === '*' ? '×' : op === '/' ? '÷' : op}
+                        </button>
+                      ))}
+                    </div>
                     {amountPreview != null && (
                       <span
                         id="amount-expr-preview"
@@ -535,10 +552,7 @@ export function ManageTransactionModal({
                           <button
                             key={chip}
                             type="button"
-                            onClick={() => {
-                              triggerHaptic();
-                              setCategory(chip);
-                            }}
+                            onClick={() => setCategory(chip)}
                             className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition active:scale-95 ${colorStyle}`}
                           >
                             {chip}
@@ -570,7 +584,10 @@ export function ManageTransactionModal({
                     : 'No types'
                 }
                 formatCreateLabel={(input) => `Use “${input.trim()}”`}
-                filterOption={() => true}
+                filterOption={(option, inputValue) => {
+                  if (!inputValue) return true;
+                  return option.label.toLowerCase().includes(inputValue.toLowerCase());
+                }}
                 openMenuOnFocus={false}
                 openMenuOnClick
                 blurInputOnSelect
