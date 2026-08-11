@@ -17,10 +17,10 @@ export function MonthlyView({ transactions }: MonthlyViewProps) {
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+        <h2 className="font-display text-lg font-bold text-text">
           Monthly log
         </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-text-muted">
           Closing totals and savings rate by month
         </p>
       </div>
@@ -85,7 +85,7 @@ function MiniStat({
 }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
         {label}
       </p>
       <p className={`mt-0.5 text-xs font-bold tabular-nums ${className}`}>

@@ -7,8 +7,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon_192.png', 'icons/icon_512.png'],
+      includeAssets: [
+        'icons/icon_192.png',
+        'icons/icon_512.png',
+        'icons/muffin-icon.svg',
+      ],
       manifest: {
+        id: '/',
         name: 'Muffin',
         short_name: 'Muffin',
         description:
@@ -17,8 +22,8 @@ export default defineConfig({
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#f8fafc',
-        theme_color: '#2563eb',
+        background_color: '#FAF5EF',
+        theme_color: '#D97706',
         icons: [
           {
             src: '/icons/icon_192.png',
@@ -35,6 +40,12 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
+          },
+          {
+            src: '/icons/muffin-icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
           },
         ],
       },
@@ -70,7 +81,7 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: false,
+        enabled: true,
       },
     }),
   ],

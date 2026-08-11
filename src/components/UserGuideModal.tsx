@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BookOpen,
   Calculator,
   ChevronRight,
   Database,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react';
 import { evaluateAmountExpression } from '../lib/evaluateAmount';
 import { backdropVariants, popoverVariants } from '../lib/motion';
+import { MuffinIcon } from './MuffinIcon';
 import { SoftButton } from './SoftButton';
 
 interface UserGuideModalProps {
@@ -62,14 +62,15 @@ export function UserGuideModal({
           <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
-                <BookOpen className="h-5 w-5" />
+                <MuffinIcon className="muffin-icon h-5 w-5 text-primary" />
               </div>
               <div>
                 <h2 className="font-display text-lg font-bold text-text">
                   Interactive User Guide
                 </h2>
                 <p className="text-xs text-text-muted">
-                  Learn features, formulas & sheet shortcuts
+                  Learn the essentials here — open the full web guide for tabs, Recipe,
+                  install, and deeper FAQs.
                 </p>
               </div>
             </div>
@@ -152,11 +153,14 @@ export function UserGuideModal({
             {activeTab === 'overview' && (
               <div className="space-y-4">
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-text">
-                  <h3 className="font-display font-bold text-primary mb-1 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" /> Welcome to Muffin!
-                  </h3>
+                    <h3 className="font-display font-bold text-primary mb-1 flex items-center gap-2">
+                      <MuffinIcon className="muffin-icon h-4 w-4 text-primary" /> Welcome to Muffin!
+                    </h3>
                   <p className="text-xs text-text-secondary leading-relaxed">
-                    Muffin connects your Google Sheet directly to a sleek mobile dashboard. Log income, expenses, and investments with 1-tap category chips, built-in percentage math, and real-time Net Worth tracking.
+                    Muffin connects your Google Sheet to a mobile dashboard. Log income,
+                    expenses, and investments with category chips, amount math, and live
+                    net-worth tracking. Installable as a PWA — balances always load from
+                    your sheet over the network.
                   </p>
                 </div>
 
@@ -203,7 +207,9 @@ export function UserGuideModal({
                   Google Sheet Workbook Structure
                 </h3>
                 <p className="text-xs text-text-muted leading-relaxed">
-                  Muffin requires a single Google Sheet workbook with 3 fixed tabs:
+                  One Google Sheet workbook with three fixed tabs. Prefer{' '}
+                  <code className="text-primary">YYYY-MM-DD</code> dates and keep the header
+                  row. Sample CSVs: <code className="text-primary">templates/</code>.
                 </p>
 
                 <div className="space-y-2 text-xs font-mono">
@@ -252,7 +258,8 @@ export function UserGuideModal({
                   <Calculator className="h-4 w-4 text-primary" /> Live Calculator Interactive Playground
                 </h3>
                 <p className="text-xs text-text-muted leading-relaxed">
-                  Test Muffin's built-in expression evaluator! Try typing math formulas below:
+                  Type math in Amount fields or open the calculator button beside them.
+                  Try formulas below (same evaluator as the app):
                 </p>
 
                 <div className="cozy-card p-4 space-y-3">
@@ -338,19 +345,34 @@ export function UserGuideModal({
               <div className="space-y-3">
                 <div className="rounded-2xl border border-border/80 bg-surface p-3.5 space-y-1">
                   <h4 className="text-xs font-bold text-text">
-                    🔒 Is my financial data private?
+                    Is my financial data private?
                   </h4>
                   <p className="text-xs text-text-muted leading-relaxed">
-                    Yes. All transaction records stay in your personal Google Sheet. Muffin does not sell user data or train AI models.
+                    Yes. Transactions stay in your personal Google Sheet. Muffin does not
+                    sell data or train AI models on it. See Privacy Policy and Terms in the
+                    gear menu.
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-border/80 bg-surface p-3.5 space-y-1">
                   <h4 className="text-xs font-bold text-text">
-                    🏦 How is Provident Fund (PF) tracked?
+                    How is Provident Fund (PF) tracked?
                   </h4>
                   <p className="text-xs text-text-muted leading-relaxed">
-                    Investment rows tagged as Provident Fund / EPF / PPF are tracked in a dedicated PF total on the More Details card and omitted from liquid cash.
+                    Investment rows tagged Provident Fund / PF / EPF / PPF appear on Home →
+                    More Details. They are excluded from counted investment, the breakup
+                    pie, and net worth.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-border/80 bg-surface p-3.5 space-y-1">
+                  <h4 className="text-xs font-bold text-text">
+                    Does Muffin work fully offline?
+                  </h4>
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    The app shell can install as a PWA. Live KPIs and ledger data need a
+                    network connection to your sheet. Planner what-if rows stay on this
+                    device only.
                   </p>
                 </div>
               </div>
@@ -365,7 +387,7 @@ export function UserGuideModal({
               rel="noopener noreferrer"
               className="font-bold text-primary hover:underline"
             >
-              Open Full Web Guide ↗
+              Open Full User Guide ↗
             </a>
             <SoftButton type="button" onClick={onClose} className="px-4 py-1.5 font-semibold">
               Got it

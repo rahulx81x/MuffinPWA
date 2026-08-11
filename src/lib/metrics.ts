@@ -6,7 +6,6 @@ import {
 import type { FinancialMetrics, MonthlyKPI, Transaction } from '../types';
 import {
   isCountedInvestment,
-  isProvidentFund,
   sumProvidentFund,
 } from './providentFund';
 
@@ -224,5 +223,3 @@ export const EMPTY_METRICS: FinancialMetrics = {
   monthsTracked: 0,
   investmentBreakup: {},
 };
-
-export { isProvidentFund, isCountedInvestment };

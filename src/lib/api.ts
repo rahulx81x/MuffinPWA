@@ -143,13 +143,6 @@ export async function unlinkSheet(): Promise<void> {
   await assertOk(response);
 }
 
-export async function getRecipe(): Promise<RecipePayload> {
-  const response = await apiFetch(RECIPE);
-  await assertOk(response);
-  const data = (await response.json()) as { recipe: RecipePayload };
-  return data.recipe;
-}
-
 export async function saveRecipe(
   recipe: RecipePayload
 ): Promise<RecipePayload> {

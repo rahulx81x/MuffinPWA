@@ -1,9 +1,3 @@
-export const INITIAL_INVESTMENT = 0;
-export const INITIAL_REGULAR_DEPOSITS = 0;
-export const INITIAL_FIXED_DEPOSITS = 0;
-export const INITIAL_MUTUAL_FUNDS = 0;
-export const INITIAL_LIQUID_BALANCE = 0;
-
 export const CURRENCY = {
   symbol: '₹',
   locale: 'en-IN',
@@ -22,13 +16,6 @@ export interface RecipeConfig {
   investments: RecipeInvestment[];
 }
 
-export interface InitialInvestmentBreakdown {
-  regular: number;
-  fixed: number;
-  mutual: number;
-  total: number;
-}
-
 type RecipeListener = () => void;
 
 let recipeCache: RecipeConfig | null = null;
@@ -36,35 +23,6 @@ const recipeListeners = new Set<RecipeListener>();
 
 function newInvestmentId(): string {
   return `inv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function seedInvestmentsFromConstants(): RecipeInvestment[] {
-  const entries: Array<{ type: string; amount: number }> = [
-    { type: 'Regular Deposits', amount: Number(INITIAL_REGULAR_DEPOSITS) || 0 },
-    { type: 'Fixed Deposits', amount: Number(INITIAL_FIXED_DEPOSITS) || 0 },
-    { type: 'Mutual Funds', amount: Number(INITIAL_MUTUAL_FUNDS) || 0 },
-  ];
-  const withAmounts = entries.filter((e) => e.amount > 0);
-  if (withAmounts.length > 0) {
-    return withAmounts.map((e) => ({
-      id: newInvestmentId(),
-      type: e.type,
-      amount: e.amount,
-    }));
-  }
-
-  const legacy = Number(INITIAL_INVESTMENT) || 0;
-  if (legacy > 0) {
-    return [
-      {
-        id: newInvestmentId(),
-        type: 'Initial Investment',
-        amount: legacy,
-      },
-    ];
-  }
-
-  return [];
 }
 
 export function createEmptyInvestment(
@@ -76,8 +34,8 @@ export function createEmptyInvestment(
 
 export function getDefaultRecipeConfig(): RecipeConfig {
   return {
-    openingBalance: Number(INITIAL_LIQUID_BALANCE) || 0,
-    investments: seedInvestmentsFromConstants(),
+    openingBalance: 0,
+    investments: [],
   };
 }
 
@@ -180,21 +138,6 @@ export function getOpeningBalance(): number {
 
 export function getInitialInvestments(): RecipeInvestment[] {
   return getRecipeConfig().investments;
-}
-
-export function getInitialInvestmentBreakdown(): InitialInvestmentBreakdown {
-  const investments = getInitialInvestments();
-  const findAmount = (label: string) =>
-    investments
-      .filter((row) => row.type.toLowerCase() === label.toLowerCase())
-      .reduce((sum, row) => sum + row.amount, 0);
-
-  const regular = findAmount('Regular Deposits');
-  const fixed = findAmount('Fixed Deposits');
-  const mutual = findAmount('Mutual Funds');
-  const total = investments.reduce((sum, row) => sum + row.amount, 0);
-
-  return { regular, fixed, mutual, total };
 }
 
 export function getInitialInvestmentTotal(): number {

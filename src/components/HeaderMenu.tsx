@@ -13,13 +13,16 @@ import {
   Palette,
   Settings2,
   ShieldCheck,
+  Type,
   UtensilsCrossed,
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useFont } from '../hooks/useFont';
 import { useMask } from '../hooks/useMask';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 import { useTheme } from '../hooks/useTheme';
+import { FONTS, type FontDefinition, type FontId } from '../lib/fonts';
 import {
   popoverVariants,
   springSnappy,
@@ -41,6 +44,7 @@ interface HeaderMenuProps {
   onPrivacy?: () => void;
   onTerms?: () => void;
   onLogout: () => void;
+  onInstallGuide?: () => void;
 }
 
 function ThemeSwatch({ theme }: { theme: ThemeDefinition }) {
@@ -73,15 +77,19 @@ export function HeaderMenu({
   onPrivacy,
   onTerms,
   onLogout,
+  onInstallGuide,
 }: HeaderMenuProps) {
   const [open, setOpen] = useState(false);
-  const [panel, setPanel] = useState<'main' | 'theme' | 'guides'>('main');
+  const [panel, setPanel] = useState<'main' | 'theme' | 'font' | 'guides'>(
+    'main'
+  );
   const [installHint, setInstallHint] = useState<string | null>(null);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const { masked, toggleMask } = useMask();
   const { themeId, setTheme } = useTheme();
-  const { state: installState, install } = usePwaInstall();
+  const { fontId, setFont } = useFont();
+  const { state: installState, install, canPrompt } = usePwaInstall();
 
   useEffect(() => {
     if (!open) return;
@@ -131,30 +139,34 @@ export function HeaderMenu({
     }, 160);
   }
 
+  function handleSelectFont(id: FontId) {
+    setFont(id);
+    window.setTimeout(() => {
+      setPanel('main');
+      setOpen(false);
+    }, 160);
+  }
+
   async function handleInstall() {
-    const result = await install();
-    if (result === 'accepted' || result === 'installed') {
-      setInstallHint('App installed.');
-      window.setTimeout(closeMenu, 700);
-      return;
+    if (canPrompt) {
+      const result = await install();
+      if (result === 'accepted' || result === 'installed') {
+        setInstallHint('App installed.');
+        window.setTimeout(closeMenu, 700);
+        return;
+      }
     }
-    if (result === 'ios-hint') {
-      setInstallHint('On iOS: Share → Add to Home Screen.');
-      return;
+
+    // If native prompt is not available, dismissed, or iOS/desktop browser menu fallback,
+    // open the interactive PWA install modal guide.
+    closeMenu();
+    if (onInstallGuide) {
+      onInstallGuide();
     }
-    if (result === 'dismissed') {
-      setInstallHint(null);
-      return;
-    }
-    setInstallHint('Install isn’t available in this browser yet.');
   }
 
   const installLabel =
-    installState === 'installed'
-      ? 'App installed'
-      : installState === 'ios-hint'
-        ? 'Download App'
-        : 'Download App';
+    installState === 'installed' ? 'App installed' : 'Download App';
 
   const itemClass =
     'flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[13px] font-medium text-text outline-none transition-colors hover:bg-surface-muted/60';
@@ -250,6 +262,17 @@ export function HeaderMenu({
                       type="button"
                       role="menuitem"
                       className={itemClass}
+                      onClick={() => setPanel('font')}
+                    >
+                      <Type className="h-4 w-4 shrink-0 text-text-secondary" />
+                      <span className="min-w-0 flex-1">Font</span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-text-muted" />
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={itemClass}
                       onClick={() => {
                         closeMenu();
                         onAbout();
@@ -330,6 +353,16 @@ export function HeaderMenu({
                       </p>
                     )}
 
+                    {(installState === 'ios-hint' ||
+                      installState === 'browser-menu') &&
+                      !installHint && (
+                        <p className="px-2.5 pb-1.5 text-[11px] leading-snug text-text-muted">
+                          {installState === 'ios-hint'
+                            ? 'On iOS: Share → Add to Home Screen.'
+                            : 'Or use your browser menu → Install app.'}
+                        </p>
+                      )}
+
                     <div className="my-1 border-t border-divider" />
 
                     <button
@@ -382,6 +415,28 @@ export function HeaderMenu({
                           theme={theme}
                           active={themeId === theme.id}
                           onSelect={handleSelectTheme}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : panel === 'font' ? (
+                  <div>
+                    <button
+                      type="button"
+                      className="mb-1 flex w-full items-center gap-1.5 rounded-xl px-2 py-1.5 text-left text-[12px] font-semibold uppercase tracking-[0.1em] text-text-muted outline-none hover:bg-surface-muted/50"
+                      onClick={() => setPanel('main')}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Font
+                    </button>
+
+                    <div className="space-y-0.5">
+                      {FONTS.map((font) => (
+                        <FontOption
+                          key={font.id}
+                          font={font}
+                          active={fontId === font.id}
+                          onSelect={handleSelectFont}
                         />
                       ))}
                     </div>
@@ -465,6 +520,54 @@ function ThemeOption({
       <ThemeSwatch theme={theme} />
       <span className="min-w-0 flex-1 text-[13px] font-medium leading-tight">
         {theme.name}
+      </span>
+      <AnimatePresence initial={false}>
+        {active && (
+          <motion.span
+            key="check"
+            initial={{ scale: 0.4, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.4, opacity: 0 }}
+            transition={springSoft}
+            className="inline-flex shrink-0 text-primary"
+          >
+            <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.button>
+  );
+}
+
+function FontOption({
+  font,
+  active,
+  onSelect,
+}: {
+  font: FontDefinition;
+  active: boolean;
+  onSelect: (id: FontId) => void;
+}) {
+  return (
+    <motion.button
+      type="button"
+      role="menuitemradio"
+      aria-checked={active}
+      onClick={() => onSelect(font.id)}
+      whileHover={{ scale: 1.015, x: 2 }}
+      whileTap={{ scale: 0.98 }}
+      transition={springSnappy}
+      className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left outline-none transition-colors duration-theme ease-cozy ${
+        active
+          ? 'bg-primary/15 text-text ring-1 ring-primary/35 shadow-glow'
+          : 'text-text-secondary hover:bg-surface-muted/60 hover:text-text'
+      }`}
+    >
+      <span
+        className="min-w-0 flex-1 text-[13px] font-medium leading-tight"
+        style={{ fontFamily: font.display }}
+      >
+        {font.name}
       </span>
       <AnimatePresence initial={false}>
         {active && (

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { SoftButton } from './SoftButton';
+import { MuffinIcon } from './MuffinIcon';
 import { createSheet, linkSheet } from '../lib/api';
 
 interface SheetOnboardingProps {
@@ -50,7 +51,8 @@ export function SheetOnboarding({ userName, onLinked }: SheetOnboardingProps) {
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
           Almost ready{userName ? `, ${userName.split(' ')[0]}` : ''}
         </p>
-        <h1 className="mt-2 font-display text-2xl font-bold tracking-[-0.02em] text-text">
+        <h1 className="mt-2 flex items-center gap-2.5 font-display text-2xl font-bold tracking-[-0.02em] text-text">
+          <MuffinIcon className="muffin-icon h-8 w-8 text-primary" />
           Connect your Google Sheet
         </h1>
         <p className="mt-2 text-sm text-text-secondary">

@@ -33,7 +33,7 @@ const STEPS = [
     id: 'features',
     eyebrow: 'Main features',
     title: 'Home, months, ledger & planner',
-    body: 'Home shows net worth and KPIs. Monthly breaks down by month. Ledger lists every row with add/edit. Planner helps sketch the current month. Charts, themes, and amount masking live under the gear menu.',
+    body: 'Home shows net worth and KPIs. Monthly breaks down by month. Ledger lists every row with add/edit. Planner helps sketch the current month. Charts, themes, fonts, and amount masking live under the gear menu.',
     Icon: LayoutDashboard,
   },
   {
@@ -102,8 +102,7 @@ export function TourModal({ open, onComplete }: TourModalProps) {
             <div className="relative overflow-hidden bg-[radial-gradient(ellipse_at_top,rgba(var(--accent-rgb),0.22),transparent_65%)] px-5 pb-4 pt-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <MuffinIcon className="h-9 w-9 text-primary" />
-                  <div>
+                  <MuffinIcon className="muffin-icon h-9 w-9 text-primary" />                  <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
                       Setup tour
                     </p>

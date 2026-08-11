@@ -3,29 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#FAF5EF">
+  <meta name="description" content="Muffin user guide — Google Sheets personal finance PWA: tabs, Recipe, calculator, PF, install, and privacy.">
   <title>User Guide - Muffin PWA</title>
+  <link rel="icon" type="image/svg+xml" href="/icons/muffin-icon.svg">
+  <link rel="apple-touch-icon" href="/icons/muffin-icon.svg">
+  <script src="/muffin-theme.js"></script>
+  <link rel="stylesheet" href="/muffin-theme.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      color-scheme: light;
-      --bg: #faf5ef;
-      --surface: #f3e8dc;
-      --card: #fffaf5;
-      --card-muted: #f5eada;
-      --text: #3d2314;
-      --text-secondary: #7c5a43;
-      --text-muted: #8c6d53;
-      --border: #e5d3b3;
-      --primary: #d97706;
-      --primary-hover: #b45309;
-      --primary-rgb: 217, 119, 6;
-      --shadow-warm: 0 4px 20px rgba(61, 35, 20, 0.06);
-    }
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     html, body {
       width: 100%;
       overflow-x: hidden;
@@ -45,7 +35,7 @@
       position: sticky;
       top: 0;
       z-index: 50;
-      background-color: rgba(250, 245, 239, 0.92);
+      background-color: var(--header-bg);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
@@ -60,14 +50,15 @@
       font-size: 1.1rem;
       margin: 0;
       color: var(--primary);
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 0.45rem;
     }
     .header-links {
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
     }
     .header-links a {
       display: inline-flex;
@@ -82,13 +73,11 @@
       font-size: 0.82rem;
       transition: background 0.2s ease;
     }
-    .header-links a:hover {
-      background: var(--border);
-    }
+    .header-links a:hover { background: var(--border); }
     .container {
       width: 100%;
       max-width: 860px;
-      margin: 20px auto;
+      margin: 20px auto 48px;
       padding: 0 16px;
     }
     .hero-banner {
@@ -106,9 +95,10 @@
       font-size: 1.5rem;
     }
     .hero-banner p {
-      margin: 0;
+      margin: 0 auto;
       font-size: 0.88rem;
       color: var(--text-secondary);
+      max-width: 54ch;
     }
     .nav-tabs {
       display: flex;
@@ -119,9 +109,7 @@
       margin-bottom: 20px;
       scrollbar-width: none;
     }
-    .nav-tabs::-webkit-scrollbar {
-      display: none;
-    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
     .tab-btn {
       flex-shrink: 0;
       background: var(--card);
@@ -134,12 +122,17 @@
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.2s ease;
+      font-family: inherit;
     }
     .tab-btn.active {
       background: var(--primary);
       color: #fff;
       border-color: var(--primary);
       box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.25);
+    }
+    .tab-btn:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
     }
     .tab-content {
       display: none;
@@ -149,8 +142,16 @@
       padding: 20px 16px;
       box-shadow: var(--shadow-warm);
     }
-    .tab-content.active {
-      display: block;
+    .tab-content.active { display: block; }
+    .section-title {
+      margin: 0 0 8px 0;
+      color: var(--primary);
+      font-size: 1.15rem;
+    }
+    .lede {
+      margin: 0 0 14px 0;
+      font-size: 0.86rem;
+      color: var(--text-secondary);
     }
     .accordion {
       border: 1px solid var(--border);
@@ -160,6 +161,7 @@
       background: var(--card);
     }
     .accordion-header {
+      width: 100%;
       background: rgba(var(--primary-rgb), 0.05);
       padding: 12px 14px;
       font-weight: 700;
@@ -169,6 +171,14 @@
       justify-content: space-between;
       align-items: center;
       user-select: none;
+      border: 0;
+      font-family: inherit;
+      color: inherit;
+      text-align: left;
+    }
+    .accordion-header:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: -2px;
     }
     .accordion-content {
       display: none;
@@ -177,9 +187,9 @@
       font-size: 0.86rem;
       color: var(--text-secondary);
     }
-    .accordion.open .accordion-content {
-      display: block;
-    }
+    .accordion.open .accordion-content { display: block; }
+    .accordion .chev { transition: transform 0.2s ease; }
+    .accordion.open .chev { transform: rotate(180deg); }
     code {
       background: var(--surface);
       padding: 2px 6px;
@@ -195,12 +205,8 @@
       margin-top: 14px;
     }
     @media (min-width: 640px) {
-      .grid-2 {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .tab-content {
-        padding: 28px 24px;
-      }
+      .grid-2 { grid-template-columns: repeat(2, 1fr); }
+      .tab-content { padding: 28px 24px; }
     }
     .feature-card {
       border: 1px solid var(--border);
@@ -218,144 +224,319 @@
       font-size: 0.84rem;
       color: var(--text-secondary);
     }
+    .callout {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(var(--primary-rgb), 0.06);
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+    }
+    .callout strong { color: var(--text); }
+    .footer-note {
+      margin-top: 18px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .footer-note a { color: var(--primary); font-weight: 700; }
+    ul.clean {
+      margin: 8px 0 0;
+      padding-left: 1.15rem;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+    }
+    ul.clean li { margin-bottom: 4px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>🧁 Muffin — User Guide</h1>
+    <h1>
+      <svg class="muffin-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 10.5c0-1.2.7-2.3 1.8-2.8.4-1.6 1.9-2.7 3.7-2.7s3.3 1.1 3.7 2.7c1.1.5 1.8 1.6 1.8 2.8 0 .4-.1.8-.2 1.1H6.7c-.1-.3-.2-.7-.2-1.1Z" fill="currentColor" opacity="0.92"/><circle cx="9.2" cy="9.2" r="0.7" fill="var(--card)"/><circle cx="12" cy="8.4" r="0.65" fill="var(--card)"/><circle cx="14.6" cy="9.4" r="0.55" fill="var(--card)"/><path d="M7 11.8h10l-.9 6.2a2.2 2.2 0 0 1-2.2 1.8H10.1a2.2 2.2 0 0 1-2.2-1.8L7 11.8Z" fill="currentColor"/><path d="M8.4 14.2h7.2M8.7 16.4h6.6" stroke="var(--card)" stroke-width="1.1" stroke-linecap="round" opacity="0.35"/></svg>
+      Muffin — User Guide
+    </h1>
     <div class="header-links">
       <a href="/technical-guide.html">Technical Guide</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
       <a href="/">Open App →</a>
     </div>
   </header>
 
   <div class="container">
     <div class="hero-banner">
-      <h2>Classic Muffin Guide</h2>
-      <p>Your cozy personal finance dashboard powered by Google Sheets and fast offline PWA capabilities.</p>
+      <h2>Muffin User Guide</h2>
+      <p>
+        Turn your Google Sheet into a cozy personal finance dashboard.
+        Installable as a PWA — live balances and KPIs always load from your sheet over the network.
+      </p>
     </div>
 
-    <div class="nav-tabs">
-      <button class="tab-btn active" onclick="showTab(event, 'quickstart')">⚡ Quick Start</button>
-      <button class="tab-btn" onclick="showTab(event, 'sheets')">📊 Sheet Setup</button>
-      <button class="tab-btn" onclick="showTab(event, 'calculator')">🧮 Calculator</button>
-      <button class="tab-btn" onclick="showTab(event, 'faq')">❓ FAQ</button>
+    <div class="nav-tabs" role="tablist" aria-label="User guide sections">
+      <button type="button" class="tab-btn active" role="tab" data-tab="quickstart" aria-selected="true" onclick="showTab(event, 'quickstart')">Quick Start</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="features" aria-selected="false" onclick="showTab(event, 'features')">Tabs &amp; Features</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="sheets" aria-selected="false" onclick="showTab(event, 'sheets')">Sheet Setup</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="settings" aria-selected="false" onclick="showTab(event, 'settings')">Recipe &amp; Settings</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="calculator" aria-selected="false" onclick="showTab(event, 'calculator')">Calculator</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="faq" aria-selected="false" onclick="showTab(event, 'faq')">FAQ</button>
     </div>
 
-    <!-- Quick Start Tab -->
-    <div id="quickstart" class="tab-content active">
-      <h3 style="margin-top: 0; color: var(--primary);">⚡ Getting Started in 3 Steps</h3>
-      
-      <div class="accordion open" onclick="toggleAccordion(this)">
-        <div class="accordion-header">
-          <span>1. Sign In & Link Your Google Sheet</span>
-          <span>▼</span>
-        </div>
+    <!-- Quick Start -->
+    <div id="quickstart" class="tab-content active" role="tabpanel">
+      <h3 class="section-title">Getting started in 3 steps</h3>
+      <p class="lede">New accounts get a short first-run tour after linking a sheet. You can replay it anytime from the in-app User Guide.</p>
+
+      <div class="accordion open">
+        <button type="button" class="accordion-header" aria-expanded="true" onclick="toggleAccordion(this)">
+          <span>1. Sign in &amp; link your Google Sheet</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
         <div class="accordion-content">
-          Sign in using your Google Account, then paste an existing Google Sheet link/ID or tap <strong>"Create a sheet for me"</strong> to generate a pre-formatted 3-tab workbook automatically.
+          Sign in with Google, then paste an existing Sheet URL/ID or tap <strong>Create a sheet for me</strong>
+          to generate a pre-formatted 3-tab workbook. Tap the sheet title in the app header later to change or unlink.
         </div>
       </div>
 
-      <div class="accordion" onclick="toggleAccordion(this)">
-        <div class="accordion-header">
-          <span>2. Log Transactions via In-App Forms or Sheets</span>
-          <span>▼</span>
-        </div>
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>2. Log transactions in the app or in Sheets</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
         <div class="accordion-content">
-          Tap the <strong>+</strong> button in the bottom floating navigation bar to log an Income, Expense, or Investment entry. You can also edit your Google Sheet directly — Muffin re-fetches automatically.
+          Tap <strong>+</strong> in the bottom navigation to add Income, Expense, or Investment.
+          Edit or delete from the Ledger. You can also edit the Google Sheet directly — Muffin reloads when you open or refresh the app.
         </div>
       </div>
 
-      <div class="accordion" onclick="toggleAccordion(this)">
-        <div class="accordion-header">
-          <span>3. Explore FinTech Dashboard & Interactive Charts</span>
-          <span>▼</span>
-        </div>
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>3. Explore Home KPIs &amp; charts</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
         <div class="accordion-content">
-          Tap any KPI tile on the Home tab to view interactive breakdown pie charts, monthly line trends with crosshairs, and Month-over-Month (MoM) delta callout cards.
+          Tap any KPI tile on Home for lists, pie breakdowns, or monthly line trends with crosshairs and month-over-month deltas.
+          Open <strong>More Details</strong> for lifetime totals and Provident Fund.
         </div>
       </div>
     </div>
 
-    <!-- Google Sheet Setup Tab -->
-    <div id="sheets" class="tab-content">
-      <h3 style="margin-top: 0; color: var(--primary);">📊 Google Sheet Structure</h3>
-      <p style="font-size: 0.86rem; color: var(--text-secondary);">Muffin requires a single Google Sheet workbook with <strong>3 fixed tabs</strong>:</p>
-      
+    <!-- Tabs & Features -->
+    <div id="features" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Tabs &amp; features</h3>
+      <p class="lede">Four main tabs sit in the floating bottom navigation.</p>
+
       <div class="grid-2">
         <div class="feature-card">
-          <h4>1. <code>Income</code> Tab</h4>
-          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
-          <p style="margin-top: 6px;"><em>Sample:</em> 2026-08-01, Salary, 75000, Monthly pay</p>
+          <h4>Home</h4>
+          <p>This month’s income, spends, and investments; liquid cash; net worth; investment breakup; More Details including Provident Fund.</p>
         </div>
         <div class="feature-card">
-          <h4>2. <code>Expense</code> Tab</h4>
-          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
-          <p style="margin-top: 6px;"><em>Sample:</em> 2026-08-02, Groceries, 3500, Supermarket</p>
+          <h4>Ledger</h4>
+          <p>Searchable timeline with type and date filters. Open a row to view, edit, or delete. Changes write back to your Sheet.</p>
         </div>
         <div class="feature-card">
-          <h4>3. <code>Investment</code> Tab</h4>
+          <h4>Monthly</h4>
+          <p>Month-by-month income, spends, investment, and closing liquid so you can spot trends over time.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Planner</h4>
+          <p>What-if sandbox. Rows stay on this device only — they never write to Google Sheets. Clear anytime without touching real data.</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Tip:</strong> Investments reduce liquid cash but are not expenses. Provident Fund rows are tracked separately and do not count toward net worth or the investment breakup pie.
+      </div>
+    </div>
+
+    <!-- Sheet Setup -->
+    <div id="sheets" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Google Sheet structure</h3>
+      <p class="lede">One workbook with <strong>three fixed tab names</strong>. Sample CSVs live in the repo under <code>templates/</code>.</p>
+
+      <div class="grid-2">
+        <div class="feature-card">
+          <h4><code>Income</code> tab</h4>
+          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
+          <p style="margin-top:6px;"><em>Sample:</em> 2026-08-01, Salary, 75000, Monthly pay</p>
+        </div>
+        <div class="feature-card">
+          <h4><code>Expense</code> tab</h4>
+          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
+          <p style="margin-top:6px;"><em>Sample:</em> 2026-08-02, Groceries, 3500, Supermarket</p>
+        </div>
+        <div class="feature-card">
+          <h4><code>Investment</code> tab</h4>
           <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Investment Type</code>, <code>Comment</code></p>
-          <p style="margin-top: 6px;"><em>Sample:</em> 2026-08-05, SIP, 10000, Mutual Fund, Nifty Index</p>
+          <p style="margin-top:6px;"><em>Sample:</em> 2026-08-05, SIP, 10000, Mutual Fund, Nifty Index</p>
         </div>
+      </div>
+
+      <div class="callout">
+        <strong>Column rules:</strong> Prefer dates as <code>YYYY-MM-DD</code> (<code>DD/MM/YYYY</code> also works).
+        Amounts should be digits only (e.g. <code>15000</code>). Keep the header row — the app skips it.
+        For PF, put <code>Provident Fund</code>, <code>PF</code>, <code>EPF</code>, or <code>PPF</code> in Category or Investment Type.
       </div>
     </div>
 
-    <!-- Calculator Tab -->
-    <div id="calculator" class="tab-content">
-      <h3 style="margin-top: 0; color: var(--primary);">🧮 Built-In Expression Calculator</h3>
-      <p style="font-size: 0.86rem; color: var(--text-secondary);">Inside the Amount field of the Add/Edit modal, you can type expressions directly:</p>
+    <!-- Recipe & Settings -->
+    <div id="settings" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Recipe &amp; settings</h3>
+      <p class="lede">Open the gear menu in the header for appearance, privacy tools, Recipe, install, and account actions.</p>
 
       <div class="grid-2">
         <div class="feature-card">
-          <h4>➕ Standard Math</h4>
-          <p>Type <code>1200 + 350 * 2</code> → evaluates to <strong>1900</strong></p>
+          <h4>Recipe</h4>
+          <p>Set opening liquid balance and starting investments by type. Synced to your account (Netlify Blobs) and cached locally for a snappy UI. View or copy your linked spreadsheet ID here.</p>
         </div>
         <div class="feature-card">
-          <h4>% Percentage & GST</h4>
-          <p>Type <code>1000 * 18%</code> → evaluates to <strong>180</strong></p>
+          <h4>Mask amounts</h4>
+          <p>Hide rupee figures behind dots when sharing your screen. Toggle anytime from the gear menu.</p>
         </div>
+        <div class="feature-card">
+          <h4>Theme &amp; font</h4>
+          <p>Six muffin themes (3 light / 3 dark) and several display fonts. Choices persist on this device and tint the app icon.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Download App</h4>
+          <p>Install Muffin as a PWA directly from the gear menu. On supported browsers, this triggers the 1-click install prompt. On iOS, Desktop, or unsupported browsers, it opens an interactive guide with visual steps for Android Chrome, iOS Safari, and Desktop Chrome/Edge.</p>
+        </div>
+      </div>
+
+      <ul class="clean">
+        <li><strong>User Guide</strong> — short in-app cheat sheet; links here for the full guide; can replay the first-run tour.</li>
+        <li><strong>Privacy / Terms</strong> — also linked from Sign-in and About.</li>
+        <li><strong>Log out</strong> — clears your session cookie on this browser.</li>
+      </ul>
+    </div>
+
+    <!-- Calculator -->
+    <div id="calculator" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Amount calculator</h3>
+      <p class="lede">
+        In Add / Edit (and Planner), type math in the Amount field or open the calculator button beside it.
+        Expressions use safe BODMAS evaluation — not arbitrary JavaScript.
+      </p>
+
+      <div class="grid-2">
+        <div class="feature-card">
+          <h4>Standard math</h4>
+          <p><code>1200 + 350 * 2</code> → <strong>1900</strong></p>
+        </div>
+        <div class="feature-card">
+          <h4>Percent &amp; GST</h4>
+          <p><code>1000 * 18%</code> → <strong>180</strong></p>
+          <p style="margin-top:6px;"><code>50000 - 15%</code> → discount-style percent off</p>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Category chips:</strong> frequent categories appear as one-tap chips so you don’t retype labels every time.
       </div>
     </div>
 
-    <!-- FAQ Tab -->
-    <div id="faq" class="tab-content">
-      <h3 style="margin-top: 0; color: var(--primary);">❓ Frequently Asked Questions</h3>
+    <!-- FAQ -->
+    <div id="faq" class="tab-content" role="tabpanel">
+      <h3 class="section-title">FAQ</h3>
 
-      <div class="accordion" onclick="toggleAccordion(this)">
-        <div class="accordion-header">
+      <div class="accordion open">
+        <button type="button" class="accordion-header" aria-expanded="true" onclick="toggleAccordion(this)">
           <span>Is my financial data shared with third parties?</span>
-          <span>▼</span>
-        </div>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
         <div class="accordion-content">
-          No. Your financial data stays inside your own personal Google Account spreadsheet. Muffin does not sell data, target ads, or train AI models.
+          No. Transactions stay in your personal Google Sheet. Muffin does not sell data, run ads against it, or train AI models on it.
+          See the <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms</a>.
         </div>
       </div>
 
-      <div class="accordion" onclick="toggleAccordion(this)">
-        <div class="accordion-header">
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
           <span>How is Provident Fund (PF) handled?</span>
-          <span>▼</span>
-        </div>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
         <div class="accordion-content">
-          Investment rows tagged as <code>Provident Fund</code>, <code>PF</code>, <code>EPF</code>, or <code>PPF</code> are tracked in a dedicated Provident Fund total and excluded from short-term liquid metrics.
+          Investment rows tagged <code>Provident Fund</code>, <code>PF</code>, <code>EPF</code>, or <code>PPF</code>
+          (in Category or Investment Type) appear on Home → More Details as a dedicated PF total.
+          They are excluded from counted investment, the investment breakup pie, and net worth.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>Does Muffin work fully offline?</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          You can install the app shell as a PWA. Live KPIs and ledger data always need a network hop to your Netlify backend and Google Sheets.
+          Planner what-if rows stay on the device only.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>Download App says to use the browser menu — why?</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          Some browsers expose Install in their own menu even when the in-app install prompt is not available yet.
+          Use that menu, or on iPhone/iPad: Share → Add to Home Screen.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>What date format should I use?</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          Prefer <code>YYYY-MM-DD</code>. <code>DD/MM/YYYY</code> is also accepted. Keep the header row in each sheet tab.
         </div>
       </div>
     </div>
+
+    <p class="footer-note">
+      Full product docs also live in the repo README ·
+      <a href="/technical-guide.html">Technical Guide</a> for engineers ·
+      Updated for current Muffin app features
+    </p>
   </div>
 
   <script>
+    const TAB_IDS = ['quickstart', 'features', 'sheets', 'settings', 'calculator', 'faq'];
+
     function showTab(event, id) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
-      event.target.classList.add('active');
-      document.getElementById(id).classList.add('active');
+      if (!TAB_IDS.includes(id)) id = 'quickstart';
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        const active = btn.getAttribute('data-tab') === id;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      document.querySelectorAll('.tab-content').forEach((panel) => {
+        panel.classList.toggle('active', panel.id === id);
+      });
+      if (event) {
+        history.replaceState(null, '', '#' + id);
+      }
     }
 
-    function toggleAccordion(element) {
-      element.classList.toggle('open');
+    function toggleAccordion(headerBtn) {
+      const accordion = headerBtn.closest('.accordion');
+      if (!accordion) return;
+      const open = accordion.classList.toggle('open');
+      headerBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
+
+    function initFromHash() {
+      const hash = (location.hash || '').replace(/^#/, '');
+      if (TAB_IDS.includes(hash)) {
+        showTab(null, hash);
+      }
+    }
+
+    window.addEventListener('hashchange', initFromHash);
+    initFromHash();
   </script>
 </body>
 </html>
