@@ -96,7 +96,7 @@ export function FloatingNav({
     >
       <div className="mx-auto max-w-lg px-4 sm:max-w-xl">
         <LayoutGroup id="muffin-nav">
-          <div className="pointer-events-auto flex w-full items-center gap-1 rounded-full border border-border/70 bg-surface/85 p-2 shadow-elevate backdrop-blur-2xl transition-theme sm:gap-1.5 sm:p-2.5">
+          <div className="nav-glass pointer-events-auto flex w-full items-center gap-1 rounded-full border p-2 transition-theme sm:gap-1.5 sm:p-2.5">
             {leftTabs.map((tab) => (
               <NavTab
                 key={tab.id}

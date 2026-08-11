@@ -489,6 +489,16 @@ body {
     box-shadow: var(--shadow-elevate);
   }
 
+  .nav-glass {
+  background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
+  border-color: var(--color-border);
+  box-shadow:
+    var(--shadow-elevate),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-text) 12%, transparent);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  }
+
   .transition-theme {
     transition:
       background-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
