@@ -16,6 +16,7 @@ import {
   type ThemeId,
   type ThemeMode,
 } from '../lib/themes';
+import { applyMuffinIconsToDocument } from '../lib/muffinIcon';
 
 interface ThemeContextValue {
   themeId: ThemeId;
@@ -32,11 +33,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (typeof document === 'undefined') return 'classic';
     const id = resolveInitialThemeId();
     applyThemeToDocument(id);
+    applyMuffinIconsToDocument(id);
     return id;
   });
 
   useEffect(() => {
     applyThemeToDocument(themeId);
+    applyMuffinIconsToDocument(themeId);
     localStorage.setItem(THEME_STORAGE_KEY, themeId);
   }, [themeId]);
 

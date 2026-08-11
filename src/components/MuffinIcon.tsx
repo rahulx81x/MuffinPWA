@@ -2,8 +2,10 @@ interface MuffinIconProps {
   className?: string;
 }
 
-/** Cozy muffin mark for the app header brand lockup. */
-export function MuffinIcon({ className = 'h-6 w-6' }: MuffinIconProps) {
+/** Cozy muffin mark — theme-aware via currentColor + CSS surface tokens. */
+export function MuffinIcon({
+  className = 'muffin-icon h-6 w-6 text-primary',
+}: MuffinIconProps) {
   return (
     <svg
       viewBox="0 0 24 24"

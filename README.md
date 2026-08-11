@@ -84,7 +84,6 @@ Sample layouts for each tab live in:
 - `templates/income_sheet_template.csv`
 - `templates/expense_sheet_template.csv`
 - `templates/investment_sheet_template.csv`
-- `finance_template.csv` â€” a single-sheet reference showing all columns side by side (for eyeballing the layout only; see note in Section 2.2)
 
 ### 1.3 How investments are treated
 
@@ -145,7 +144,7 @@ Also included:
 - **Date-Grouped Fintech Timeline Ledger** — Grouped timeline headers ("Today", "Yesterday", "Mon, 10 Aug 2026") with daily totals, category-colored icon badges (`ArrowUpRight`, `Utensils`, `Coffee`, `ShoppingBag`, `Zap`), unclipped `createPortal` Action Sheet menu, and View Transaction Details modal.
 - **1-Tap Dynamic Category Chips & Calculator Math** — Auto-extracted top 8 frequent category chips, decimal input mode for phone keypads, micro-haptics (`navigator.vibrate(8)`), and safe math expression evaluator supporting BODMAS arithmetic and `%` percentage calculations (e.g. `1000 * 18%` → `180` for tax/GST).
 - **6 Premium Visual Upgrades** — Ambient FinTech radial aura glows on KPI cards, Shimmer Skeleton Card Loaders (`ShimmerSkeleton.tsx`), pastel category chip pills, ambient motion mesh gradient background blobs, 135° card background gradients (`cozy-card`) unified across all tabs (Home, Ledger, Monthly, Planner), and tactile card press physics.
-- **32-Bit RGBA Transparent PNG Icons** — App icons (`icon_192.png` and `icon_512.png`) with 100% alpha transparency for phone home screens and dark mode.
+- **Themed SVG app icon** — `public/icons/muffin-icon.svg` (PWA manifest + favicon), recolored per theme.
 - **Six muffin themes** — 3 light (Classic, Blueberry, Pistachio Matcha) and 3 dark (Double Chocolate, Red Velvet, Salted Caramel), with CSS design tokens + themed chart palettes.
 - **Google Sign-In (multi-user)** — Each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token.
 - **Header settings (gear)** — One menu for Mask, Theme, About, Privacy Policy, Terms of Service, Recipe (configuration), Download App (PWA install), and Log out.
@@ -265,8 +264,6 @@ Date,Category,Amount,Investment Type,Comment
 ```
 
 You can also copy from the repo files under `templates/` (`income_sheet_template.csv`, etc.): in Sheets use **File â†’ Import â†’ Upload**, importing each CSV into its matching tab.
-
-> **Note:** `finance_template.csv` in the repo root shows all columns combined into one sheet â€” it's kept as a quick reference for the overall layout, but the live app always reads the three separate tabs described above, not a single combined tab.
 
 #### Column rules (important)
 
@@ -465,7 +462,7 @@ MuffinPWA/
 │       ├── api.ts               # Client → Netlify auth / sheet / recipe / tour / transactions
 │       ├── themes.ts            # Theme catalog, persistence helpers, chart palettes
 │       ├── motion.ts            # Shared Framer Motion springs / variants
-│       ├── parseSheet.ts        # Date parsing + ID helpers (used by Planner)
+│       ├── parseSheet.ts        # ID helper (used by Planner)
 │       ├── metrics.ts            # Aggregations and KPI builders
 │       └── providentFund.ts      # PF detection helpers
 ├── scripts/
@@ -474,12 +471,10 @@ MuffinPWA/
 ├── docs/showcase/
 │   ├── Muffin_Showcase.pptx     # Product showcase deck
 │   └── screens/                 # Captured PNGs (gitignored; regenerate via npm run showcase)
-├── public/icons/                # PWA icons
+├── public/icons/                # PWA icon (muffin-icon.svg)
 ├── netlify/functions/           # auth-*, sheet-*, recipe, tour-complete, transactions, health
 ├── netlify/lib/                 # Shared helpers (env, session, Blobs user store, Sheets, recipe/tour)
 ├── templates/                   # Per-tab CSV examples (Income / Expense / Investment)
-├── finance_template.csv         # Reference-only combined layout (not read by the app)
-├── legacy/                      # Previous vanilla JS PWA (CSV-publish based, reference)
 ├── dist/                        # Build output (generated)
 ├── netlify.toml                 # Build, publish, redirects, functions, secrets-scan omit
 ├── vite.config.ts               # React + PWA + dev proxy
@@ -490,7 +485,7 @@ MuffinPWA/
 └── README.md
 ```
 
-The project migrated from a vanilla `app.js` / `config.js` PWA that read published CSV links (`legacy/`) to a typed React SPA, then to **six muffin-inspired themes**, then from CSV-publish to **OAuth Google Sheets**, and most recently to **per-user Google Sign-In** with sheet ID + Recipe stored in **Netlify Blobs**.
+The project evolved from an early CSV-publish prototype to a typed React SPA, then to **six muffin-inspired themes**, then from CSV-publish to **OAuth Google Sheets**, and most recently to **per-user Google Sign-In** with sheet ID + Recipe stored in **Netlify Blobs**.
 
 ### 3.3 Runtime architecture and data flow
 
@@ -713,8 +708,6 @@ node scripts/capture-showcase.mjs http://localhost:8888
   - `docs/showcase/` — product showcase deck + regenerated screen PNGs
   - `public/` — static assets and icons
   - `templates/` — CSV templates for the three required sheet tabs
-  - `legacy/` — older version of the app and service-worker (kept for reference)
-  - `future-upgrades/` — notes and ideas for future changes
 
 - **Build & runtime notes:**
   - The `build` script runs `tsc -b` (TypeScript project references) then `vite build`.
@@ -735,7 +728,7 @@ node scripts/capture-showcase.mjs http://localhost:8888
 - **Where to look next:**
   - App entry: `src/main.tsx` and `src/App.tsx` for routing and bootstrapping.
   - Server functions: `netlify/functions/transactions.js` for read/write logic against Google Sheets.
-  - Templates: `templates/` and `finance_template.csv` for sample sheet layouts.
+  - Templates: `templates/` for sample sheet layouts.
 
 ## 5. Credits
 
@@ -744,6 +737,5 @@ node scripts/capture-showcase.mjs http://localhost:8888
 - Live site: [https://muffin-ledger.netlify.app/](https://muffin-ledger.netlify.app/).
 - Product showcase deck: `docs/showcase/Muffin_Showcase.pptx` (regenerate with `npm run showcase`).
 - Google Sheets used as a lightweight, human-editable data backend, accessed via the Google Sheets API over OAuth 2.0.
-- Legacy vanilla implementation (CSV-publish based) retained under `legacy/` for reference.
 
 If you publish your own fork, keep your `GOOGLE_CLIENT_SECRET` / `SESSION_SECRET` and other credentials private, and avoid committing personal financial CSVs with real data.

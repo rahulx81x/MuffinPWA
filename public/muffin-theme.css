@@ -1,0 +1,192 @@
+/**
+ * Theme tokens for static external pages (privacy, terms, guide, technical-guide).
+ * Mirrors src/index.css muffin themes. Default is Classic Muffin.
+ * Page styles should consume --bg, --surface, --card, --text, --primary, etc.
+ */
+
+:root,
+[data-theme='classic'] {
+  color-scheme: light;
+  --bg: #faf5ef;
+  --surface: #f3e8dc;
+  --card: #fffaf5;
+  --card-muted: #e8d5c0;
+  --text: #3d2314;
+  --text-secondary: #7c5a43;
+  --text-muted: #8c6d53;
+  --border: #e5d3b3;
+  --primary: #d97706;
+  --primary-hover: #b45309;
+  --primary-rgb: 217, 119, 6;
+  --on-primary: #fffaf5;
+  --shadow-warm: 0 4px 20px rgba(61, 35, 20, 0.06);
+  --header-bg: color-mix(in srgb, var(--bg) 92%, transparent);
+  --ok: #15803d;
+  --warn: #b45309;
+  --danger: #b91c1c;
+  --info: #1d4ed8;
+  --code-bg: #1f1610;
+  --code-text: #f3e8dc;
+  --code-muted: #c4a484;
+  --code-accent: #fbbf24;
+}
+
+[data-theme='blueberry'] {
+  color-scheme: light;
+  --bg: #f5f6fa;
+  --surface: #eaeff8;
+  --card: #fbfcfe;
+  --card-muted: #d4dcf0;
+  --text: #1e1b4b;
+  --text-secondary: #3730a3;
+  --text-muted: #6366a0;
+  --border: #c7d2fe;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-rgb: 79, 70, 229;
+  --on-primary: #f8fafc;
+  --shadow-warm: 0 4px 20px rgba(30, 27, 75, 0.06);
+  --header-bg: color-mix(in srgb, var(--bg) 92%, transparent);
+  --ok: #15803d;
+  --warn: #b45309;
+  --danger: #b91c1c;
+  --info: #4338ca;
+  --code-bg: #1e1b4b;
+  --code-text: #e0e7ff;
+  --code-muted: #a5b4fc;
+  --code-accent: #818cf8;
+}
+
+[data-theme='pistachio'] {
+  color-scheme: light;
+  --bg: #f6f8f3;
+  --surface: #eaf0e4;
+  --card: #fbfcfa;
+  --card-muted: #d5e2c8;
+  --text: #1a2e05;
+  --text-secondary: #3f6212;
+  --text-muted: #4d7c0f;
+  --border: #d1e2c4;
+  --primary: #65a30d;
+  --primary-hover: #4d7c0f;
+  --primary-rgb: 101, 163, 13;
+  --on-primary: #f7fee7;
+  --shadow-warm: 0 4px 20px rgba(26, 46, 5, 0.06);
+  --header-bg: color-mix(in srgb, var(--bg) 92%, transparent);
+  --ok: #15803d;
+  --warn: #b45309;
+  --danger: #b91c1c;
+  --info: #3f6212;
+  --code-bg: #1a2e05;
+  --code-text: #ecfccb;
+  --code-muted: #a3e635;
+  --code-accent: #84cc16;
+}
+
+[data-theme='chocolate'] {
+  color-scheme: dark;
+  --bg: #1c130d;
+  --surface: #291d15;
+  --card: #34261c;
+  --card-muted: #423024;
+  --text: #f3e8dc;
+  --text-secondary: #b89c88;
+  --text-muted: #9a7f6a;
+  --border: #423024;
+  --primary: #f59e0b;
+  --primary-hover: #d97706;
+  --primary-rgb: 245, 158, 11;
+  --on-primary: #1c130d;
+  --shadow-warm: 0 8px 28px rgba(0, 0, 0, 0.42);
+  --header-bg: color-mix(in srgb, var(--bg) 92%, transparent);
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --code-bg: #120d09;
+  --code-text: #f3e8dc;
+  --code-muted: #c4a484;
+  --code-accent: #fbbf24;
+}
+
+[data-theme='velvet'] {
+  color-scheme: dark;
+  --bg: #1a0c0e;
+  --surface: #2a1417;
+  --card: #351a1e;
+  --card-muted: #4c1d24;
+  --text: #fce7f3;
+  --text-secondary: #f9a8d4;
+  --text-muted: #f472b6;
+  --border: #4c1d24;
+  --primary: #e11d48;
+  --primary-hover: #be123c;
+  --primary-rgb: 225, 29, 72;
+  --on-primary: #1a0c0e;
+  --shadow-warm: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --header-bg: color-mix(in srgb, var(--bg) 92%, transparent);
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #fb7185;
+  --info: #f9a8d4;
+  --code-bg: #12080a;
+  --code-text: #fce7f3;
+  --code-muted: #f9a8d4;
+  --code-accent: #fb7185;
+}
+
+[data-theme='caramel'] {
+  color-scheme: dark;
+  --bg: #17120a;
+  --surface: #261c10;
+  --card: #322617;
+  --card-muted: #422e19;
+  --text: #fef3c7;
+  --text-secondary: #fcd34d;
+  --text-muted: #d97706;
+  --border: #422e19;
+  --primary: #f97316;
+  --primary-hover: #ea580c;
+  --primary-rgb: 249, 115, 22;
+  --on-primary: #17120a;
+  --shadow-warm: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --header-bg: color-mix(in srgb, var(--bg) 92%, transparent);
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --info: #fdba74;
+  --code-bg: #0f0c07;
+  --code-text: #fef3c7;
+  --code-muted: #fcd34d;
+  --code-accent: #fb923c;
+}
+
+html,
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease;
+}
+
+.muffin-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1.35rem;
+  height: 1.35rem;
+  color: var(--primary);
+  vertical-align: middle;
+}
+
+.muffin-icon--lg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}

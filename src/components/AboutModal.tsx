@@ -7,6 +7,7 @@ import {
   springSoft,
 } from '../lib/motion';
 import { SoftButton } from './SoftButton';
+import { MuffinIcon } from './MuffinIcon';
 
 interface AboutModalProps {
   open: boolean;
@@ -55,8 +56,9 @@ export function AboutModal({
                 </p>
                 <h2
                   id="about-title"
-                  className="mt-1 font-display text-base font-bold text-text"
+                  className="mt-1 flex items-center gap-2 font-display text-base font-bold text-text"
                 >
+                  <MuffinIcon className="muffin-icon h-6 w-6 text-primary" />
                   Muffin
                 </h2>
                 <p className="mt-0.5 text-xs text-text-secondary">

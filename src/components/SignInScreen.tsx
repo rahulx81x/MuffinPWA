@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { pageTransition, springSoft } from '../lib/motion';
 import { AUTH_START_URL } from '../lib/api';
+import { MuffinIcon } from './MuffinIcon';
 
 interface SignInScreenProps {
   authError?: string | null;
@@ -82,7 +83,8 @@ export function SignInScreen({ authError }: SignInScreenProps) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
               Personal finance · Google Sheets
             </p>
-            <h1 className="mt-3 font-display text-4xl font-extrabold tracking-[-0.04em] sm:text-5xl lg:text-[3.35rem]">
+            <h1 className="mt-3 flex items-center justify-center gap-3 font-display text-4xl font-extrabold tracking-[-0.04em] sm:text-5xl lg:justify-start lg:text-[3.35rem]">
+              <MuffinIcon className="muffin-icon h-10 w-10 text-primary sm:h-12 sm:w-12" />
               <span className="bg-gradient-to-br from-primary-muted via-primary to-primary-muted bg-clip-text text-transparent">
                 Muffin
               </span>

@@ -193,8 +193,68 @@ body,
     border-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
+:root {
+  --font-body: 'Plus Jakarta Sans', 'Outfit', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+}
+
+/*
+ * Font selection must win over Tailwind layers / third-party styles.
+ * Unlayered + !important so KPI amounts, nav tabs, chips, etc. all follow.
+ */
+html {
+  font-family: var(--font-body) !important;
+}
+
+body,
+#root {
+  font-family: inherit !important;
+}
+
+button,
+input,
+textarea,
+select,
+option,
+a,
+p,
+span,
+div,
+li,
+label,
+td,
+th,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: inherit;
+}
+
+h1,
+h2,
+h3,
+.font-display,
+.tabular-nums {
+  font-family: var(--font-display) !important;
+}
+
+.font-mono,
+code,
+kbd,
+pre,
+samp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace !important;
+}
+
+svg text {
+  font-family: var(--font-body) !important;
+}
+
 body {
-  font-family: 'Plus Jakarta Sans', 'Outfit', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
@@ -205,19 +265,28 @@ body {
   border-color: inherit;
 }
 
+.muffin-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--color-primary);
+  vertical-align: middle;
+}
+
 @layer base {
   h1,
   h2,
   h3,
   .font-display {
-    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
     font-weight: 700;
     letter-spacing: -0.025em;
   }
 
   input,
   textarea,
-  select {
+  select,
+  button {
     transition:
       border-color 0.3s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
       box-shadow 0.3s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),

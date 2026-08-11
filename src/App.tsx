@@ -10,6 +10,7 @@ import { ManageTransactionModal } from './components/ManageTransactionModal';
 import { MonthlyView } from './components/MonthlyView';
 import { PlannerView, toPlannerTransaction } from './components/PlannerView';
 import { PrivacyModal } from './components/PrivacyModal';
+import { PwaInstallModal } from './components/PwaInstallModal';
 import { RecipeModal } from './components/RecipeModal';
 import { SheetOnboarding } from './components/SheetOnboarding';
 import { ShimmerSkeleton } from './components/ShimmerSkeleton';
@@ -18,6 +19,7 @@ import { SignInScreen } from './components/SignInScreen';
 import { SoftButton } from './components/SoftButton';
 import { TourModal } from './components/TourModal';
 import { UserGuideModal } from './components/UserGuideModal';
+import { MuffinIcon } from './components/MuffinIcon';
 import { useRecipeConfig } from './hooks/useRecipeConfig';
 import { useTheme } from './hooks/useTheme';
 import {
@@ -153,6 +155,7 @@ export default function App() {
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [installGuideOpen, setInstallGuideOpen] = useState(false);
 
   const needsSheet = Boolean(auth && auth.needsSheet);
   const ready = Boolean(auth && !auth.needsSheet);
@@ -572,6 +575,7 @@ export default function App() {
         <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2 sm:max-w-3xl lg:max-w-5xl">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
+              <MuffinIcon className="muffin-icon h-7 w-7 text-primary" />
               <h1 className="font-display text-[1.2rem] font-bold leading-none tracking-[-0.03em] text-text">
                 <span className="bg-gradient-to-r from-primary-muted to-primary bg-clip-text text-transparent">
                   Muffin
@@ -601,6 +605,7 @@ export default function App() {
             onPrivacy={() => setPrivacyOpen(true)}
             onTerms={() => setTermsOpen(true)}
             onLogout={() => void handleLogout()}
+            onInstallGuide={() => setInstallGuideOpen(true)}
           />
         </div>
       </header>
@@ -710,6 +715,10 @@ export default function App() {
       />
       <PrivacyModal open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
       <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
+      <PwaInstallModal
+        open={installGuideOpen}
+        onClose={() => setInstallGuideOpen(false)}
+      />
       <UserGuideModal
         isOpen={guideOpen}
         onClose={() => setGuideOpen(false)}

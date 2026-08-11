@@ -8,29 +8,30 @@
     />
     <meta name="google-site-verification" content="p9OeMCg2FfVwJc-YaOmNJZe7ILvaxcSqK_P8Jqhf-2c" />
     <title>Muffin</title>
-    <link rel="icon" type="image/png" href="/icons/icon_192.png" />
-    <link rel="apple-touch-icon" href="/icons/icon_192.png" />
+    <link rel="icon" type="image/svg+xml" href="/icons/muffin-icon.svg" />
+    <link rel="apple-touch-icon" href="/icons/muffin-icon.svg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar" content="#F3E8DC" />
     <meta name="apple-mobile-web-app-title" content="Muffin" />
-    <meta
-      name="theme-color"
-      content="#FAF5EF"
-      media="(prefers-color-scheme: light)"
-    />
-    <meta
-      name="theme-color"
-      content="#1C130D"
-      media="(prefers-color-scheme: dark)"
-    />
+    <meta name="theme-color" content="#FAF5EF" />
     <meta
       name="description"
       content="Muffin is a personal finance dashboard PWA. Sign in with Google to connect your own Sheet, track income, expenses, and investments, and keep your data in Drive."
     />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      (function() {
+        window.__deferredPwaPrompt = null;
+        window.addEventListener('beforeinstallprompt', function(e) {
+          e.preventDefault();
+          window.__deferredPwaPrompt = e;
+        });
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Josefin+Sans:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Atkinson+Hyperlegible:wght@400;700&family=Syne:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&display=swap"
       rel="stylesheet"
     />
     <script>
@@ -51,6 +52,44 @@
         }
         document.documentElement.setAttribute('data-theme', id);
         document.documentElement.classList.toggle('dark', !!themes[id]);
+
+        var fonts = {
+          muffin: {
+            body: "'Plus Jakarta Sans', 'Outfit', 'DM Sans', ui-sans-serif, system-ui, sans-serif",
+            display: "'Outfit', 'Plus Jakarta Sans', sans-serif",
+          },
+          josefin: {
+            body: "'Josefin Sans', ui-sans-serif, system-ui, sans-serif",
+            display: "'Josefin Sans', ui-sans-serif, system-ui, sans-serif",
+          },
+          fredoka: {
+            body: "'Fredoka', ui-sans-serif, system-ui, sans-serif",
+            display: "'Fredoka', ui-sans-serif, system-ui, sans-serif",
+          },
+          exo: {
+            body: "'Exo 2', ui-sans-serif, system-ui, sans-serif",
+            display: "'Exo 2', ui-sans-serif, system-ui, sans-serif",
+          },
+          atkinson: {
+            body: "'Atkinson Hyperlegible', ui-sans-serif, system-ui, sans-serif",
+            display: "'Atkinson Hyperlegible', ui-sans-serif, system-ui, sans-serif",
+          },
+          syne: {
+            body: "'Syne', ui-sans-serif, system-ui, sans-serif",
+            display: "'Syne', ui-sans-serif, system-ui, sans-serif",
+          },
+          bricolage: {
+            body: "'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif",
+            display: "'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif",
+          },
+        };
+        var fontId = localStorage.getItem('muffinFont');
+        if (!fonts.hasOwnProperty(fontId)) fontId = 'muffin';
+        var font = fonts[fontId];
+        document.documentElement.setAttribute('data-font', fontId);
+        document.documentElement.style.setProperty('--font-body', font.body);
+        document.documentElement.style.setProperty('--font-display', font.display);
+        document.documentElement.style.fontFamily = font.body;
       })();
     </script>
   </head>

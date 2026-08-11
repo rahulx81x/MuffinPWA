@@ -3,24 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#FAF5EF">
   <title>Terms of Service - Muffin PWA</title>
+  <link rel="icon" type="image/svg+xml" href="/icons/muffin-icon.svg">
+  <link rel="apple-touch-icon" href="/icons/muffin-icon.svg">
+  <script src="/muffin-theme.js"></script>
+  <link rel="stylesheet" href="/muffin-theme.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      color-scheme: light;
-      --bg: #faf5ef;
-      --surface: #f3e8dc;
-      --card: #fffaf5;
-      --text: #3d2314;
-      --text-secondary: #7c5a43;
-      --text-muted: #8c6d53;
-      --border: #e5d3b3;
-      --primary: #d97706;
-      --primary-hover: #b45309;
-      --shadow-warm: 0 4px 20px rgba(61, 35, 20, 0.06);
-    }
     * {
       box-sizing: border-box;
     }
@@ -44,7 +36,7 @@
       position: sticky;
       top: 0;
       z-index: 50;
-      background-color: rgba(250, 245, 239, 0.92);
+      background-color: var(--header-bg);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
@@ -57,6 +49,9 @@
       font-size: 1.1rem;
       margin: 0;
       color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
     }
     header a {
       display: inline-flex;
@@ -107,7 +102,10 @@
 </head>
 <body>
   <header>
-    <h1>Muffin Legal</h1>
+    <h1>
+      <svg class="muffin-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 10.5c0-1.2.7-2.3 1.8-2.8.4-1.6 1.9-2.7 3.7-2.7s3.3 1.1 3.7 2.7c1.1.5 1.8 1.6 1.8 2.8 0 .4-.1.8-.2 1.1H6.7c-.1-.3-.2-.7-.2-1.1Z" fill="currentColor" opacity="0.92"/><circle cx="9.2" cy="9.2" r="0.7" fill="var(--card)"/><circle cx="12" cy="8.4" r="0.65" fill="var(--card)"/><circle cx="14.6" cy="9.4" r="0.55" fill="var(--card)"/><path d="M7 11.8h10l-.9 6.2a2.2 2.2 0 0 1-2.2 1.8H10.1a2.2 2.2 0 0 1-2.2-1.8L7 11.8Z" fill="currentColor"/><path d="M8.4 14.2h7.2M8.7 16.4h6.6" stroke="var(--card)" stroke-width="1.1" stroke-linecap="round" opacity="0.35"/></svg>
+      Muffin
+    </h1>
     <a href="/">← Back to App</a>
   </header>
 
