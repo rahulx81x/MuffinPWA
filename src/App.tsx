@@ -152,6 +152,11 @@ export default function App() {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [mutating, setMutating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  useEffect(() => {
+  if (!statusMessage) return;
+  const timer = window.setTimeout(() => setStatusMessage(null), 5000);
+  return () => window.clearTimeout(timer);
+}, [statusMessage]);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
