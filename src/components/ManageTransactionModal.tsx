@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -28,6 +28,7 @@ import type {
   Transaction,
   TransactionType,
 } from '../types';
+import { SmartAmountInput } from './SmartAmountInput';
 import { SoftButton } from './SoftButton';
 
 interface ManageTransactionModalProps {
@@ -100,6 +101,7 @@ function buildSelectStyles(): StylesConfig<InvestmentTypeOption, false> {
       borderColor: state.isFocused ? 'var(--color-primary)' : 'var(--color-border)',
       backgroundColor: 'var(--color-surface-strong)',
       boxShadow: state.isFocused ? '0 0 0 1px var(--color-primary)' : 'none',
+      fontFamily: 'var(--font-body)',
       '&:hover': { borderColor: 'var(--color-primary)' },
     }),
     valueContainer: (base: CSSObjectWithLabel) => ({
@@ -111,10 +113,12 @@ function buildSelectStyles(): StylesConfig<InvestmentTypeOption, false> {
       color: 'var(--color-text)',
       margin: 0,
       padding: 0,
+      fontFamily: 'var(--font-body)',
     }),
     singleValue: (base: CSSObjectWithLabel) => ({
       ...base,
       color: 'var(--color-text)',
+      fontFamily: 'var(--font-body)',
     }),
     placeholder: (base: CSSObjectWithLabel) => ({
       ...base,
@@ -128,6 +132,7 @@ function buildSelectStyles(): StylesConfig<InvestmentTypeOption, false> {
       border: '1px solid var(--color-border)',
       boxShadow: 'var(--shadow-warm)',
       zIndex: 60,
+      fontFamily: 'var(--font-body)',
     }),
     menuList: (base: CSSObjectWithLabel) => ({
       ...base,
@@ -148,6 +153,7 @@ function buildSelectStyles(): StylesConfig<InvestmentTypeOption, false> {
       color: state.isSelected ? 'var(--color-on-primary)' : 'var(--color-text)',
       cursor: 'pointer',
       fontSize: 14,
+      fontFamily: 'var(--font-body)',
     }),
     dropdownIndicator: (base: CSSObjectWithLabel) => ({
       ...base,
@@ -189,24 +195,6 @@ export function ManageTransactionModal({
   const [investmentTypeInput, setInvestmentTypeInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const amountInputRef = useRef<HTMLInputElement>(null);
-
-  function insertOperator(op: string) {
-    const input = amountInputRef.current;
-    if (!input) {
-      setAmountText((prev) => prev + op);
-      return;
-    }
-    const start = input.selectionStart ?? amountText.length;
-    const end = input.selectionEnd ?? amountText.length;
-    const next = amountText.slice(0, start) + op + amountText.slice(end);
-    setAmountText(next);
-    // Restore cursor after React re-render
-    requestAnimationFrame(() => {
-      input.focus();
-      input.setSelectionRange(start + op.length, start + op.length);
-    });
-  }
 
   const dynamicCategoryChips = useMemo(() => {
     if (!transactions || !transactions.length) return [];
@@ -248,12 +236,6 @@ export function ManageTransactionModal({
       ) ?? { value: trimmed, label: trimmed }
     );
   }, [investmentType, typeOptions]);
-
-  const amountPreview = useMemo(() => {
-    if (!looksLikeAmountExpression(amountText)) return null;
-    const result = evaluateAmountExpression(amountText);
-    return result.ok ? result.value : null;
-  }, [amountText]);
 
   useEffect(() => {
     if (!open) return;
@@ -479,45 +461,15 @@ export function ManageTransactionModal({
                   </label>
                   <label className="block">
                     <span className={labelClass}>Amount</span>
-                    <input
-                      ref={amountInputRef}
-                      type="text"
+                    <SmartAmountInput
                       required
-                      inputMode="decimal"
-                      autoComplete="off"
-                      spellCheck={false}
-                      placeholder="0 or 1200+350"
+                      placeholder="0"
                       value={amountText}
                       disabled={saving}
-                      onChange={(e) => setAmountText(e.target.value)}
+                      onChange={setAmountText}
                       onBlur={handleAmountBlur}
-                      aria-describedby={
-                        amountPreview != null ? 'amount-expr-preview' : undefined
-                      }
                       className={fieldClass}
                     />
-                    <div className="mt-1.5 flex gap-1">
-                      {(['+', '-', '*', '/'] as const).map((op) => (
-                        <button
-                          key={op}
-                          type="button"
-                          disabled={saving}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => insertOperator(op)}
-                          className="flex-1 rounded-lg border border-border/70 bg-canvas/70 py-1 text-sm font-bold text-text-secondary transition active:scale-95 hover:border-primary/50 hover:bg-primary/10 hover:text-primary disabled:opacity-40"
-                        >
-                          {op === '*' ? '×' : op === '/' ? '÷' : op}
-                        </button>
-                      ))}
-                    </div>
-                    {amountPreview != null && (
-                      <span
-                        id="amount-expr-preview"
-                        className="mt-1 block text-[11px] font-semibold tabular-nums leading-snug text-primary"
-                      >
-                        = {amountPreview}
-                      </span>
-                    )}
                   </label>
                 </div>
 

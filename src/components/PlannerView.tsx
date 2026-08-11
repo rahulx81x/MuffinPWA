@@ -2,10 +2,12 @@ import { FormEvent, useMemo, useState } from 'react';
 import { getOpeningBalance } from '../config';
 import { useRecipeConfig } from '../hooks/useRecipeConfig';
 import { useMask } from '../hooks/useMask';
+import { evaluateAmountExpression } from '../lib/evaluateAmount';
 import { createId } from '../lib/parseSheet';
 import { buildMonthlyKPIs, currentMonthKey, monthKey } from '../lib/metrics';
 import { isCountedInvestment } from '../lib/providentFund';
 import type { NewTransactionInput, Transaction, TransactionType } from '../types';
+import { SmartAmountInput } from './SmartAmountInput';
 
 interface PlannerViewProps {
   sheetTransactions: Transaction[];
@@ -14,6 +16,9 @@ interface PlannerViewProps {
   onRemove: (id: string) => void;
   onClear: () => void;
 }
+
+const labelClass = 'mb-1 block text-xs font-semibold text-text-muted';
+const fieldClass = 'field-cozy';
 
 function todayIso(): string {
   const now = new Date();
@@ -83,14 +88,14 @@ export function PlannerView({
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const amount = parseFloat(amountText);
-    if (!category.trim() || Number.isNaN(amount) || amount <= 0) return;
+    const result = evaluateAmountExpression(amountText);
+    if (!category.trim() || !result.ok || result.value <= 0) return;
 
     onAdd({
       date,
       type,
       category: category.trim(),
-      amount,
+      amount: result.value,
       comment: comment.trim(),
     });
 
@@ -102,19 +107,33 @@ export function PlannerView({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-          Planner
-        </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <h2 className="font-display text-lg font-bold text-text">Planner</h2>
+        <p className="text-sm text-text-muted">
           What-if entries for this month stay in-memory on this device only.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-        <Stat label="Income" value={formatCurrency(income)} tone="text-emerald-600 dark:text-emerald-400" />
-        <Stat label="Expenses" value={formatCurrency(expenses)} tone="text-rose-600 dark:text-rose-400" />
-        <Stat label="Investment" value={formatCurrency(investment)} tone="text-violet-600 dark:text-violet-400" />
-        <Stat label="Liquid" value={formatCurrency(liquid)} tone="text-teal-600 dark:text-teal-400" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+        <Stat
+          label="Income"
+          value={formatCurrency(income)}
+          tone="text-emerald-600 dark:text-emerald-400"
+        />
+        <Stat
+          label="Expenses"
+          value={formatCurrency(expenses)}
+          tone="text-rose-600 dark:text-rose-400"
+        />
+        <Stat
+          label="Investment"
+          value={formatCurrency(investment)}
+          tone="text-violet-600 dark:text-violet-400"
+        />
+        <Stat
+          label="Liquid"
+          value={formatCurrency(liquid)}
+          tone="text-teal-600 dark:text-teal-400"
+        />
         <Stat
           label="Savings %"
           value={`${savingsPct.toFixed(1)}%`}
@@ -129,28 +148,26 @@ export function PlannerView({
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+        className="cozy-card space-y-3 border-border p-4"
       >
-        <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
-          Add mock entry
-        </h3>
+        <h3 className="text-sm font-bold text-text">Add mock entry</h3>
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-zinc-500">Date</span>
+            <span className={labelClass}>Date</span>
             <input
               type="date"
               required
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+              className={fieldClass}
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-zinc-500">Type</span>
+            <span className={labelClass}>Type</span>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as TransactionType)}
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+              className={fieldClass}
             >
               <option value="income">Income</option>
               <option value="expense">Expense</option>
@@ -160,69 +177,66 @@ export function PlannerView({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-zinc-500">Category</span>
+            <span className={labelClass}>Category</span>
             <input
               type="text"
               required
               placeholder="e.g. Rent"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+              className={fieldClass}
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-zinc-500">Amount</span>
-            <input
-              type="number"
+            <span className={labelClass}>Amount</span>
+            <SmartAmountInput
               required
-              min="0"
-              step="0.01"
-              inputMode="decimal"
               placeholder="0"
               value={amountText}
-              onChange={(e) => setAmountText(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+              onChange={setAmountText}
+              className={fieldClass}
             />
           </label>
         </div>
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-zinc-500">Comment</span>
+          <span className={labelClass}>Comment</span>
           <input
             type="text"
             placeholder="Optional note"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50"
+            className={fieldClass}
           />
         </label>
         <button
           type="submit"
-          className="w-full min-h-11 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900"
+          className="soft-glow w-full min-h-11 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-warm transition active:scale-[0.98]"
         >
           Add to plan
         </button>
       </form>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <h3 className="mb-3 text-sm font-bold text-zinc-900 dark:text-zinc-50">
-          Expense categories
-        </h3>
+      <div className="cozy-card border-border p-4">
+        <h3 className="mb-3 text-sm font-bold text-text">Expense categories</h3>
         {expenseBreakdown.length === 0 ? (
-          <p className="text-sm text-zinc-500">No expenses this month yet.</p>
+          <p className="text-sm text-text-muted">No expenses this month yet.</p>
         ) : (
           <ul className="space-y-2">
             {expenseBreakdown.map(([name, amount]) => (
-              <li key={name} className="flex items-center justify-between text-sm">
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">{name}</span>
+              <li
+                key={name}
+                className="flex items-center justify-between text-sm"
+              >
+                <span className="font-medium text-text">{name}</span>
                 <span className="tabular-nums text-rose-600 dark:text-rose-400">
                   {masked ? (
-                    <span className="text-zinc-500 dark:text-zinc-400">
+                    <span className="text-text-muted">
                       {pct(amount, expenses).toFixed(1)}%
                     </span>
                   ) : (
                     <>
                       {formatCurrency(amount)}
-                      <span className="ml-2 text-zinc-400">
+                      <span className="ml-2 text-text-muted">
                         {pct(amount, expenses).toFixed(1)}%
                       </span>
                     </>
@@ -236,9 +250,7 @@ export function PlannerView({
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
-            Mock entries
-          </h3>
+          <h3 className="text-sm font-bold text-text">Mock entries</h3>
           {plannerThisMonth.length > 0 && (
             <button
               type="button"
@@ -250,7 +262,7 @@ export function PlannerView({
           )}
         </div>
         {plannerThisMonth.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-zinc-300 p-4 text-sm text-zinc-500 dark:border-zinc-700">
+          <div className="rounded-xl border border-dashed border-border bg-surface-strong/80 p-4 text-sm text-text-muted">
             No planning transactions yet. Add one above to model this month.
           </div>
         ) : (
@@ -258,16 +270,16 @@ export function PlannerView({
             {plannerThisMonth.map((t) => (
               <li
                 key={t.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 dark:border-zinc-800 dark:bg-zinc-900"
+                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-strong px-3 py-2.5 shadow-warm-sm"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  <p className="truncate text-sm font-semibold text-text">
                     {t.category}
-                    <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] uppercase text-zinc-500 dark:bg-zinc-800">
+                    <span className="ml-2 rounded-full bg-surface-muted/70 px-2 py-0.5 text-[10px] uppercase text-text-muted">
                       {t.type}
                     </span>
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-text-secondary">
                     {formatCurrency(t.amount)}
                   </p>
                 </div>
@@ -299,13 +311,13 @@ function Stat({
   className?: string;
 }) {
   return (
-    <div
-      className={`cozy-card p-3.5 border-border ${className}`}
-    >
+    <div className={`cozy-card border-border p-3.5 ${className}`}>
       <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
         {label}
       </p>
-      <p className={`mt-1 font-display text-xl font-bold tabular-nums ${tone}`}>{value}</p>
+      <p className={`mt-1 font-display text-xl font-bold tabular-nums ${tone}`}>
+        {value}
+      </p>
     </div>
   );
 }
