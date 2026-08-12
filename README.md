@@ -146,10 +146,11 @@ Also included:
 - **6 Premium Visual Upgrades** — Ambient FinTech radial aura glows on KPI cards, Shimmer Skeleton Card Loaders (`ShimmerSkeleton.tsx`), pastel category chip pills, ambient motion mesh gradient background blobs, 135° card background gradients (`cozy-card`) unified across all tabs (Home, Ledger, Monthly, Planner), and tactile card press physics.
 - **Themed SVG app icon** — `public/icons/muffin-icon.svg` (PWA manifest + favicon), recolored per theme.
 - **Six muffin themes** — 3 light (Classic, Blueberry, Pistachio Matcha) and 3 dark (Double Chocolate, Red Velvet, Salted Caramel), with CSS design tokens + themed chart palettes.
+- **Seven switchable display fonts** — Muffin (Outfit + Plus Jakarta Sans, default), Josefin — Elegant, Fredoka — Playful, Exo 2 — Futuristic, Atkinson — Clear, Syne — Bold, Bricolage — Quirky. Selected from the settings menu → **Font** sub-panel; choice persists in `localStorage`.
 - **Google Sign-In (multi-user)** — Each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token.
-- **Header settings (gear)** — One menu for Mask, Theme, About, Privacy Policy, Terms of Service, Recipe (configuration), Download App (PWA install), and Log out.
+- **Header settings (⚙️)** — One menu, in order: **Mask amounts**, **Theme** (sub-panel), **Font** (sub-panel), **About**, **Recipe**, **Guides** (sub-panel → User Guide + Technical Guide), **Privacy Policy**, **Terms of Service**, **Download App** (PWA install), and **Log out**.
 - **Recipe** — View/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in Netlify Blobs for the signed-in user; local cache for snappy UI).
-- **First-run tour** — Short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again.
+- **First-run tour** — Short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again. Replay anytime from settings → Guides → User Guide → Replay First-Run Tour.
 
 ### 1.6 Everyday data flow
 
@@ -174,6 +175,7 @@ Also included:
 | Currency display | `src/config.ts` (`CURRENCY`) |
 | Planner "what if" rows | Browser `localStorage` (`plannerTransactions`) |
 | Selected muffin theme | Browser `localStorage` (`muffinTheme`) |
+| Selected display font | Browser `localStorage` (`muffinFont`) |
 | Amount mask preference | Browser `localStorage` (`valuesMasked`) |
 | App UI / assets | Netlify CDN (`dist` after build); live site: [muffin-ledger.netlify.app](https://muffin-ledger.netlify.app/) |
 
@@ -398,7 +400,7 @@ Optional code defaults (used when no Recipe exists yet) and currency live in `sr
 2. Open your Netlify site (or pull to refresh) to see the latest numbers; the app re-fetches after every in-app add/edit/delete automatically.
 3. On Home, tap KPI cards to open charts or filtered lists; open **More Details** for Provident Fund and extra KPIs.
 4. Use **Planner** for temporary what-if entries (device-only).
-5. Open the header **gear** for Mask, Theme, About, Recipe, Download App, and Log out.
+5. Open the header **⚙️ settings** for Mask, Theme, Font, About, Recipe, Guides, Privacy, Terms, Download App, and Log out.
 6. After your first sheet link, walk through the **tour** (or skip it) — it will not appear again once completed.
 7. On your phone browser, use **Download App** from the gear menu (or the browser’s Add to Home Screen / Install).
 
@@ -430,7 +432,8 @@ Optional code defaults (used when no Recipe exists yet) and currency live in `sr
 | UI | **React 19** + **TypeScript** | Component tree, state, typed domain model |
 | Motion | **Framer Motion** | Springs, layout tab pill, page/sheet enter-exit, modal portals |
 | Icons | **Lucide React** | Soft-contoured header / nav / modal icons |
-| Typography | **Syne** (display) + **DM Sans** (UI) | Branded header + app body font (Google Fonts) |
+| Typography | **Outfit** (display) + **Plus Jakarta Sans** (body) | Default "Muffin" font pair (Google Fonts); 7 switchable font families via `useFont` |
+| Font system | `src/lib/fonts.ts` + `useFont` hook | 7 selectable display fonts: Muffin (default), Josefin, Fredoka, Exo 2, Atkinson, Syne, Bricolage |
 | Build | **Vite 6** + `@vitejs/plugin-react` | Dev server, production bundle |
 | Styling | **Tailwind CSS 3** + CSS design tokens | Six muffin themes via `data-theme` (`canvas`, `surface`, `primary`, `border`, chart colors, â€¦) |
 | Forms | **react-select** (Creatable) | Investment Type combobox (existing types + free text) |
@@ -577,8 +580,9 @@ Growth compares current net worth to `initialInvestments + openingBalance` (from
 - **Shared UI:** `components/ui` (`SoftButton`, `FloatingNav`, `ConfirmModal`, `ShimmerSkeleton`, `MuffinIcon`).
 - **`KpiCard` tones:** semantic colors for income/expense/investment; Net Worth uses the theme **hero** primary gradient.
 - **Themes:** `src/lib/themes.ts` catalogs six variants; `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color`. Charts pull per-theme `chartColors`.
+- **Fonts:** `src/lib/fonts.ts` catalogs seven font families; `useFont` applies `data-font` + `--font-body` / `--font-display` CSS properties, persists `muffinFont`. Default "Muffin" uses Outfit (display) + Plus Jakarta Sans (body); alternatives include Josefin Sans, Fredoka, Exo 2, Atkinson Hyperlegible, Syne, and Bricolage Grotesque.
 - **Motion:** shared springs/variants in `src/lib/motion.ts` (Framer Motion).
-- **Hooks:** also `useTheme`, `useMask`, `useRecipeConfig` (local cache + `persistConfig` → Blobs), `usePwaInstall` (`beforeinstallprompt`).
+- **Hooks:** also `useTheme`, `useFont`, `useMask`, `useRecipeConfig` (local cache + `persistConfig` → Blobs), `usePwaInstall` (`beforeinstallprompt`).
 - Layout is mobile-first (`max-w-lg`), branded sticky header with a single gear control, floating bottom nav width-matched to cards, themed modals/forms portaled above the nav.
 
 ### 3.7 PWA behavior

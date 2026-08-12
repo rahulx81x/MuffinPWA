@@ -53,7 +53,13 @@
       align-items: center;
       gap: 0.45rem;
     }
-    header a {
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .header-links a {
       display: inline-flex;
       align-items: center;
       padding: 6px 12px;
@@ -64,7 +70,9 @@
       text-decoration: none;
       font-weight: 700;
       font-size: 0.82rem;
+      transition: background 0.2s ease;
     }
+    .header-links a:hover { background: var(--border); }
     .container {
       width: 100%;
       max-width: 800px;
@@ -112,9 +120,14 @@
   <header>
     <h1>
       <svg class="muffin-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 10.5c0-1.2.7-2.3 1.8-2.8.4-1.6 1.9-2.7 3.7-2.7s3.3 1.1 3.7 2.7c1.1.5 1.8 1.6 1.8 2.8 0 .4-.1.8-.2 1.1H6.7c-.1-.3-.2-.7-.2-1.1Z" fill="currentColor" opacity="0.92"/><circle cx="9.2" cy="9.2" r="0.7" fill="var(--card)"/><circle cx="12" cy="8.4" r="0.65" fill="var(--card)"/><circle cx="14.6" cy="9.4" r="0.55" fill="var(--card)"/><path d="M7 11.8h10l-.9 6.2a2.2 2.2 0 0 1-2.2 1.8H10.1a2.2 2.2 0 0 1-2.2-1.8L7 11.8Z" fill="currentColor"/><path d="M8.4 14.2h7.2M8.7 16.4h6.6" stroke="var(--card)" stroke-width="1.1" stroke-linecap="round" opacity="0.35"/></svg>
-      Muffin
+      Muffin — Privacy Policy
     </h1>
-    <a href="/">← Back to App</a>
+    <div class="header-links">
+      <a href="/guide.html">User Guide</a>
+      <a href="/technical-guide.html">Technical Guide</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/">Open App →</a>
+    </div>
   </header>
 
   <div class="container">
@@ -138,10 +151,35 @@
       <h2>2. Data Storage & Privacy</h2>
       <p>Your financial transaction records remain stored inside your personal Google Account spreadsheet in Google Drive. Muffin does not operate a central external database storing your bank statements, income, or transaction history. Recipe opening balances and linked spreadsheet IDs are saved to your user record in Netlify Blobs for multi-device sync.</p>
 
-      <h2>3. Data Sharing & Third Parties</h2>
+      <h2>3. Cookies, Sessions & Local Storage</h2>
+      <p>Muffin uses browser storage technologies strictly for authentication and app operation:</p>
+      <ul>
+        <li><strong>Session Cookie (httpOnly):</strong> An encrypted session cookie (<code>muffin_session</code>) stores your authorization state securely so you stay signed in.</li>
+        <li><strong>Local Storage:</strong> Your browser stores local preferences on your device, including selected theme (<code>muffinTheme</code>), display font (<code>muffinFont</code>), amount masking toggle (<code>valuesMasked</code>), local Recipe cache (<code>muffinRecipe</code>), and temporary Planner entries (<code>plannerTransactions</code>).</li>
+      </ul>
+
+      <h2>4. Data Sharing & Third Parties</h2>
       <p>Muffin does not sell, rent, trade, or share user data with third-party advertisers, data brokers, or marketing partners. Data accessed from Google APIs is never used to train generalized AI or machine learning models.</p>
 
-      <h2>4. Developer Contact Information</h2>
+      <h2>5. User Rights & Data Deletion</h2>
+      <p>You have full control over your personal finance data:</p>
+      <ul>
+        <li><strong>Google Drive Data:</strong> You can edit or delete your financial records at any time directly inside your Google Sheet in Google Drive.</li>
+        <li><strong>App Access Revocation:</strong> You can revoke Muffin's access to your Google Account at any time via your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">Google Security Settings</a>.</li>
+        <li><strong>Unlinking Sheet:</strong> You can unlink your spreadsheet in-app by clicking your spreadsheet title in the header.</li>
+        <li><strong>Account Deletion:</strong> Logging out terminates your session. If you wish to permanently delete your linked configuration record from Netlify Blobs, contact the developer at <a href="mailto:rahulgouri072@gmail.com" style="color: var(--primary);">rahulgouri072@gmail.com</a>.</li>
+      </ul>
+
+      <h2>6. Data Retention</h2>
+      <p>Financial transaction data resides entirely in your personal Google Sheet and is retained as long as you maintain the sheet in Google Drive. App configuration records (linked sheet ID and Recipe starting balances) are retained in secure cloud storage (Netlify Blobs) until you request deletion or revoke account access.</p>
+
+      <h2>7. Children's Privacy</h2>
+      <p>Muffin is not intended for use by children under the age of 13. We do not knowingly collect or solicit personal information from children.</p>
+
+      <h2>8. Changes to This Policy</h2>
+      <p>The Developer may update this Privacy Policy from time to time to reflect updates in app functionality or regulatory guidelines. Revised policies will be posted on this page with an updated Effective Date.</p>
+
+      <h2>9. Developer Contact Information</h2>
       <p>If you have any questions or privacy concerns regarding Muffin, please contact the developer directly:</p>
       <p><strong>Developer:</strong> Rahul Gouri<br>
       <strong>Support Email:</strong> <a href="mailto:rahulgouri072@gmail.com" style="color: var(--primary);">rahulgouri072@gmail.com</a></p>

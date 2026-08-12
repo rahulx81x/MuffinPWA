@@ -1,19 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 500" width="100%" height="100%" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 500" width="100%" height="100%">
   <defs>
+    <!-- CUSTOMIZABLE VARIABLES -->
     <style>
       :root, svg {
+        /* Background */
         --bg-color: #1e222d;
+
+        /* Muffin Top Colors */
         --top-light: #ffecb3;
         --top-dark: #d87c4b;
+
+        /* Muffin Cup Colors */
         --cup-light: #e69a5e;
         --cup-dark: #5e2b15;
+        
+        /* Inner Cup Highlight */
         --cup-highlight: rgba(255, 235, 180, 0.25);
+
+        /* Outlines & Glow */
         --glow-color: #ffca28;
         --line-color: #3a1e12;
         --chip-color: #3a1e12;
       }
     </style>
 
+    <!-- Gradients -->
     <linearGradient id="topGrad" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="var(--top-light)" />
       <stop offset="100%" stop-color="var(--top-dark)" />
@@ -30,6 +41,7 @@
       <stop offset="100%" stop-color="transparent" />
     </linearGradient>
 
+    <!-- Glow Filter -->
     <filter id="neon-glow" x="-30%" y="-30%" width="160%" height="160%">
       <feGaussianBlur stdDeviation="12" result="blur" />
       <feMerge>
@@ -38,24 +50,47 @@
       </feMerge>
     </filter>
 
-    <path id="cup-fill" d="M 145 275 L 175 410 C 195 430, 305 430, 325 410 L 355 275 Z" />
-    <path id="cup-outline" d="M 145 275 L 175 410 C 195 430, 305 430, 325 410 L 355 275" />
-    <path id="top-shape" d="M 130 270 C 105 245, 110 195, 145 175 C 175 140, 205 125, 250 125 C 295 125, 325 140, 355 175 C 390 195, 395 245, 370 270 C 345 285, 305 282, 285 273 C 265 284, 235 284, 215 273 C 195 282, 155 285, 130 270 Z" />
+    <!-- Core Shapes -->
+    <!-- Closed shape for fills -->
+    <path id="cup-fill" d="
+      M 145 275
+      L 175 410
+      C 195 430, 305 430, 325 410
+      L 355 275 Z" />
+
+    <!-- Open path for cup outer border & glow (avoids stroke across top rim) -->
+    <path id="cup-outline" d="
+      M 145 275
+      L 175 410
+      C 195 430, 305 430, 325 410
+      L 355 275" />
+
+    <!-- Smooth, voluptuous muffin dome -->
+    <path id="top-shape" d="
+      M 130 270
+      C 105 245, 110 195, 145 175
+      C 175 140, 205 125, 250 125
+      C 295 125, 325 140, 355 175
+      C 390 195, 395 245, 370 270
+      C 345 285, 305 282, 285 273
+      C 265 284, 235 284, 215 273
+      C 195 282, 155 285, 130 270 Z" />
   </defs>
 
-  <rect width="100%" height="100%" rx="96" fill="var(--bg-color)" />
+  <!-- 1. Background -->
+  <rect width="100%" height="100%" fill="var(--bg-color)" />
 
-  <!-- Outer Blurred Glow (Neon highlights) -->
+  <!-- 2. Outer Blurred Glow (Neon highlights) -->
   <g filter="url(#neon-glow)">
     <use href="#cup-outline" xlink:href="#cup-outline" stroke="var(--glow-color)" stroke-width="26" stroke-linejoin="round" stroke-linecap="round" fill="none" />
     <use href="#top-shape" xlink:href="#top-shape" stroke="var(--glow-color)" stroke-width="26" stroke-linejoin="round" fill="none" />
   </g>
 
-  <!-- Crisp Outer Neon Border -->
+  <!-- 3. Crisp Outer Neon Border -->
   <use href="#cup-outline" xlink:href="#cup-outline" stroke="var(--glow-color)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" fill="none" />
   <use href="#top-shape" xlink:href="#top-shape" stroke="var(--glow-color)" stroke-width="18" stroke-linejoin="round" fill="none" />
 
-  <!-- Cup Base & Fill -->
+  <!-- 4. Cup Base & Fill -->
   <use href="#cup-fill" xlink:href="#cup-fill" fill="url(#cupGrad)" />
   <use href="#cup-fill" xlink:href="#cup-fill" fill="url(#cupHighlight)" />
   <use href="#cup-outline" xlink:href="#cup-outline" stroke="var(--line-color)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" fill="none" />
@@ -68,7 +103,7 @@
     <path d="M 315 285 L 295 410" />
   </g>
 
-  <!-- Muffin Top -->
+  <!-- 5. Muffin Top (Base, Outline, Chocolate Chips) -->
   <use href="#top-shape" xlink:href="#top-shape" stroke="var(--line-color)" stroke-width="12" stroke-linejoin="round" fill="url(#topGrad)" />
 
   <!-- Scattered Chocolate Chips -->
