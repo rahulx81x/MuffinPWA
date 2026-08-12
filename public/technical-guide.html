@@ -585,6 +585,8 @@
     </h1>
     <div class="header-links">
       <a href="/guide.html">User Guide</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
       <a href="/">Open App →</a>
     </div>
   </header>
@@ -673,6 +675,7 @@
             <tr><td>UI</td><td>React 19 + TypeScript</td><td>Component tree, typed domain model, client state</td></tr>
             <tr><td>Build</td><td>Vite 6 + <code>tsc -b</code></td><td>HMR, production bundle, project references</td></tr>
             <tr><td>Styling</td><td>Tailwind 3 + CSS tokens</td><td>Six muffin themes via <code>data-theme</code></td></tr>
+            <tr><td>Typography</td><td>Outfit (display) + Plus Jakarta Sans (body)</td><td>Default "Muffin" font pair; 7 switchable display fonts via <code>useFont</code></td></tr>
             <tr><td>Motion</td><td>Framer Motion</td><td>Springs, layout pill, portaled sheet enter/exit</td></tr>
             <tr><td>PWA</td><td>vite-plugin-pwa + Workbox</td><td>Manifest, SW precache, autoUpdate</td></tr>
             <tr><td>BFF</td><td>Netlify Functions</td><td>Auth, sheet link/create, CRUD proxy, recipe, tour</td></tr>
@@ -1199,7 +1202,7 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
         <div class="card">
           <h4>Cross-cutting</h4>
           <ul>
-            <li><code>features/settings</code> — HeaderMenu, Recipe, Tour, Guide, legal</li>
+            <li><code>features/settings</code> — HeaderMenu, Recipe, Tour, Guide, Privacy, Terms, PwaInstall, About</li>
             <li><code>components/ui</code> — FloatingNav, SoftButton, ConfirmModal</li>
             <li><code>shared/</code> — tabs, recipe sanitize, dates, Transaction DTO</li>
             <li>Hooks: auth/sheet/planner/modals + theme, font, mask, recipe, PWA</li>
@@ -1395,8 +1398,8 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
     </div>
 
     <p class="footer-note">
-      Companion to README §3 · Live site muffin-ledger.netlify.app · Vibe coded by Rahul Gouri, 2026
-      · Synced with current VitePWA / fonts / themed SVG icon / SmartAmountInput behavior
+      Companion to README §3 · <a href="https://muffin-ledger.netlify.app/" target="_blank" rel="noopener" style="color:var(--primary); font-weight:700;">Live Site</a> · Vibe coded by Rahul Gouri, 2026 ·
+      <a href="/guide.html" style="color:var(--primary); font-weight:700;">User Guide</a> · <a href="/privacy.html" style="color:var(--primary); font-weight:700;">Privacy</a> · <a href="/terms.html" style="color:var(--primary); font-weight:700;">Terms</a>
     </p>
   </div>
 

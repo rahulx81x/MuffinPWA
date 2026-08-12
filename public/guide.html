@@ -276,9 +276,11 @@
     <div class="nav-tabs" role="tablist" aria-label="User guide sections">
       <button type="button" class="tab-btn active" role="tab" data-tab="quickstart" aria-selected="true" onclick="showTab(event, 'quickstart')">Quick Start</button>
       <button type="button" class="tab-btn" role="tab" data-tab="features" aria-selected="false" onclick="showTab(event, 'features')">Tabs &amp; Features</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="transactions" aria-selected="false" onclick="showTab(event, 'transactions')">Transactions</button>
       <button type="button" class="tab-btn" role="tab" data-tab="sheets" aria-selected="false" onclick="showTab(event, 'sheets')">Sheet Setup</button>
-      <button type="button" class="tab-btn" role="tab" data-tab="settings" aria-selected="false" onclick="showTab(event, 'settings')">Recipe &amp; Settings</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="settings" aria-selected="false" onclick="showTab(event, 'settings')">Settings</button>
       <button type="button" class="tab-btn" role="tab" data-tab="calculator" aria-selected="false" onclick="showTab(event, 'calculator')">Calculator</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="install" aria-selected="false" onclick="showTab(event, 'install')">Install</button>
       <button type="button" class="tab-btn" role="tab" data-tab="faq" aria-selected="false" onclick="showTab(event, 'faq')">FAQ</button>
     </div>
 
@@ -324,20 +326,20 @@
     <!-- Tabs & Features -->
     <div id="features" class="tab-content" role="tabpanel">
       <h3 class="section-title">Tabs &amp; features</h3>
-      <p class="lede">Four main tabs sit in the floating bottom navigation.</p>
+      <p class="lede">Four main tabs sit in the floating bottom navigation, plus a center <strong>+</strong> button to add transactions.</p>
 
       <div class="grid-2">
         <div class="feature-card">
           <h4>Home</h4>
-          <p>This month’s income, spends, and investments; liquid cash; net worth; investment breakup; More Details including Provident Fund.</p>
+          <p>This month's income, spends, and investments; liquid cash; net worth; investment breakup (top 3 chips — tap for full pie). Open <strong>More Details</strong> for Provident Fund, lifetime totals, and growth metrics.</p>
         </div>
         <div class="feature-card">
           <h4>Ledger</h4>
-          <p>Searchable timeline with type and date filters. Open a row to view, edit, or delete. Changes write back to your Sheet.</p>
+          <p>Searchable timeline with type and date filters, date-grouped headers ("Today", "Yesterday", formatted dates), and category-colored icon badges. Open a row to view, edit, or delete. Changes write back to your Sheet.</p>
         </div>
         <div class="feature-card">
-          <h4>Monthly</h4>
-          <p>Month-by-month income, spends, investment, and closing liquid so you can spot trends over time.</p>
+          <h4>Months</h4>
+          <p>Month-by-month income, spends, investment, closing liquid, and savings percentages so you can spot trends over time.</p>
         </div>
         <div class="feature-card">
           <h4>Planner</h4>
@@ -347,6 +349,52 @@
 
       <div class="callout">
         <strong>Tip:</strong> Investments reduce liquid cash but are not expenses. Provident Fund rows are tracked separately and do not count toward net worth or the investment breakup pie.
+      </div>
+    </div>
+
+    <!-- Transactions -->
+    <div id="transactions" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Adding &amp; managing transactions</h3>
+      <p class="lede">Add entries in-app or directly in Google Sheets — both stay in sync automatically.</p>
+
+      <div class="accordion open">
+        <button type="button" class="accordion-header" aria-expanded="true" onclick="toggleAccordion(this)">
+          <span>Using the + button</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          Tap the glowing <strong>+</strong> button in the center of the floating bottom navigation. Choose <strong>Income</strong>, <strong>Expense</strong>, or <strong>Investment</strong> as the transaction type. Fill in the date, category, amount, and an optional comment. For investments, you can also specify an <strong>Investment Type</strong> (e.g., Mutual Fund, Fixed Deposit).
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>Category chips (quick entry)</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          The top 8 most frequently used categories are auto-extracted and shown as color-coded chips at the top of the form. Tap any chip to fill in the category instantly — no retyping needed.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>Editing &amp; deleting from Ledger</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          On the <strong>Ledger</strong> tab, tap any transaction row to open its details. From there you can <strong>edit</strong> (pre-filled form) or <strong>delete</strong> (with a confirmation prompt). Changes are written directly to your Google Sheet. App-created sheets use a stable <code>Id</code> column so edits stay accurate even if rows move in the sheet.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>Provident Fund (PF) tracking</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          To log PF contributions, add them as regular <strong>Investment</strong> rows and set the <strong>Investment Type</strong> (or Category) to one of: <code>Provident Fund</code>, <code>PF</code>, <code>EPF</code>, or <code>PPF</code> (case-insensitive). These rows appear in the Ledger like any other transaction, but they are <strong>excluded</strong> from net worth, liquid balance, investment totals, and the breakup pie. PF surfaces only on Home → <strong>More Details</strong> as a dedicated Provident Fund total card.
+        </div>
       </div>
     </div>
 
@@ -381,35 +429,47 @@
       </div>
     </div>
 
-    <!-- Recipe & Settings -->
+    <!-- Settings -->
     <div id="settings" class="tab-content" role="tabpanel">
-      <h3 class="section-title">Recipe &amp; settings</h3>
-      <p class="lede">Open the gear menu in the header for appearance, privacy tools, Recipe, install, and account actions.</p>
+      <h3 class="section-title">Settings menu (⚙️)</h3>
+      <p class="lede">Tap the ⚙️ gear icon in the header to access all appearance, configuration, and account options.</p>
 
       <div class="grid-2">
         <div class="feature-card">
+          <h4>Mask / Unmask amounts</h4>
+          <p>Hide all rupee figures behind dots (•••) when sharing your screen or presenting. Toggle anytime — the preference is saved on this device.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Theme</h4>
+          <p>Six muffin themes with color swatches: <strong>Classic</strong>, <strong>Blueberry</strong>, <strong>Pistachio Matcha</strong> (light) and <strong>Double Chocolate</strong>, <strong>Red Velvet</strong>, <strong>Salted Caramel</strong> (dark). Choice persists on this device and tints the app icon.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Font</h4>
+          <p>Seven switchable display fonts: <strong>Muffin</strong> (default — Outfit + Plus Jakarta Sans), <strong>Josefin</strong> — Elegant, <strong>Fredoka</strong> — Playful, <strong>Exo 2</strong> — Futuristic, <strong>Atkinson</strong> — Clear, <strong>Syne</strong> — Bold, <strong>Bricolage</strong> — Quirky. Choice persists on this device.</p>
+        </div>
+        <div class="feature-card">
           <h4>Recipe</h4>
-          <p>Set opening liquid balance and starting investments by type. Synced to your account (Netlify Blobs) and cached locally for a snappy UI. View or copy your linked spreadsheet ID here.</p>
+          <p>Set your opening liquid balance and starting investments by type (e.g., Fixed Deposits, Mutual Funds). View or copy your linked spreadsheet ID. Values sync to your account via Netlify Blobs and are cached locally for a snappy UI.</p>
         </div>
         <div class="feature-card">
-          <h4>Mask amounts</h4>
-          <p>Hide rupee figures behind dots when sharing your screen. Toggle anytime from the gear menu.</p>
-        </div>
-        <div class="feature-card">
-          <h4>Theme &amp; font</h4>
-          <p>Six muffin themes (3 light / 3 dark) and several display fonts. Choices persist on this device and tint the app icon.</p>
+          <h4>Guides</h4>
+          <p>Opens a sub-panel with two links: <strong>User Guide</strong> (in-app interactive modal with overview, sheet setup, calculator demo, charts, and FAQ — plus a <strong>Replay First-Run Tour</strong> button) and <strong>Technical Guide</strong> (full developer reference, opens in a new tab).</p>
         </div>
         <div class="feature-card">
           <h4>Download App</h4>
-          <p>Install Muffin as a PWA directly from the gear menu. On supported browsers, this triggers the 1-click install prompt. On iOS, Desktop, or unsupported browsers, it opens an interactive guide with visual steps for Android Chrome, iOS Safari, and Desktop Chrome/Edge.</p>
+          <p>Install Muffin as a PWA directly from this menu. On supported browsers (Android Chrome), this triggers the native 1-click install prompt. On iOS, Desktop, or unsupported browsers, it opens an interactive guide with visual steps.</p>
         </div>
       </div>
 
       <ul class="clean">
-        <li><strong>User Guide</strong> — short in-app cheat sheet; links here for the full guide; can replay the first-run tour.</li>
-        <li><strong>Privacy / Terms</strong> — also linked from Sign-in and About.</li>
-        <li><strong>Log out</strong> — clears your session cookie on this browser.</li>
+        <li><strong>About</strong> — Version info, tech stack, links to Privacy Policy and Terms.</li>
+        <li><strong>Privacy Policy / Terms of Service</strong> — Also linked from the Sign-in screen and About modal.</li>
+        <li><strong>Log out</strong> — Clears your session cookie on this browser. Recipe and sheet link stay on your account for next sign-in.</li>
       </ul>
+
+      <div class="callout">
+        <strong>Menu order:</strong> Mask → Theme → Font → About → Recipe → Guides → Privacy Policy → Terms of Service → Download App → Log out.
+      </div>
     </div>
 
     <!-- Calculator -->
@@ -477,6 +537,38 @@
 
       <div class="accordion">
         <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>How do I change my linked spreadsheet?</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          Tap the spreadsheet title shown below the Muffin logo in the app header. This opens an <strong>Unlink spreadsheet?</strong> confirmation.
+          After unlinking, you'll return to the Sheet Onboarding screen where you can paste a new URL/ID or create a new workbook.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>How do I edit or delete a transaction?</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          Go to the <strong>Ledger</strong> tab and tap any transaction row to open it. Use the action menu to <strong>Edit</strong> (pre-filled form) or <strong>Delete</strong> (confirmation required).
+          Changes are written directly back to your Google Sheet.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>How do I replay the first-run tour?</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          Open the ⚙️ settings menu → <strong>Guides</strong> → <strong>User Guide</strong>. In the in-app User Guide modal, tap <strong>Replay First-Run Tour</strong> at the bottom of the Overview tab.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
           <span>Download App says to use the browser menu — why?</span>
           <span class="chev" aria-hidden="true">▼</span>
         </button>
@@ -497,15 +589,72 @@
       </div>
     </div>
 
+    <!-- Install -->
+    <div id="install" class="tab-content" role="tabpanel">
+      <h3 class="section-title">Install Muffin as an app</h3>
+      <p class="lede">Muffin is a Progressive Web App (PWA) — you can install it on your phone or desktop for a native-like experience.</p>
+
+      <div class="accordion open">
+        <button type="button" class="accordion-header" aria-expanded="true" onclick="toggleAccordion(this)">
+          <span>Android (Chrome)</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          <ol style="margin:0; padding-left:1.2rem; font-size:0.84rem;">
+            <li>Open the ⚙️ settings menu and tap <strong>Download App</strong>.</li>
+            <li>If the native install banner appears, tap <strong>Install</strong>.</li>
+            <li>If no banner appears, tap Chrome's <strong>⋮</strong> menu → <strong>Add to Home screen</strong> or <strong>Install app</strong>.</li>
+            <li>Muffin will appear as an app on your home screen with the themed muffin icon.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>iPhone / iPad (Safari)</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          <ol style="margin:0; padding-left:1.2rem; font-size:0.84rem;">
+            <li>Open Muffin in <strong>Safari</strong> (not Chrome — iOS requires Safari for PWA install).</li>
+            <li>Tap the <strong>Share</strong> button (box with up arrow) at the bottom of the screen.</li>
+            <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+            <li>Tap <strong>Add</strong> in the top-right corner.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>Desktop (Chrome / Edge)</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          <ol style="margin:0; padding-left:1.2rem; font-size:0.84rem;">
+            <li>Open Muffin in Chrome or Edge.</li>
+            <li>Look for the <strong>Install</strong> icon (⊕) in the address bar, or use the ⚙️ settings menu → <strong>Download App</strong>.</li>
+            <li>Click <strong>Install</strong> in the prompt.</li>
+            <li>Muffin opens in its own window without browser chrome.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>Note:</strong> The PWA shell loads offline, but live financial data (KPIs, ledger) requires a network connection to reach your Netlify backend and Google Sheets.
+      </div>
+    </div>
+
     <p class="footer-note">
       Full product docs also live in the repo README ·
-      <a href="/technical-guide.html">Technical Guide</a> for engineers ·
-      Updated for current Muffin app features
+      <a href="/technical-guide.html">Technical Guide</a> ·
+      <a href="/privacy.html">Privacy</a> ·
+      <a href="/terms.html">Terms</a> ·
+      Vibe coded by Rahul Gouri, 2026
     </p>
   </div>
 
   <script>
-    const TAB_IDS = ['quickstart', 'features', 'sheets', 'settings', 'calculator', 'faq'];
+    const TAB_IDS = ['quickstart', 'features', 'transactions', 'sheets', 'settings', 'calculator', 'install', 'faq'];
 
     function showTab(event, id) {
       if (!TAB_IDS.includes(id)) id = 'quickstart';
