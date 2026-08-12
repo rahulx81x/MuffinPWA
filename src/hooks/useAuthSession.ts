@@ -15,6 +15,7 @@ import {
 } from '../api/client';
 
 const SESSION_PROBE_MIN_INTERVAL_MS = 30_000;
+const STATUS_TOAST_MS = 3_500;
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   denied: 'Google sign-in was denied.',
@@ -100,6 +101,14 @@ export function useAuthSession() {
 
   const needsSheet = Boolean(auth && auth.needsSheet);
   const ready = Boolean(auth && !auth.needsSheet);
+
+  useEffect(() => {
+    if (!statusMessage) return;
+    const timer = window.setTimeout(() => {
+      setStatusMessage(null);
+    }, STATUS_TOAST_MS);
+    return () => window.clearTimeout(timer);
+  }, [statusMessage]);
 
   const refreshAuth = useCallback(async () => {
     const me = await getMe();
