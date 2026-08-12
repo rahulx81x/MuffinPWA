@@ -143,12 +143,14 @@ Also included:
 - **Interactive Touch Charts** — Tappable Donut/Pie slices with stroke expansion & glow, crosshair guidelines on trend graphs, pulsing active aura rings, and Month-over-Month (MoM) delta calculation cards.
 - **Date-Grouped Fintech Timeline Ledger** — Grouped timeline headers ("Today", "Yesterday", "Mon, 10 Aug 2026") with daily totals, category-colored icon badges (`ArrowUpRight`, `Utensils`, `Coffee`, `ShoppingBag`, `Zap`), unclipped `createPortal` Action Sheet menu, and View Transaction Details modal.
 - **1-Tap Dynamic Category Chips & Calculator Math** — Auto-extracted top 8 frequent category chips, decimal input mode for phone keypads, micro-haptics (`navigator.vibrate(8)`), and safe math expression evaluator supporting BODMAS arithmetic and `%` percentage calculations (e.g. `1000 * 18%` → `180` for tax/GST).
-- **6 Premium Visual Upgrades** — Ambient FinTech radial aura glows on KPI cards, Shimmer Skeleton Card Loaders (`ShimmerSkeleton.tsx`), pastel category chip pills, ambient motion mesh gradient background blobs, 135° card background gradients (`cozy-card`) unified across all tabs (Home, Ledger, Monthly, Planner), and tactile card press physics.
-- **Themed SVG app icon** — `public/icons/muffin-icon.svg` (PWA manifest + favicon), recolored per theme.
-- **Six muffin themes** — 3 light (Classic, Blueberry, Pistachio Matcha) and 3 dark (Double Chocolate, Red Velvet, Salted Caramel), with CSS design tokens + themed chart palettes.
+- **6 Premium Visual Upgrades** — Ambient FinTech radial aura glows on KPI cards, pastel category chip pills, ambient motion mesh gradient background blobs, 135° card background gradients (`cozy-card`) unified across all tabs (Home, Ledger, Monthly, Planner), and tactile card press physics.
+- **Boot splash** — Themed `LoadingScreen` (floating muffin mark + ambient glow) while the session resolves; no skeleton placeholders.
+- **Signed-in welcome** — Home greets you by first name (`Good morning, …`); the settings menu shows your Google avatar, name, and email above Log out.
+- **Themed favicon** — Tab favicon SVG recolors with the active theme via `src/lib/muffinIcon.ts`. Install / home-screen icons stay on static PNGs in the web manifest (required for a real Android WebAPK).
+- **Six muffin themes** — 3 light (Classic, Blueberry, Pistachio Matcha) and 3 dark (Double Chocolate, Red Velvet, Salted Caramel), with CSS design tokens + themed chart palettes. `theme-color` / status bar track the canvas background.
 - **Seven switchable display fonts** — Muffin (Outfit + Plus Jakarta Sans, default), Josefin — Elegant, Fredoka — Playful, Exo 2 — Futuristic, Atkinson — Clear, Syne — Bold, Bricolage — Quirky. Selected from the settings menu → **Font** sub-panel; choice persists in `localStorage`.
 - **Google Sign-In (multi-user)** — Each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token.
-- **Header settings (⚙️)** — One menu, in order: **Mask amounts**, **Theme** (sub-panel), **Font** (sub-panel), **About**, **Recipe**, **Guides** (sub-panel → User Guide + Technical Guide), **Privacy Policy**, **Terms of Service**, **Download App** (PWA install), and **Log out**.
+- **Header settings (⚙️)** — One menu, in order: **Mask amounts**, **Theme** (sub-panel), **Font** (sub-panel), **About**, **Recipe**, **Guides** (sub-panel → User Guide + Technical Guide), **Privacy Policy**, **Terms of Service**, **Download App** (PWA install), signed-in account chip, and **Log out**.
 - **Recipe** — View/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in Netlify Blobs for the signed-in user; local cache for snappy UI).
 - **First-run tour** — Short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again. Replay anytime from settings → Guides → User Guide → Replay First-Run Tour.
 
@@ -398,11 +400,11 @@ Optional code defaults (used when no Recipe exists yet) and currency live in `sr
 
 1. Add, edit, or delete rows using the in-app **+** / Ledger edit flows — these write straight to your Google Sheet through the Netlify Function. You can also edit the sheet directly in Google Sheets.
 2. Open your Netlify site (or pull to refresh) to see the latest numbers; the app re-fetches after every in-app add/edit/delete automatically.
-3. On Home, tap KPI cards to open charts or filtered lists; open **More Details** for Provident Fund and extra KPIs.
+3. On Home, you’ll see a time-based welcome with your first name; tap KPI cards to open charts or filtered lists; open **More Details** for Provident Fund and extra KPIs.
 4. Use **Planner** for temporary what-if entries (device-only).
-5. Open the header **⚙️ settings** for Mask, Theme, Font, About, Recipe, Guides, Privacy, Terms, Download App, and Log out.
+5. Open the header **⚙️ settings** for Mask, Theme, Font, About, Recipe, Guides, Privacy, Terms, Download App, your signed-in account, and Log out.
 6. After your first sheet link, walk through the **tour** (or skip it) — it will not appear again once completed.
-7. On your phone browser, use **Download App** from the gear menu (or the browser’s Add to Home Screen / Install).
+7. On your phone browser, use **Download App** from the gear menu and choose **Install app** (preferred on Android) so Muffin installs as a full PWA, not a browser shortcut.
 
 ### 2.11 Troubleshooting
 
@@ -419,6 +421,7 @@ Optional code defaults (used when no Recipe exists yet) and currency live in `sr
 | PF showing in net worth / liquid | Tag PF with Investment Type `Provident Fund`, `PF`, `EPF`, or `PPF` so it is excluded from those totals |
 | Add/edit/delete fails in the app | Re-sign in if the session expired; confirm the Google account has **edit** (not just view) access to the sheet |
 | Site shows old UI after code change | Wait for Netlify deploy to finish; hard-refresh the browser (PWA may need a second load for the service worker) |
+| Home screen icon opens in the browser (shortcut), not standalone | Remove the shortcut, reinstall via **Install app** (not Add to Home screen); confirm the live site serves `/manifest.webmanifest` with PNG icons |
 | Local `npm run dev` can't reach the function | Use `npm run dev` (Netlify Dev), not plain Vite alone, so `/.netlify/functions/*` exists; confirm `.env` is populated with the **localhost** redirect URI |
 
 ---
@@ -463,10 +466,10 @@ MuffinPWA/
 │   ├── api/client.ts          # Typed client → Netlify functions
 │   ├── domain/                # metrics, providentFund, evaluateAmount, UI types
 │   ├── features/              # auth, home, ledger, planner, monthly, settings
-│   ├── components/ui/         # SoftButton, FloatingNav, ConfirmModal, …
+│   ├── components/ui/         # SoftButton, FloatingNav, ConfirmModal, LoadingScreen, MuffinIcon
 │   ├── hooks/                 # useAuthSession, useSheetTransactions, usePlannerStore,
 │   │                          # useAppModals, theme, mask, recipe, PWA install
-│   └── lib/                   # themes, fonts, motion, muffinIcon
+│   └── lib/                   # themes, fonts, motion, muffinIcon (favicon + theme-color)
 ├── scripts/                   # showcase capture / PPT
 ├── docs/showcase/
 ├── public/icons/
@@ -577,21 +580,27 @@ Growth compares current net worth to `initialInvestments + openingBalance` (from
 - **`App.tsx`** is a thin shell: wires hooks, hosts tabs/modals, recomputes metrics when sheet rows or Recipe change.
 - **Lifecycle hooks:** `useAuthSession` (boot, logout, visibility health probe), `useSheetTransactions` (load/mutate/refresh), `usePlannerStore` (`plannerTransactions` localStorage), `useAppModals` (single discriminated modal union).
 - **Feature folders:** `features/auth`, `home`, `ledger`, `planner`, `monthly`, `settings` — views and feature-owned modals live with their domain.
-- **Shared UI:** `components/ui` (`SoftButton`, `FloatingNav`, `ConfirmModal`, `ShimmerSkeleton`, `MuffinIcon`).
+- **Shared UI:** `components/ui` (`SoftButton`, `FloatingNav`, `ConfirmModal`, `LoadingScreen`, `MuffinIcon`).
 - **`KpiCard` tones:** semantic colors for income/expense/investment; Net Worth uses the theme **hero** primary gradient.
-- **Themes:** `src/lib/themes.ts` catalogs six variants; `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color`. Charts pull per-theme `chartColors`.
+- **Themes:** `src/lib/themes.ts` catalogs six variants; `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color` to the canvas background (status bar match). Charts pull per-theme `chartColors`.
 - **Fonts:** `src/lib/fonts.ts` catalogs seven font families; `useFont` applies `data-font` + `--font-body` / `--font-display` CSS properties, persists `muffinFont`. Default "Muffin" uses Outfit (display) + Plus Jakarta Sans (body); alternatives include Josefin Sans, Fredoka, Exo 2, Atkinson Hyperlegible, Syne, and Bricolage Grotesque.
 - **Motion:** shared springs/variants in `src/lib/motion.ts` (Framer Motion).
 - **Hooks:** also `useTheme`, `useFont`, `useMask`, `useRecipeConfig` (local cache + `persistConfig` → Blobs), `usePwaInstall` (`beforeinstallprompt`).
-- Layout is mobile-first (`max-w-lg`), branded sticky header with a single gear control, floating bottom nav width-matched to cards, themed modals/forms portaled above the nav.
+- Layout is mobile-first (`max-w-lg`), branded sticky header with a single gear control, floating bottom nav width-matched to cards, themed modals/forms portaled above the nav. Home opens with a signed-in greeting; session boot uses `LoadingScreen`.
 
 ### 3.7 PWA behavior
 
 Configured in `vite.config.ts` via `VitePWA`:
 
-- Manifest name/short name, portrait standalone display, theme colors, 192/512 icons (including maskable)
+- Static same-origin `/manifest.webmanifest` (never swapped to a `blob:` URL — that breaks Android WebAPK install and falls back to a shortcut)
+- Manifest `theme_color` / `background_color` use the Classic canvas (`#FAF5EF`); runtime `theme-color` meta tracks the active theme background for the status bar
+- Portrait `display: standalone`, PNG icons at 192/512 with separate `purpose: any` and `purpose: maskable` entries
+- Apple: `apple-mobile-web-app-status-bar-style: black-translucent` + PNG `apple-touch-icon`; Android: `mobile-web-app-capable`
+- Favicon SVG may recolor with theme; **install icons stay on `/icons/icon_*.png`**
 - `registerType: 'autoUpdate'`
-- Workbox precaches static assets (`js/css/html/ico/png/svg/woff2`) with `navigateFallback: '/index.html'`
+- Workbox precaches static assets (`js/css/ico/png/svg/woff2`); `index.html` is excluded from precache; `navigateFallback` is off; document navigations use `NetworkFirst` so Edge Access / login challenges work; API routes are `NetworkOnly`
+- Netlify headers force correct `Content-Type` / no-cache for the manifest and service worker
+- Prefer **Install app** over “Add to Home screen” on Android so Chrome packages a full PWA
 - Live finance data is fetched through the Netlify Function and should not be treated as durable offline truth; the shell can load offline, but KPIs need network for the function to reach Google Sheets
 
 ### 3.8 Deployment and environments
@@ -608,10 +617,23 @@ From `netlify.toml`:
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "GOOGLE_REDIRECT_URI"
 
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 ```
 
 - **Build:** `tsc -b && vite build` (`package.json`)

@@ -6,8 +6,8 @@ import type { MutationResult } from './api/client';
 import { SoftButton } from './components/ui/SoftButton';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import { FloatingNav } from './components/ui/FloatingNav';
+import { LoadingScreen } from './components/ui/LoadingScreen';
 import { MuffinIcon } from './components/ui/MuffinIcon';
-import { ShimmerSkeleton } from './components/ui/ShimmerSkeleton';
 import { SignInScreen } from './features/auth/SignInScreen';
 import { SheetOnboarding } from './features/auth/SheetOnboarding';
 import { HomeView } from './features/home/HomeView';
@@ -217,11 +217,7 @@ export default function App() {
     'inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border/80 bg-surface-strong/90 text-text-secondary shadow-warm-sm backdrop-blur-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40';
 
   if (authBooting) {
-    return (
-      <div className="relative min-h-dvh bg-canvas py-8 text-text transition-theme">
-        <ShimmerSkeleton />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!auth) {

@@ -331,7 +331,7 @@
       <div class="grid-2">
         <div class="feature-card">
           <h4>Home</h4>
-          <p>This month's income, spends, and investments; liquid cash; net worth; investment breakup (top 3 chips — tap for full pie). Open <strong>More Details</strong> for Provident Fund, lifetime totals, and growth metrics.</p>
+          <p>Opens with a time-based welcome using your first name. This month's income, spends, and investments; liquid cash; net worth; investment breakup (top 3 chips — tap for full pie). Open <strong>More Details</strong> for Provident Fund, lifetime totals, and growth metrics.</p>
         </div>
         <div class="feature-card">
           <h4>Ledger</h4>
@@ -457,18 +457,19 @@
         </div>
         <div class="feature-card">
           <h4>Download App</h4>
-          <p>Install Muffin as a PWA directly from this menu. On supported browsers (Android Chrome), this triggers the native 1-click install prompt. On iOS, Desktop, or unsupported browsers, it opens an interactive guide with visual steps.</p>
+          <p>Install Muffin as a full PWA from this menu. On Android Chrome, use the native 1-click prompt or browser <strong>Install app</strong> (preferred over Add to Home screen). On iOS, Desktop, or unsupported browsers, an interactive guide walks through the steps. Installed apps get a status bar that matches your theme.</p>
         </div>
       </div>
 
       <ul class="clean">
         <li><strong>About</strong> — Version info, tech stack, links to Privacy Policy and Terms.</li>
         <li><strong>Privacy Policy / Terms of Service</strong> — Also linked from the Sign-in screen and About modal.</li>
+        <li><strong>Signed-in account</strong> — Your Google avatar, name, and email appear above Log out so you can confirm which account is active.</li>
         <li><strong>Log out</strong> — Clears your session cookie on this browser. Recipe and sheet link stay on your account for next sign-in.</li>
       </ul>
 
       <div class="callout">
-        <strong>Menu order:</strong> Mask → Theme → Font → About → Recipe → Guides → Privacy Policy → Terms of Service → Download App → Log out.
+        <strong>Menu order:</strong> Mask → Theme → Font → About → Recipe → Guides → Privacy Policy → Terms of Service → Download App → Account → Log out.
       </div>
     </div>
 
@@ -574,7 +575,18 @@
         </button>
         <div class="accordion-content">
           Some browsers expose Install in their own menu even when the in-app install prompt is not available yet.
-          Use that menu, or on iPhone/iPad: Share → Add to Home Screen.
+          On Android, choose <strong>Install app</strong> (not Add to Home screen) so Chrome installs a full standalone PWA with a matching status bar.
+          On iPhone/iPad: Share → Add to Home Screen.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
+          <span>Why does the home-screen icon open in Chrome instead of as an app?</span>
+          <span class="chev" aria-hidden="true">▼</span>
+        </button>
+        <div class="accordion-content">
+          That usually means the entry was added as a browser shortcut. Remove it, open Muffin in Chrome, then use ⚙️ → <strong>Download App</strong> or the browser menu → <strong>Install app</strong>, and reinstall.
         </div>
       </div>
 
@@ -603,8 +615,8 @@
           <ol style="margin:0; padding-left:1.2rem; font-size:0.84rem;">
             <li>Open the ⚙️ settings menu and tap <strong>Download App</strong>.</li>
             <li>If the native install banner appears, tap <strong>Install</strong>.</li>
-            <li>If no banner appears, tap Chrome's <strong>⋮</strong> menu → <strong>Add to Home screen</strong> or <strong>Install app</strong>.</li>
-            <li>Muffin will appear as an app on your home screen with the themed muffin icon.</li>
+            <li>Otherwise open Chrome's <strong>⋮</strong> menu and choose <strong>Install app</strong> (preferred). Prefer Install over <strong>Add to Home screen</strong> so Android packages Muffin as a full PWA (standalone, themed status bar), not a browser shortcut.</li>
+            <li>Muffin opens fullscreen with a status bar that matches your theme canvas.</li>
           </ol>
         </div>
       </div>

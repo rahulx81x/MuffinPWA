@@ -159,8 +159,10 @@ export function UserGuideModal({
                   <p className="text-xs text-text-secondary leading-relaxed">
                     Muffin connects your Google Sheet to a mobile dashboard. Log income,
                     expenses, and investments with category chips, amount math, and live
-                    net-worth tracking. Customize your app with 6 muffin themes and 7 display fonts in Settings (⚙️).
-                    Installable as a PWA — balances always load from your sheet over the network.
+                    net-worth tracking. Home greets you by name; Settings shows your signed-in
+                    Google account. Customize with 6 muffin themes and 7 display fonts.
+                    Install as a full PWA (prefer Install app on Android) — balances always
+                    load from your sheet over the network.
                   </p>
                 </div>
 

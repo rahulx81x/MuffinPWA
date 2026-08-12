@@ -677,7 +677,7 @@
             <tr><td>Styling</td><td>Tailwind 3 + CSS tokens</td><td>Six muffin themes via <code>data-theme</code></td></tr>
             <tr><td>Typography</td><td>Outfit (display) + Plus Jakarta Sans (body)</td><td>Default "Muffin" font pair; 7 switchable display fonts via <code>useFont</code></td></tr>
             <tr><td>Motion</td><td>Framer Motion</td><td>Springs, layout pill, portaled sheet enter/exit</td></tr>
-            <tr><td>PWA</td><td>vite-plugin-pwa + Workbox</td><td>Manifest, SW precache, autoUpdate</td></tr>
+            <tr><td>PWA</td><td>vite-plugin-pwa + Workbox</td><td>Static manifest (PNG any/maskable), SW precache, autoUpdate, themed status bar</td></tr>
             <tr><td>BFF</td><td>Netlify Functions</td><td>Auth, sheet link/create, CRUD proxy, recipe, tour</td></tr>
             <tr><td>Sheets</td><td>google-spreadsheet + google-auth-library</td><td>OAuth2Client + workbook row I/O</td></tr>
             <tr><td>User store</td><td>Netlify Blobs (<code>muffin-users</code>)</td><td>spreadsheetId, recipe, tourCompletedAt</td></tr>
@@ -767,7 +767,7 @@ src/
   App.tsx                 <span class="c"># thin shell: tabs + modal host</span>
   hooks/                  <span class="c"># useAuthSession, useSheetTransactions, usePlannerStore, useAppModals</span>
   features/               <span class="c"># auth, home, ledger, planner, monthly, settings</span>
-  components/ui/          <span class="c"># SoftButton, FloatingNav, ConfirmModal, …</span>
+  components/ui/          <span class="c"># SoftButton, FloatingNav, ConfirmModal, LoadingScreen, MuffinIcon</span>
   api/client.ts           <span class="c"># typed client → functions</span>
   domain/                 <span class="c"># metrics, PF, evaluateAmount, UI types</span>
 shared/                   <span class="c"># tabs, recipe sanitize, dates, Transaction DTO</span>
@@ -1186,14 +1186,16 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
       <p class="lede">
         Mobile-first shell (<code>max-w-lg</code>). <code>App.tsx</code> is a thin shell wired to
         <code>useAuthSession</code>, <code>useSheetTransactions</code>, <code>usePlannerStore</code>,
-        and <code>useAppModals</code>. Feature UI lives under <code>src/features/*</code>.
+        and <code>useAppModals</code>. Session boot shows <code>LoadingScreen</code>, then Sign-in /
+        Sheet onboarding / main tabs. Home greets the signed-in user; HeaderMenu shows account
+        identity above Log out. Feature UI lives under <code>src/features/*</code>.
       </p>
 
       <div class="grid-2">
         <div class="card">
           <h4>Views</h4>
           <ul>
-            <li><code>features/home</code> — KPI grid, ChartModal, More Details / PF</li>
+            <li><code>features/home</code> — Welcome greeting, KPI grid, ChartModal, More Details / PF</li>
             <li><code>features/planner</code> — ephemeral what-if rows</li>
             <li><code>features/ledger</code> — searchable timeline + manage modal</li>
             <li><code>features/monthly</code> — per-month KPI breakdown</li>
@@ -1202,8 +1204,8 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
         <div class="card">
           <h4>Cross-cutting</h4>
           <ul>
-            <li><code>features/settings</code> — HeaderMenu, Recipe, Tour, Guide, Privacy, Terms, PwaInstall, About</li>
-            <li><code>components/ui</code> — FloatingNav, SoftButton, ConfirmModal</li>
+            <li><code>features/settings</code> — HeaderMenu (account chip), Recipe, Tour, Guide, Privacy, Terms, PwaInstall, About</li>
+            <li><code>components/ui</code> — FloatingNav, SoftButton, ConfirmModal, LoadingScreen, MuffinIcon</li>
             <li><code>shared/</code> — tabs, recipe sanitize, dates, Transaction DTO</li>
             <li>Hooks: auth/sheet/planner/modals + theme, font, mask, recipe, PWA</li>
           </ul>
@@ -1221,7 +1223,9 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
           Red Velvet, Salted Caramel. Applied via <code>data-theme</code> + optional <code>dark</code> class;
           persisted as <code>muffinTheme</code>. Charts pull per-theme <code>chartColors</code>.
           Motion springs/variants centralized in <code>src/lib/motion.ts</code>.
-          Favicon / PWA icon is a themed SVG from <code>src/lib/muffinIcon.ts</code> (not PNG assets).
+          <code>applyMuffinIconsToDocument</code> updates the tab favicon SVG and <code>theme-color</code>
+          (canvas background for status-bar match). Install icons stay on static PNG assets in the
+          web manifest — never swapped to <code>blob:</code> / <code>data:</code> URLs.
         </div>
       </div>
 
@@ -1247,12 +1251,16 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
         <div class="accordion-content">
           <ul style="margin:0; padding-left:1.1rem;">
             <li><code>registerType: 'autoUpdate'</code></li>
+            <li>Static same-origin <code>/manifest.webmanifest</code> — do not replace with a blob URL (breaks WebAPK → shortcut fallback)</li>
+            <li>Manifest <code>theme_color</code> / <code>background_color</code> = canvas (<code>#FAF5EF</code>); runtime <code>theme-color</code> meta follows the active theme background</li>
+            <li>PNG icons 192/512 with separate <code>purpose: any</code> and <code>purpose: maskable</code>; Apple touch icon is PNG; status bar style <code>black-translucent</code></li>
             <li>Workbox <code>globPatterns</code>: <code>js,css,ico,png,svg,woff2</code> — <code>index.html</code> is excluded from precache</li>
             <li><code>navigateFallback: undefined</code>; document navigations use <code>NetworkFirst</code> so Edge Access / login challenges work</li>
             <li>API routes (<code>/.netlify/functions/*</code>) are <code>NetworkOnly</code></li>
+            <li>Netlify headers: correct <code>Content-Type</code> + must-revalidate for manifest / <code>sw.js</code></li>
             <li>Shell assets may cache; live KPIs always need network → function → Sheets</li>
-            <li>Install: early <code>beforeinstallprompt</code> listener in <code>index.html</code> head & store in <code>usePwaInstall</code>; opens native 1-click prompt or falls back to interactive <code>PwaInstallModal</code> guide with Android/iOS/Desktop tabs</li>
-            <li>Manifest icons: SVG primary icon with PNG fallbacks for Desktop Chromium PWA installability + dynamic live theme SVG icon sync</li>
+            <li>Install: early <code>beforeinstallprompt</code> in <code>index.html</code> → <code>usePwaInstall</code>; native prompt or <code>PwaInstallModal</code> (prefer <strong>Install app</strong> on Android)</li>
+            <li>Session boot UI: <code>LoadingScreen</code> (not a skeleton grid)</li>
           </ul>
         </div>
       </div>
