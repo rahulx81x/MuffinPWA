@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { AboutModal } from './components/AboutModal';
+import { ConfirmModal } from './components/ConfirmModal';
 import { FloatingNav } from './components/FloatingNav';
 import { HeaderMenu } from './components/HeaderMenu';
 import { HomeView } from './components/HomeView';
@@ -156,6 +157,12 @@ export default function App() {
   const [termsOpen, setTermsOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [installGuideOpen, setInstallGuideOpen] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState<
+    | { kind: 'delete'; tx: Transaction; label: string }
+    | { kind: 'unlink' }
+    | null
+  >(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   const needsSheet = Boolean(auth && auth.needsSheet);
   const ready = Boolean(auth && !auth.needsSheet);
@@ -441,12 +448,17 @@ export default function App() {
     }
   }
 
-  async function handleDelete(tx: Transaction) {
+  function handleDelete(tx: Transaction) {
     if (tx.tabName == null || tx.rowIndex == null) return;
     const label = tx.category || 'this transaction';
-    if (!window.confirm(`Delete ${label}?`)) return;
+    setPendingConfirm({ kind: 'delete', tx, label });
+  }
+
+  async function executeDelete(tx: Transaction) {
+    if (tx.tabName == null || tx.rowIndex == null) return;
 
     setMutating(true);
+    setConfirmBusy(true);
     setStatusMessage(null);
     setError(null);
 
@@ -456,10 +468,12 @@ export default function App() {
         amount: tx.amount,
       });
       await refreshTransactions();
+      setPendingConfirm(null);
       setStatusMessage('Transaction deleted.');
     } catch (err) {
       if (err instanceof AuthRequiredError) {
         setAuth(null);
+        setPendingConfirm(null);
         setStatusMessage('Signed out — please sign in again.');
         return;
       }
@@ -467,8 +481,10 @@ export default function App() {
       setError(
         err instanceof Error ? err.message : 'Could not delete transaction.'
       );
+      setPendingConfirm(null);
     } finally {
       setMutating(false);
+      setConfirmBusy(false);
     }
   }
 
@@ -497,26 +513,39 @@ export default function App() {
     setStatusMessage(null);
   }
 
-  async function handleChangeSheet() {
-    if (
-      !window.confirm(
-        'Unlink this spreadsheet from Muffin on this account? You can link another one next.'
-      )
-    ) {
-      return;
-    }
+  function handleChangeSheet() {
+    setPendingConfirm({ kind: 'unlink' });
+  }
+
+  async function executeUnlinkSheet() {
+    setConfirmBusy(true);
+    setError(null);
     try {
       await unlinkSheet();
       await refreshAuth();
       setSheetTransactions([]);
+      setPendingConfirm(null);
       setStatusMessage('Spreadsheet unlinked.');
     } catch (err) {
       if (err instanceof AuthRequiredError) {
         setAuth(null);
+        setPendingConfirm(null);
         return;
       }
       setError(err instanceof Error ? err.message : 'Could not unlink sheet.');
+      setPendingConfirm(null);
+    } finally {
+      setConfirmBusy(false);
     }
+  }
+
+  function handleConfirmAction() {
+    if (!pendingConfirm) return;
+    if (pendingConfirm.kind === 'delete') {
+      void executeDelete(pendingConfirm.tx);
+      return;
+    }
+    void executeUnlinkSheet();
   }
 
   const headerBtnClass =
@@ -589,7 +618,7 @@ export default function App() {
               />
               <button
                 type="button"
-                onClick={() => void handleChangeSheet()}
+                onClick={handleChangeSheet}
                 className="truncate text-left outline-none hover:text-text-secondary"
                 title="Change linked spreadsheet"
               >
@@ -740,6 +769,30 @@ export default function App() {
         investmentTypeOptions={investmentTypeOptions}
         onClose={() => setManageOpen(false)}
         onSuccess={handleManageSuccess}
+      />
+      <ConfirmModal
+        open={pendingConfirm != null}
+        title={
+          pendingConfirm?.kind === 'unlink'
+            ? 'Unlink spreadsheet?'
+            : 'Delete transaction?'
+        }
+        message={
+          pendingConfirm?.kind === 'unlink'
+            ? 'Unlink this spreadsheet from Muffin on this account? You can link another one next.'
+            : `Delete ${pendingConfirm?.label ?? 'this transaction'}?`
+        }
+        confirmLabel={
+          pendingConfirm?.kind === 'unlink' ? 'Unlink' : 'Delete'
+        }
+        variant={
+          pendingConfirm?.kind === 'delete' ? 'destructive' : 'default'
+        }
+        busy={confirmBusy}
+        onConfirm={handleConfirmAction}
+        onCancel={() => {
+          if (!confirmBusy) setPendingConfirm(null);
+        }}
       />
     </div>
   );

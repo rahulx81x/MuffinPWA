@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { getOpeningBalance } from '../config';
 import { useRecipeConfig } from '../hooks/useRecipeConfig';
 import { useMask } from '../hooks/useMask';
@@ -45,6 +46,21 @@ export function PlannerView({
   const [category, setCategory] = useState('');
   const [amountText, setAmountText] = useState('');
   const [comment, setComment] = useState('');
+
+  const dynamicCategoryChips = useMemo(() => {
+    if (!sheetTransactions.length) return [];
+    const counts: Record<string, number> = {};
+    for (const tx of sheetTransactions) {
+      if (tx.type !== type) continue;
+      const cat = tx.category?.trim();
+      if (!cat) continue;
+      counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat]) => cat)
+      .slice(0, 8);
+  }, [sheetTransactions, type]);
 
   const monthTx = useMemo(() => {
     const combined = [...sheetTransactions, ...plannerTransactions];
@@ -151,52 +167,151 @@ export function PlannerView({
         className="cozy-card space-y-3 border-border p-4"
       >
         <h3 className="text-sm font-bold text-text">Add mock entry</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <span className={labelClass}>Date</span>
-            <input
-              type="date"
-              required
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-          <label className="block">
-            <span className={labelClass}>Type</span>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as TransactionType)}
-              className={fieldClass}
-            >
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
-              <option value="investment">Investment</option>
-            </select>
-          </label>
+        <label className="block">
+          <span className={labelClass}>Date</span>
+          <input
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+        <div>
+          <span className={labelClass}>Type</span>
+          <div className="relative flex rounded-xl border border-border/80 bg-canvas/80 p-1">
+            {(
+              [
+                { id: 'expense', label: 'Expense' },
+                { id: 'income', label: 'Income' },
+                { id: 'investment', label: 'Investment' },
+              ] as const
+            ).map((item) => {
+              const active = type === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setType(item.id)}
+                  className={`relative flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors duration-200 ${
+                    active
+                      ? 'text-primary-foreground'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="plannerTxTypeActive"
+                      className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary-muted to-primary shadow-warm-sm"
+                      transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <span className={labelClass}>Category</span>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Rent"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className={fieldClass}
-            />
-          </label>
-          <label className="block">
-            <span className={labelClass}>Amount</span>
-            <SmartAmountInput
-              required
-              placeholder="0"
-              value={amountText}
-              onChange={setAmountText}
-              className={fieldClass}
-            />
-          </label>
+        <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className={labelClass}>Category</span>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Rent"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className={fieldClass}
+              />
+            </label>
+            <label className="block">
+              <span className={labelClass}>Amount</span>
+              <SmartAmountInput
+                required
+                placeholder="0"
+                value={amountText}
+                onChange={setAmountText}
+                className={fieldClass}
+              />
+            </label>
+          </div>
+
+          {dynamicCategoryChips.length > 0 && (
+            <div>
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                Frequent Categories (1-Tap)
+              </span>
+              <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {dynamicCategoryChips.map((chip) => {
+                  const active =
+                    category.trim().toLowerCase() === chip.toLowerCase();
+                  const c = chip.toLowerCase();
+                  let colorStyle =
+                    'border-border/80 bg-canvas/80 text-text-secondary hover:border-primary/50 hover:text-text';
+
+                  if (active) {
+                    colorStyle =
+                      'border-primary bg-primary/20 text-primary shadow-warm-sm ring-1 ring-primary/40';
+                  } else if (
+                    c.includes('food') ||
+                    c.includes('coffee') ||
+                    c.includes('dine')
+                  ) {
+                    colorStyle =
+                      'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20';
+                  } else if (
+                    c.includes('groc') ||
+                    c.includes('shop') ||
+                    c.includes('market')
+                  ) {
+                    colorStyle =
+                      'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20';
+                  } else if (
+                    c.includes('fuel') ||
+                    c.includes('travel') ||
+                    c.includes('cab')
+                  ) {
+                    colorStyle =
+                      'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20';
+                  } else if (
+                    c.includes('rent') ||
+                    c.includes('bill') ||
+                    c.includes('house')
+                  ) {
+                    colorStyle =
+                      'border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20';
+                  } else if (
+                    c.includes('sip') ||
+                    c.includes('stock') ||
+                    c.includes('invest') ||
+                    c.includes('fund')
+                  ) {
+                    colorStyle =
+                      'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20';
+                  } else if (
+                    c.includes('sal') ||
+                    c.includes('bonus') ||
+                    c.includes('income')
+                  ) {
+                    colorStyle =
+                      'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20';
+                  }
+
+                  return (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => setCategory(chip)}
+                      className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition active:scale-95 ${colorStyle}`}
+                    >
+                      {chip}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
         <label className="block">
           <span className={labelClass}>Comment</span>
