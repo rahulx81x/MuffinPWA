@@ -180,7 +180,7 @@ export function PwaInstallModal({
                       3
                     </span>
                     <p className="pt-0.5 text-text-secondary">
-                      Select <strong className="text-text">Add to Home screen</strong> or <strong className="text-text">Install app</strong>.
+                      Select <strong className="text-text">Install app</strong> (preferred) or <strong className="text-text">Add to Home screen</strong>. Prefer Install so Android packages Muffin as a full PWA, not a browser shortcut.
                     </p>
                   </div>
                 </>

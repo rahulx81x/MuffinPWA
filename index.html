@@ -9,9 +9,10 @@
     <meta name="google-site-verification" content="p9OeMCg2FfVwJc-YaOmNJZe7ILvaxcSqK_P8Jqhf-2c" />
     <title>Muffin</title>
     <link rel="icon" type="image/svg+xml" href="/icons/muffin-icon.svg" />
-    <link rel="apple-touch-icon" href="/icons/muffin-icon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon_192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar" content="#F3E8DC" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Muffin" />
     <meta name="theme-color" content="#FAF5EF" />
     <meta
@@ -37,6 +38,14 @@
     <script>
       (function () {
         var themes = {
+          classic: '#FAF5EF',
+          blueberry: '#F5F6FA',
+          pistachio: '#F6F8F3',
+          chocolate: '#1C130D',
+          velvet: '#1A0C0E',
+          caramel: '#17120A',
+        };
+        var darkThemes = {
           classic: false,
           blueberry: false,
           pistachio: false,
@@ -51,7 +60,12 @@
           else id = 'classic';
         }
         document.documentElement.setAttribute('data-theme', id);
-        document.documentElement.classList.toggle('dark', !!themes[id]);
+        document.documentElement.classList.toggle('dark', !!darkThemes[id]);
+        var themeColor = themes[id] || themes.classic;
+        var metas = document.querySelectorAll('meta[name="theme-color"]');
+        for (var i = 0; i < metas.length; i++) {
+          metas[i].setAttribute('content', themeColor);
+        }
 
         var fonts = {
           muffin: {

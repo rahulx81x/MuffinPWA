@@ -27,34 +27,33 @@ export default defineConfig({
         short_name: 'Muffin',
         description:
           'Muffin — track income, expenses, and investments from a Google Sheet on your phone',
+        lang: 'en',
         start_url: '/',
         scope: '/',
         display: 'standalone',
+        display_override: ['standalone', 'browser'],
         orientation: 'portrait',
+        // Match canvas so Android status bar + splash blend with the app shell
         background_color: '#FAF5EF',
-        theme_color: '#D97706',
+        theme_color: '#FAF5EF',
         icons: [
           {
             src: '/icons/icon_192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: '/icons/icon_512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: '/icons/icon_512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
-          },
-          {
-            src: '/icons/muffin-icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable',
           },
         ],
       },

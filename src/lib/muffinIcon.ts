@@ -86,15 +86,18 @@ export function muffinIconDataUrl(themeId: ThemeId): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-let currentManifestBlobUrl: string | null = null;
-
-/** Swap favicon, apple-touch-icon, theme-color meta tags, and PWA manifest icon dynamically with theme. */
+/**
+ * Swap favicon + theme-color for the active theme.
+ * Do NOT replace the install manifest — Chrome requires a same-origin
+ * HTTPS manifest with fetchable PNG icons for a real WebAPK install
+ * (blob:/data: manifests fall back to a browser shortcut).
+ */
 export function applyMuffinIconsToDocument(themeId: ThemeId): void {
   if (typeof document === 'undefined') return;
   const theme = getTheme(themeId);
   const href = muffinIconDataUrl(themeId);
 
-  // 1. Favicon SVG
+  // 1. Favicon SVG (tab / bookmark only — install icons stay on /icons/*.png)
   let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
   if (!favicon) {
     favicon = document.createElement('link');
@@ -104,82 +107,35 @@ export function applyMuffinIconsToDocument(themeId: ThemeId): void {
   favicon.type = 'image/svg+xml';
   favicon.href = href;
 
-  // 2. Apple touch icon SVG
-  let apple = document.querySelector<HTMLLinkElement>(
-    'link[rel="apple-touch-icon"]'
-  );
-  if (!apple) {
-    apple = document.createElement('link');
-    apple.rel = 'apple-touch-icon';
-    document.head.appendChild(apple);
-  }
-  apple.href = href;
-
-  // 3. Theme color meta tag
-  let themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  if (!themeColorMeta) {
-    themeColorMeta = document.createElement('meta');
+  // 2. Status / chrome color — must match canvas so Android status bar blends
+  document
+    .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
+    .forEach((meta) => {
+      meta.content = theme.background;
+    });
+  if (!document.querySelector('meta[name="theme-color"]')) {
+    const themeColorMeta = document.createElement('meta');
     themeColorMeta.name = 'theme-color';
+    themeColorMeta.content = theme.background;
     document.head.appendChild(themeColorMeta);
   }
-  themeColorMeta.content = theme.background;
 
-  let appleStatusBarMeta = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar"]');
-  if (appleStatusBarMeta) {
-    appleStatusBarMeta.content = theme.background;
+  // 3. iOS: black-translucent lets the page canvas show under the status bar
+  let appleStatusBarMeta = document.querySelector<HTMLMetaElement>(
+    'meta[name="apple-mobile-web-app-status-bar-style"]'
+  );
+  if (!appleStatusBarMeta) {
+    appleStatusBarMeta = document.createElement('meta');
+    appleStatusBarMeta.name = 'apple-mobile-web-app-status-bar-style';
+    document.head.appendChild(appleStatusBarMeta);
   }
+  appleStatusBarMeta.content = 'black-translucent';
 
-  // 4. Dynamic Manifest theme + SVG icon sync
-  try {
-    const dynamicManifest = {
-      id: '/',
-      name: 'Muffin',
-      short_name: 'Muffin',
-      description:
-        'Muffin — track income, expenses, and investments from a Google Sheet on your phone',
-      start_url: '/',
-      scope: '/',
-      display: 'standalone',
-      orientation: 'portrait',
-      background_color: theme.background,
-      theme_color: theme.accent,
-      icons: [
-        {
-          src: '/icons/icon_192.png',
-          sizes: '192x192',
-          type: 'image/png',
-        },
-        {
-          src: '/icons/icon_512.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'maskable',
-        },
-        {
-          src: href,
-          sizes: 'any',
-          type: 'image/svg+xml',
-          purpose: 'any maskable',
-        },
-      ],
-    };
-
-    if (currentManifestBlobUrl) {
-      URL.revokeObjectURL(currentManifestBlobUrl);
-    }
-    const blob = new Blob([JSON.stringify(dynamicManifest, null, 2)], {
-      type: 'application/manifest+json',
-    });
-    currentManifestBlobUrl = URL.createObjectURL(blob);
-
-    let manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-    if (!manifestLink) {
-      manifestLink = document.createElement('link');
-      manifestLink.rel = 'manifest';
-      document.head.appendChild(manifestLink);
-    }
-    manifestLink.href = currentManifestBlobUrl;
-  } catch (err) {
-    console.warn('Could not update dynamic manifest theme:', err);
+  // Keep the static /manifest.webmanifest link — never swap to blob:
+  const manifestLink = document.querySelector<HTMLLinkElement>(
+    'link[rel="manifest"]'
+  );
+  if (manifestLink && manifestLink.href.startsWith('blob:')) {
+    manifestLink.href = '/manifest.webmanifest';
   }
 }
