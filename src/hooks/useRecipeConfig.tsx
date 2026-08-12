@@ -14,7 +14,7 @@ import {
   type RecipeConfig,
   type RecipeInvestment,
 } from '../config';
-import { saveRecipe } from '../lib/api';
+import { saveRecipe } from '../api/client';
 
 interface RecipeConfigContextValue {
   config: RecipeConfig;

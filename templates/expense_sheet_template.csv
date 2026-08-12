@@ -1,8 +1,4 @@
-Date,Category,Amount,Comment
-2026-01-10,Groceries,4200,
-2026-01-12,Rent,15000,
-2026-01-22,Utilities,2200,Electricity + water
-2026-02-14,Groceries,3900,
-2026-02-20,Travel,3500,Weekend trip
-2026-03-10,Groceries,4100,
-2026-03-15,Entertainment,1800,Movies and dinner
+Id,Date,Category,Amount,Comment
+mfn_sample_exp_1,2026-01-10,Groceries,4200,
+mfn_sample_exp_2,2026-01-12,Rent,15000,
+mfn_sample_exp_3,2026-01-22,Utilities,2200,Electricity + water

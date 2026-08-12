@@ -1,177 +1,97 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { AboutModal } from './components/AboutModal';
-import { ConfirmModal } from './components/ConfirmModal';
-import { FloatingNav } from './components/FloatingNav';
-import { HeaderMenu } from './components/HeaderMenu';
-import { HomeView } from './components/HomeView';
-import { LedgerView } from './components/LedgerView';
-import { ManageTransactionModal } from './components/ManageTransactionModal';
-import { MonthlyView } from './components/MonthlyView';
-import { PlannerView, toPlannerTransaction } from './components/PlannerView';
-import { PrivacyModal } from './components/PrivacyModal';
-import { PwaInstallModal } from './components/PwaInstallModal';
-import { RecipeModal } from './components/RecipeModal';
-import { SheetOnboarding } from './components/SheetOnboarding';
-import { ShimmerSkeleton } from './components/ShimmerSkeleton';
-import { TermsModal } from './components/TermsModal';
-import { SignInScreen } from './components/SignInScreen';
-import { SoftButton } from './components/SoftButton';
-import { TourModal } from './components/TourModal';
-import { UserGuideModal } from './components/UserGuideModal';
-import { MuffinIcon } from './components/MuffinIcon';
+import { completeTour, unlinkSheet, AuthRequiredError } from './api/client';
+import type { MutationResult } from './api/client';
+import { SoftButton } from './components/ui/SoftButton';
+import { ConfirmModal } from './components/ui/ConfirmModal';
+import { FloatingNav } from './components/ui/FloatingNav';
+import { MuffinIcon } from './components/ui/MuffinIcon';
+import { ShimmerSkeleton } from './components/ui/ShimmerSkeleton';
+import { SignInScreen } from './features/auth/SignInScreen';
+import { SheetOnboarding } from './features/auth/SheetOnboarding';
+import { HomeView } from './features/home/HomeView';
+import { LedgerView } from './features/ledger/LedgerView';
+import { ManageTransactionModal } from './features/ledger/ManageTransactionModal';
+import { MonthlyView } from './features/monthly/MonthlyView';
+import { PlannerView } from './features/planner/PlannerView';
+import { AboutModal } from './features/settings/AboutModal';
+import { HeaderMenu } from './features/settings/HeaderMenu';
+import { PrivacyModal } from './features/settings/PrivacyModal';
+import { PwaInstallModal } from './features/settings/PwaInstallModal';
+import { RecipeModal } from './features/settings/RecipeModal';
+import { TermsModal } from './features/settings/TermsModal';
+import { TourModal } from './features/settings/TourModal';
+import { UserGuideModal } from './features/settings/UserGuideModal';
+import { useAppModals } from './hooks/useAppModals';
+import { useAuthSession } from './hooks/useAuthSession';
+import { usePlannerStore } from './hooks/usePlannerStore';
 import { useRecipeConfig } from './hooks/useRecipeConfig';
+import { useSheetTransactions } from './hooks/useSheetTransactions';
 import { useTheme } from './hooks/useTheme';
-import {
-  clearRecipeConfig,
-  getRecipeConfig,
-  hasMeaningfulRecipe,
-  hydrateRecipeConfig,
-} from './config';
-import {
-  AuthRequiredError,
-  NeedsSheetError,
-  checkSessionHealth,
-  completeTour,
-  deleteTransaction,
-  getMe,
-  getTransactions,
-  logout,
-  saveRecipe,
-  unlinkSheet,
-  type AuthMeResponse,
-} from './lib/api';
-import { buildFinancialMetrics, EMPTY_METRICS } from './lib/metrics';
+import { buildFinancialMetrics, EMPTY_METRICS } from './domain/metrics';
 import { pageTransition, pageVariants, springSoft } from './lib/motion';
-import type {
-  AppTab,
-  FinancialMetrics,
-  NewTransactionInput,
-  Transaction,
-} from './types';
-
-const PLANNER_STORAGE_KEY = 'plannerTransactions';
-const SESSION_PROBE_MIN_INTERVAL_MS = 30_000;
-
-function loadPlannerTransactions(): Transaction[] {
-  try {
-    const stored = localStorage.getItem(PLANNER_STORAGE_KEY);
-    if (!stored) return [];
-    const parsed = JSON.parse(stored) as Transaction[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function savePlannerTransactions(items: Transaction[]): void {
-  localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(items));
-}
-
-const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  denied: 'Google sign-in was denied.',
-  missing_code: 'Missing authorization code. Try signing in again.',
-  invalid_state: 'Invalid OAuth state. Try signing in again.',
-  invalid_method: 'Invalid sign-in method.',
-  failed: 'Google sign-in failed. Try again.',
-};
-
-const OAUTH_QUERY_KEYS = [
-  'authError',
-  'code',
-  'state',
-  'scope',
-  'error',
-  'error_description',
-  'prompt',
-  'authuser',
-  'hd',
-  'session_state',
-] as const;
-
-/** Strip OAuth junk from the address bar and map short auth error codes. */
-function readAuthErrorFromUrl(): string | null {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const raw = params.get('authError');
-    const message = raw
-      ? AUTH_ERROR_MESSAGES[raw] ||
-        (raw.length > 120 ? AUTH_ERROR_MESSAGES.failed : raw)
-      : null;
-
-    let dirty = Boolean(raw);
-    for (const key of OAUTH_QUERY_KEYS) {
-      if (params.has(key)) {
-        params.delete(key);
-        dirty = true;
-      }
-    }
-
-    const onFunctionPath = window.location.pathname.includes(
-      '/.netlify/functions/'
-    );
-    if (dirty || onFunctionPath) {
-      const path = onFunctionPath ? '/' : window.location.pathname;
-      const query = params.toString();
-      window.history.replaceState(
-        {},
-        '',
-        `${path}${query ? `?${query}` : ''}`
-      );
-    }
-
-    return message;
-  } catch {
-    return null;
-  }
-}
+import type { AppTab, FinancialMetrics, Transaction } from './domain/types';
 
 export default function App() {
   const { themeId } = useTheme();
   const { config: recipeConfig } = useRecipeConfig();
-  const [authBooting, setAuthBooting] = useState(true);
-  const [auth, setAuth] = useState<AuthMeResponse | null>(null);
-  const [authError, setAuthError] = useState<string | null>(() =>
-    readAuthErrorFromUrl()
-  );
+  const {
+    authBooting,
+    auth,
+    setAuth,
+    authError,
+    needsSheet,
+    ready,
+    statusMessage,
+    setStatusMessage,
+    refreshAuth,
+    handleLogout,
+  } = useAuthSession();
+
+  const {
+    sheetTransactions,
+    setSheetTransactions,
+    ledgerTransactions,
+    loading,
+    error,
+    setError,
+    mutating,
+    setMutating,
+    refreshTransactions,
+    applyTransactions,
+    executeDelete,
+  } = useSheetTransactions({
+    ready,
+    spreadsheetId: auth?.spreadsheetId,
+    setAuth,
+    setStatusMessage,
+  });
+
+  const {
+    plannerTransactions,
+    handleAddPlanner,
+    handleRemovePlanner,
+    handleClearPlanner,
+  } = usePlannerStore();
+
+  const {
+    modal,
+    openModal,
+    closeModal,
+    confirmBusy,
+    setConfirmBusy,
+  } = useAppModals();
+
   const [activeTab, setActiveTab] = useState<AppTab>('home');
-  const [sheetTransactions, setSheetTransactions] = useState<Transaction[]>(
-    []
-  );
-  const [plannerTransactions, setPlannerTransactions] = useState<
-    Transaction[]
-  >(() => loadPlannerTransactions());
   const [metrics, setMetrics] = useState<FinancialMetrics>(EMPTY_METRICS);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [aboutOpen, setAboutOpen] = useState(false);
-  const [recipeOpen, setRecipeOpen] = useState(false);
-  const [tourOpen, setTourOpen] = useState(false);
-  const [manageOpen, setManageOpen] = useState(false);
-  const [manageMode, setManageMode] = useState<'add' | 'edit'>('add');
-  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
-  const [mutating, setMutating] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
-  const [termsOpen, setTermsOpen] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
-  const [installGuideOpen, setInstallGuideOpen] = useState(false);
-  const [pendingConfirm, setPendingConfirm] = useState<
-    | { kind: 'delete'; tx: Transaction; label: string }
-    | { kind: 'unlink' }
-    | null
-  >(null);
-  const [confirmBusy, setConfirmBusy] = useState(false);
 
-  const needsSheet = Boolean(auth && auth.needsSheet);
-  const ready = Boolean(auth && !auth.needsSheet);
-
-  const ledgerTransactions = useMemo(
-    () =>
-      [...sheetTransactions].sort((a, b) => a.date.localeCompare(b.date)),
-    [sheetTransactions]
-  );
+  const manageMode =
+    modal?.kind === 'manage' ? modal.mode : ('add' as const);
+  const editingTx =
+    modal?.kind === 'manage' ? modal.transaction : null;
+  const pendingConfirm =
+    modal?.kind === 'confirm' ? modal.pending : null;
 
   const investmentTypeOptions = useMemo(() => {
     const labels = new Set<string>();
@@ -187,255 +107,31 @@ export default function App() {
     return Array.from(labels);
   }, [sheetTransactions, recipeConfig.investments]);
 
-  async function refreshAuth() {
-    const me = await getMe();
-    setAuth(me);
-    if (me) await syncRecipeFromAuth(me);
-    return me;
-  }
-
-  async function syncRecipeFromAuth(me: AuthMeResponse) {
-    if (me.recipe) {
-      hydrateRecipeConfig(me.recipe);
-      return;
-    }
-
-    // One-time migrate: push existing localStorage recipe into Blobs.
-    const local = getRecipeConfig();
-    if (!hasMeaningfulRecipe(local)) return;
-    try {
-      const saved = await saveRecipe(local);
-      hydrateRecipeConfig(saved);
-    } catch (err) {
-      console.warn('Could not migrate local recipe to Blobs', err);
-    }
-  }
-
-  async function refreshTransactions() {
-    setError(null);
-    try {
-      const transactions = await getTransactions();
-      setSheetTransactions(transactions);
-    } catch (err) {
-      if (err instanceof AuthRequiredError) {
-        setAuth(null);
-        throw err;
-      }
-      if (err instanceof NeedsSheetError) {
-        setAuth((prev) =>
-          prev
-            ? {
-                ...prev,
-                needsSheet: true,
-                spreadsheetId: null,
-                spreadsheetTitle: null,
-              }
-            : prev
-        );
-        throw err;
-      }
-      console.error('Error loading sheet data', err);
-      setError(
-        "Couldn't load your sheet. Showing overview with configured starting balances."
-      );
-      setSheetTransactions([]);
-      throw err;
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function boot() {
-      setAuthBooting(true);
-      try {
-        const me = await getMe();
-        if (cancelled) return;
-        setAuth(me);
-        if (me) await syncRecipeFromAuth(me);
-      } catch (err) {
-        console.error('Auth bootstrap failed', err);
-        if (!cancelled) {
-          setAuth(null);
-          setAuthError(
-            err instanceof Error
-              ? err.message
-              : 'Could not check sign-in status.'
-          );
-        }
-      } finally {
-        if (!cancelled) setAuthBooting(false);
-      }
-    }
-
-    void boot();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   useEffect(() => {
     if (!ready || !auth?.showTour) return;
-    setTourOpen(true);
-  }, [ready, auth?.showTour]);
-
-  useEffect(() => {
-    if (!ready) {
-      setSheetTransactions([]);
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadFinances() {
-      setLoading(true);
-      setError(null);
-      try {
-        const transactions = await getTransactions();
-        if (cancelled) return;
-        setSheetTransactions(transactions);
-      } catch (err) {
-        if (err instanceof AuthRequiredError) {
-          if (!cancelled) setAuth(null);
-          return;
-        }
-        if (err instanceof NeedsSheetError) {
-          if (!cancelled) {
-            setAuth((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    needsSheet: true,
-                    spreadsheetId: null,
-                    spreadsheetTitle: null,
-                  }
-                : prev
-            );
-          }
-          return;
-        }
-        console.error('Error loading sheet data', err);
-        if (!cancelled) {
-          setError(
-            "Couldn't load your sheet. Showing overview with configured starting balances."
-          );
-          setSheetTransactions([]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void loadFinances();
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, auth?.spreadsheetId]);
-
-  useEffect(() => {
-    if (!ready || loading) return;
-
-    let lastProbeAt = Date.now();
-    let hiddenAt: number | null = null;
-    let probing = false;
-
-    async function probeSession(force = false) {
-      if (document.visibilityState !== 'visible') return;
-      if (probing) return;
-      const now = Date.now();
-      if (!force && now - lastProbeAt < SESSION_PROBE_MIN_INTERVAL_MS) return;
-
-      probing = true;
-      try {
-        await checkSessionHealth();
-        lastProbeAt = Date.now();
-      } catch (err) {
-        if (err instanceof AuthRequiredError) {
-          setAuth(null);
-          setStatusMessage('Signed out — please sign in again.');
-          return;
-        }
-        console.warn('[muffin] Session health probe failed', err);
-      } finally {
-        probing = false;
-      }
-    }
-
-    function onVisibilityChange() {
-      if (document.visibilityState === 'hidden') {
-        hiddenAt = Date.now();
-        return;
-      }
-      const awayMs = hiddenAt == null ? 0 : Date.now() - hiddenAt;
-      hiddenAt = null;
-      void probeSession(awayMs >= SESSION_PROBE_MIN_INTERVAL_MS);
-    }
-
-    function onPageShow(event: PageTransitionEvent) {
-      if (event.persisted) {
-        void probeSession(true);
-      }
-    }
-
-    function onFocus() {
-      const awayMs = hiddenAt == null ? 0 : Date.now() - hiddenAt;
-      if (awayMs >= SESSION_PROBE_MIN_INTERVAL_MS) {
-        void probeSession(true);
-      }
-    }
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('pageshow', onPageShow);
-    window.addEventListener('focus', onFocus);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('pageshow', onPageShow);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, [ready, loading]);
+    openModal({ kind: 'tour' });
+  }, [ready, auth?.showTour, openModal]);
 
   useEffect(() => {
     setMetrics(buildFinancialMetrics(sheetTransactions));
   }, [sheetTransactions, recipeConfig]);
 
-  function handleAddPlanner(input: NewTransactionInput) {
-    setPlannerTransactions((prev) => {
-      const updated = [...prev, toPlannerTransaction(input)];
-      savePlannerTransactions(updated);
-      return updated;
-    });
-  }
-
-  function handleRemovePlanner(id: string) {
-    setPlannerTransactions((prev) => {
-      const updated = prev.filter((t) => t.id !== id);
-      savePlannerTransactions(updated);
-      return updated;
-    });
-  }
-
-  function handleClearPlanner() {
-    setPlannerTransactions([]);
-    savePlannerTransactions([]);
-  }
-
   function openAddModal() {
-    setManageMode('add');
-    setEditingTx(null);
-    setManageOpen(true);
+    openModal({ kind: 'manage', mode: 'add', transaction: null });
   }
 
   function openEditModal(tx: Transaction) {
-    setManageMode('edit');
-    setEditingTx(tx);
-    setManageOpen(true);
+    openModal({ kind: 'manage', mode: 'edit', transaction: tx });
   }
 
-  async function handleManageSuccess() {
+  async function handleManageSuccess(result?: MutationResult) {
     setStatusMessage(null);
     try {
-      await refreshTransactions();
+      if (result?.transactions?.length) {
+        applyTransactions(result.transactions);
+      } else {
+        await refreshTransactions();
+      }
       setStatusMessage(
         manageMode === 'add' ? 'Transaction added.' : 'Transaction updated.'
       );
@@ -451,41 +147,10 @@ export default function App() {
   function handleDelete(tx: Transaction) {
     if (tx.tabName == null || tx.rowIndex == null) return;
     const label = tx.category || 'this transaction';
-    setPendingConfirm({ kind: 'delete', tx, label });
-  }
-
-  async function executeDelete(tx: Transaction) {
-    if (tx.tabName == null || tx.rowIndex == null) return;
-
-    setMutating(true);
-    setConfirmBusy(true);
-    setStatusMessage(null);
-    setError(null);
-
-    try {
-      await deleteTransaction(tx.tabName, tx.rowIndex, {
-        category: tx.category,
-        amount: tx.amount,
-      });
-      await refreshTransactions();
-      setPendingConfirm(null);
-      setStatusMessage('Transaction deleted.');
-    } catch (err) {
-      if (err instanceof AuthRequiredError) {
-        setAuth(null);
-        setPendingConfirm(null);
-        setStatusMessage('Signed out — please sign in again.');
-        return;
-      }
-      console.error('Failed to delete transaction', err);
-      setError(
-        err instanceof Error ? err.message : 'Could not delete transaction.'
-      );
-      setPendingConfirm(null);
-    } finally {
-      setMutating(false);
-      setConfirmBusy(false);
-    }
+    openModal({
+      kind: 'confirm',
+      pending: { kind: 'delete', tx, label },
+    });
   }
 
   async function handleTourComplete(openRecipe: boolean = false) {
@@ -494,27 +159,16 @@ export default function App() {
     } catch (err) {
       console.warn('Could not persist tour completion', err);
     }
-    setTourOpen(false);
     setAuth((prev) => (prev ? { ...prev, showTour: false } : prev));
     if (openRecipe) {
-      setRecipeOpen(true);
+      openModal({ kind: 'recipe' });
+    } else {
+      closeModal();
     }
-  }
-
-  async function handleLogout() {
-    try {
-      await logout();
-    } catch (err) {
-      console.warn('Logout request failed', err);
-    }
-    clearRecipeConfig();
-    setAuth(null);
-    setSheetTransactions([]);
-    setStatusMessage(null);
   }
 
   function handleChangeSheet() {
-    setPendingConfirm({ kind: 'unlink' });
+    openModal({ kind: 'confirm', pending: { kind: 'unlink' } });
   }
 
   async function executeUnlinkSheet() {
@@ -524,16 +178,16 @@ export default function App() {
       await unlinkSheet();
       await refreshAuth();
       setSheetTransactions([]);
-      setPendingConfirm(null);
+      closeModal();
       setStatusMessage('Spreadsheet unlinked.');
     } catch (err) {
       if (err instanceof AuthRequiredError) {
         setAuth(null);
-        setPendingConfirm(null);
+        closeModal();
         return;
       }
       setError(err instanceof Error ? err.message : 'Could not unlink sheet.');
-      setPendingConfirm(null);
+      closeModal();
     } finally {
       setConfirmBusy(false);
     }
@@ -542,7 +196,18 @@ export default function App() {
   function handleConfirmAction() {
     if (!pendingConfirm) return;
     if (pendingConfirm.kind === 'delete') {
-      void executeDelete(pendingConfirm.tx);
+      void (async () => {
+        setConfirmBusy(true);
+        setMutating(true);
+        try {
+          const ok = await executeDelete(pendingConfirm.tx);
+          if (ok) closeModal();
+          else closeModal();
+        } finally {
+          setConfirmBusy(false);
+          setMutating(false);
+        }
+      })();
       return;
     }
     void executeUnlinkSheet();
@@ -628,13 +293,13 @@ export default function App() {
           </div>
           <HeaderMenu
             buttonClassName={headerBtnClass}
-            onAbout={() => setAboutOpen(true)}
-            onRecipe={() => setRecipeOpen(true)}
-            onGuide={() => setGuideOpen(true)}
-            onPrivacy={() => setPrivacyOpen(true)}
-            onTerms={() => setTermsOpen(true)}
+            onAbout={() => openModal({ kind: 'about' })}
+            onRecipe={() => openModal({ kind: 'recipe' })}
+            onGuide={() => openModal({ kind: 'guide' })}
+            onPrivacy={() => openModal({ kind: 'privacy' })}
+            onTerms={() => openModal({ kind: 'terms' })}
             onLogout={() => void handleLogout()}
-            onInstallGuide={() => setInstallGuideOpen(true)}
+            onInstallGuide={() => openModal({ kind: 'install' })}
           />
         </div>
       </header>
@@ -737,41 +402,47 @@ export default function App() {
         showAdd={!loading}
       />
       <AboutModal
-        open={aboutOpen}
-        onClose={() => setAboutOpen(false)}
-        onPrivacy={() => setPrivacyOpen(true)}
-        onTerms={() => setTermsOpen(true)}
+        open={modal?.kind === 'about'}
+        onClose={closeModal}
+        onPrivacy={() => openModal({ kind: 'privacy' })}
+        onTerms={() => openModal({ kind: 'terms' })}
       />
-      <PrivacyModal open={privacyOpen} onClose={() => setPrivacyOpen(false)} />
-      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
+      <PrivacyModal
+        open={modal?.kind === 'privacy'}
+        onClose={closeModal}
+      />
+      <TermsModal open={modal?.kind === 'terms'} onClose={closeModal} />
       <PwaInstallModal
-        open={installGuideOpen}
-        onClose={() => setInstallGuideOpen(false)}
+        open={modal?.kind === 'install'}
+        onClose={closeModal}
       />
       <UserGuideModal
-        isOpen={guideOpen}
-        onClose={() => setGuideOpen(false)}
-        onReplayTour={() => setTourOpen(true)}
+        isOpen={modal?.kind === 'guide'}
+        onClose={closeModal}
+        onReplayTour={() => openModal({ kind: 'tour' })}
       />
-      <TourModal open={tourOpen} onComplete={handleTourComplete} />
+      <TourModal
+        open={modal?.kind === 'tour'}
+        onComplete={handleTourComplete}
+      />
       <RecipeModal
-        open={recipeOpen}
-        onClose={() => setRecipeOpen(false)}
+        open={modal?.kind === 'recipe'}
+        onClose={closeModal}
         spreadsheetId={auth.spreadsheetId}
         spreadsheetTitle={auth.spreadsheetTitle}
         investmentTypeSuggestions={investmentTypeOptions}
       />
       <ManageTransactionModal
-        open={manageOpen}
+        open={modal?.kind === 'manage'}
         mode={manageMode}
         transaction={editingTx}
         transactions={sheetTransactions}
         investmentTypeOptions={investmentTypeOptions}
-        onClose={() => setManageOpen(false)}
+        onClose={closeModal}
         onSuccess={handleManageSuccess}
       />
       <ConfirmModal
-        open={pendingConfirm != null}
+        open={modal?.kind === 'confirm'}
         title={
           pendingConfirm?.kind === 'unlink'
             ? 'Unlink spreadsheet?'
@@ -791,7 +462,7 @@ export default function App() {
         busy={confirmBusy}
         onConfirm={handleConfirmAction}
         onCancel={() => {
-          if (!confirmBusy) setPendingConfirm(null);
+          if (!confirmBusy) closeModal();
         }}
       />
     </div>

@@ -700,7 +700,7 @@
       <div class="arch-layers" id="archLayers">
         <button type="button" class="arch-layer active" data-layer="spa" onclick="selectLayer(this)">
           <div class="layer-name">1 · React SPA (Browser)</div>
-          <div class="layer-tech">src/App.tsx · src/lib/api.ts · src/lib/metrics.ts</div>
+          <div class="layer-tech">src/App.tsx · src/api/client.ts · src/domain/metrics.ts · shared/</div>
         </button>
         <button type="button" class="arch-layer" data-layer="edge" onclick="selectLayer(this)">
           <div class="layer-name">2 · Netlify Edge / CDN</div>
@@ -761,18 +761,21 @@
         <div class="accordion-content">
 <pre><span class="c">// Primary touch points when extending the system</span>
 src/
-  App.tsx                 <span class="c"># auth lifecycle, tour, tabs, metrics recompute</span>
-  lib/api.ts              <span class="c"># typed client → functions</span>
-  lib/metrics.ts          <span class="c"># pure KPI engine</span>
-  lib/providentFund.ts    <span class="c"># PF carve-out rules</span>
-  types.ts                <span class="c"># Transaction, FinancialMetrics, MetricKey</span>
+  App.tsx                 <span class="c"># thin shell: tabs + modal host</span>
+  hooks/                  <span class="c"># useAuthSession, useSheetTransactions, usePlannerStore, useAppModals</span>
+  features/               <span class="c"># auth, home, ledger, planner, monthly, settings</span>
+  components/ui/          <span class="c"># SoftButton, FloatingNav, ConfirmModal, …</span>
+  api/client.ts           <span class="c"># typed client → functions</span>
+  domain/                 <span class="c"># metrics, PF, evaluateAmount, UI types</span>
+shared/                   <span class="c"># tabs, recipe sanitize, dates, Transaction DTO</span>
 netlify/
-  functions/              <span class="c"># HTTP entrypoints</span>
+  functions/              <span class="c"># TypeScript HTTP entrypoints</span>
   lib/
-    session.js            <span class="c"># AES-GCM cookie seal/unseal</span>
-    userStore.js          <span class="c"># Blobs + local FS fallback</span>
-    googleAuth.js         <span class="c"># OAuth2Client from refresh token</span>
-    sheetBootstrap.js     <span class="c"># tab names / template headers</span>
+    handler.ts            <span class="c"># withSession wrapper</span>
+    session.ts            <span class="c"># AES-GCM cookie seal/unseal</span>
+    userStore.ts          <span class="c"># Blobs + local FS fallback</span>
+    googleAuth.ts         <span class="c"># OAuth2Client from refresh token</span>
+    sheetBootstrap.ts     <span class="c"># create workbook / assert tabs</span>
 </pre>
         </div>
       </div>
@@ -782,7 +785,7 @@ netlify/
     <div id="api" class="tab-content" role="tabpanel">
       <h3 class="section-title">API Surface</h3>
       <p class="lede">
-        All routes are same-origin Netlify Functions. Client wrappers live in <code>src/lib/api.ts</code>
+        All routes are same-origin Netlify Functions. Client wrappers live in <code>src/api/client.ts</code>
         and always send <code>credentials: 'include'</code>. Expand an endpoint for method, body, and error codes.
       </p>
 
@@ -825,7 +828,7 @@ netlify/
               </tbody>
             </table>
           </div>
-<pre><span class="c">// AuthMeResponse (src/lib/api.ts)</span>
+<pre><span class="c">// AuthMeResponse (src/api/client.ts)</span>
 {
   <span class="k">user</span>: { sub, email, name, picture },
   spreadsheetId: string | null,
@@ -877,12 +880,12 @@ netlify/
                 </tr>
                 <tr>
                   <td>PUT</td>
-                  <td><code>{ tabName, rowIndex, rowData, expectedRow? }</code></td>
+                  <td><code>{ tabName, rowIndex, rowData, expectedRow?, rowId? }</code></td>
                   <td>Updates row; optional optimistic concurrency via <code>expectedRow</code>.</td>
                 </tr>
                 <tr>
                   <td>DELETE</td>
-                  <td><code>{ tabName, rowIndex, expectedRow? }</code></td>
+                  <td><code>{ tabName, rowIndex, expectedRow?, rowId? }</code></td>
                   <td>Deletes row; same optional guard.</td>
                 </tr>
               </tbody>
@@ -925,7 +928,7 @@ netlify/
     <div id="domain" class="tab-content" role="tabpanel">
       <h3 class="section-title">Domain Model &amp; Data Residency</h3>
       <p class="lede">
-        Core types live in <code>src/types.ts</code>. Transaction <em>type</em> is derived from sheet tab —
+        Core types live in <code>src/domain/types.ts + shared/</code>. Transaction <em>type</em> is derived from sheet tab —
         never stored as a user-editable column.
       </p>
 
@@ -941,8 +944,9 @@ amount: number
 comment: string
 investmentType?: string
 tabName?: SheetTabName
-rowIndex?: number</pre>
-          <p style="margin-top:8px;"><code>tabName</code> / <code>rowIndex</code> are sheet-backed write handles. Planner entries omit them.</p>
+rowIndex?: number
+rowId?: string</pre>
+          <p style="margin-top:8px;"><code>tabName</code> / <code>rowIndex</code> / optional stable <code>rowId</code> are sheet-backed write handles. Planner entries omit them.</p>
         </div>
         <div class="card">
           <h4>FinancialMetrics (subset)</h4>
@@ -976,7 +980,7 @@ investmentBreakup: Record&lt;string, number&gt;</pre>
       <div class="accordion" style="margin-top:14px;" onclick="toggleAccordion(this)">
         <div class="accordion-header">
           <span>Provident Fund carve-out</span>
-          <span class="meta">src/lib/providentFund.ts</span>
+          <span class="meta">src/domain/providentFund.ts</span>
           <span class="chev">▼</span>
         </div>
         <div class="accordion-content">
@@ -1024,7 +1028,7 @@ investmentBreakup: Record&lt;string, number&gt;</pre>
       </div>
 
       <div class="callout">
-        <strong>Date parsing note:</strong> <code>transactions.js</code> accepts ISO, Sheets serial numbers,
+        <strong>Date parsing note:</strong> <code>transactions.ts</code> accepts ISO, Sheets serial numbers,
         month-name text, and slash dates (defaults ambiguous numeric to DD/MM/YYYY). Normalized output is always ISO <code>YYYY-MM-DD</code>.
       </div>
     </div>
@@ -1056,7 +1060,7 @@ investmentBreakup: Record&lt;string, number&gt;</pre>
             <li>AES-256-GCM; key = SHA-256(<code>SESSION_SECRET</code>)</li>
             <li>Payload: <code>sub</code>, profile fields, <code>refreshToken</code>, <code>exp</code></li>
             <li>TTL: 30 days; Secure flag when redirect URI is non-localhost</li>
-            <li>Impl: <code>netlify/lib/session.js</code></li>
+            <li>Impl: <code>netlify/lib/session.ts</code></li>
           </ul>
         </div>
         <div class="card">
@@ -1177,28 +1181,28 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
     <div id="frontend" class="tab-content" role="tabpanel">
       <h3 class="section-title">Frontend Application Structure</h3>
       <p class="lede">
-        Mobile-first shell (<code>max-w-lg</code>). <code>App.tsx</code> owns auth + sheet lifecycle,
-        tour, metrics recompute, planner localStorage, and modal orchestration.
+        Mobile-first shell (<code>max-w-lg</code>). <code>App.tsx</code> is a thin shell wired to
+        <code>useAuthSession</code>, <code>useSheetTransactions</code>, <code>usePlannerStore</code>,
+        and <code>useAppModals</code>. Feature UI lives under <code>src/features/*</code>.
       </p>
 
       <div class="grid-2">
         <div class="card">
           <h4>Views</h4>
           <ul>
-            <li><code>HomeView</code> — KPI grid, ChartModal, More Details / PF</li>
-            <li><code>PlannerView</code> — ephemeral what-if rows</li>
-            <li><code>LedgerView</code> — searchable timeline + manage modal</li>
-            <li><code>MonthlyView</code> — per-month KPI breakdown</li>
+            <li><code>features/home</code> — KPI grid, ChartModal, More Details / PF</li>
+            <li><code>features/planner</code> — ephemeral what-if rows</li>
+            <li><code>features/ledger</code> — searchable timeline + manage modal</li>
+            <li><code>features/monthly</code> — per-month KPI breakdown</li>
           </ul>
         </div>
         <div class="card">
           <h4>Cross-cutting</h4>
           <ul>
-            <li><code>HeaderMenu</code> — mask, theme, font, legal, recipe, install, logout</li>
-            <li><code>FloatingNav</code> — layout-animated active pill</li>
-            <li><code>ChartModal</code> — list / pie / line; portaled sheet</li>
-            <li><code>SmartAmountInput</code> + <code>AmountCalculatorModal</code></li>
-            <li>Hooks: theme, font, mask, recipe, PWA install</li>
+            <li><code>features/settings</code> — HeaderMenu, Recipe, Tour, Guide, legal</li>
+            <li><code>components/ui</code> — FloatingNav, SoftButton, ConfirmModal</li>
+            <li><code>shared/</code> — tabs, recipe sanitize, dates, Transaction DTO</li>
+            <li>Hooks: auth/sheet/planner/modals + theme, font, mask, recipe, PWA</li>
           </ul>
         </div>
       </div>
@@ -1253,7 +1257,7 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
       <div class="accordion" onclick="toggleAccordion(this)">
         <div class="accordion-header">
           <span>Amount expression evaluator</span>
-          <span class="meta">src/lib/evaluateAmount.ts</span>
+          <span class="meta">src/domain/evaluateAmount.ts</span>
           <span class="chev">▼</span>
         </div>
         <div class="accordion-content">
@@ -1261,8 +1265,8 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
           <code>AmountCalculatorModal</code>. Accepts BODMAS arithmetic and <code>%</code>
           (e.g. <code>1000 * 18%</code> → 180). Safe evaluator — not <code>eval</code> of arbitrary JS.
           Micro-haptics via <code>navigator.vibrate(8)</code> where supported.
-          Client ID helper for planner rows: <code>createId</code> in <code>src/lib/parseSheet.ts</code>
-          (sheet date parsing lives in <code>netlify/functions/transactions.js</code>).
+          Client ID helper for planner rows: <code>createId</code> in <code>src/domain/parseSheet.ts</code>
+          (sheet date parsing lives in <code>netlify/functions/transactions.ts</code>).
         </div>
       </div>
 
@@ -1358,7 +1362,7 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
           <span class="chev">▼</span>
         </div>
         <div class="accordion-content">
-          Update row mapping in <code>netlify/functions/transactions.js</code>, templates under
+          Update row mapping in <code>netlify/functions/transactions.ts</code>, templates under
           <code>templates/</code>, and <code>SheetRowData</code>. Document header-row assumptions.
         </div>
       </div>
@@ -1368,7 +1372,7 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
           <span class="chev">▼</span>
         </div>
         <div class="accordion-content">
-          Keep <code>src/lib/api.ts</code> shapes stable; replace the transactions function with any
+          Keep <code>src/api/client.ts</code> shapes stable; replace the transactions function with any
           store that returns the same <code>Transaction[]</code> contract. Service-account auth is a
           viable alternative to per-user refresh tokens (share the sheet with the SA email).
         </div>
@@ -1400,8 +1404,8 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
     const LAYER_DETAIL = {
       spa: {
         title: 'React SPA',
-        body: `Owns auth bootstrap (getMe), sheet onboarding gates, first-run tour, tab routing, and metric recomputation.
-Client never holds Google client secrets. Planner / theme / mask stay in localStorage.
+        body: `Thin App shell wires useAuthSession / useSheetTransactions / usePlannerStore / useAppModals.
+Feature folders under src/features/*; shared domain under shared/. Client never holds Google secrets.
 Failure modes: AuthRequiredError → sign-in screen; NeedsSheetError → SheetOnboarding; soft banner if sheet tabs missing.`
       },
       edge: {
@@ -1412,8 +1416,8 @@ Finance payloads are never durable offline truth — KPIs need a live function h
       },
       fn: {
         title: 'Netlify Functions BFF',
-        body: `Thin adapters: verify session → load Blobs user record → OAuth2Client(refresh) → Sheets or mutate Blobs.
-Shared helpers under netlify/lib/*. Keep business math out of this layer; prefer returning raw Transaction[] for the client engine.`
+        body: `TypeScript adapters via withSession: verify session → load Blobs user record → OAuth2Client(refresh) → Sheets or mutate Blobs.
+Shared helpers under netlify/lib/*. Keep business math out of this layer; mutations return refreshed Transaction[].`
       },
       session: {
         title: 'Session + user store',
@@ -1422,8 +1426,8 @@ Local netlify dev without Blobs context falls back to .netlify/muffin-users/ on 
       },
       sheets: {
         title: 'Google Sheets',
-        body: `Human-editable ledger / database. Fixed tabs Income, Expense, Investment. google-spreadsheet wraps the API.
-Type is inferred from tab name (TYPE_BY_TAB). Mutating APIs identify rows by tabName + rowIndex (+ optional expectedRow guard).`
+        body: `Human-editable ledger / database. Fixed tabs Income, Expense, Investment. Optional Id column on app-created books.
+Type from TYPE_BY_TAB (shared/). Mutations prefer rowId, then rowIndex + expectedRow fingerprint; responses include transactions[].`
       }
     };
 
