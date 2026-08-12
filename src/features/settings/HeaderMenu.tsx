@@ -38,6 +38,9 @@ import { SoftButton } from '../../components/ui/SoftButton';
 
 interface HeaderMenuProps {
   buttonClassName: string;
+  userName?: string;
+  userEmail?: string;
+  userPicture?: string;
   onAbout: () => void;
   onRecipe: () => void;
   onGuide?: () => void;
@@ -71,6 +74,9 @@ function ThemeSwatch({ theme }: { theme: ThemeDefinition }) {
 
 export function HeaderMenu({
   buttonClassName,
+  userName,
+  userEmail,
+  userPicture,
   onAbout,
   onRecipe,
   onGuide,
@@ -364,6 +370,41 @@ export function HeaderMenu({
                       )}
 
                     <div className="my-1 border-t border-divider" />
+
+                    {(userName || userEmail) && (
+                      <div className="mb-0.5 flex items-center gap-2.5 rounded-xl px-2.5 py-2">
+                        {userPicture ? (
+                          <img
+                            src={userPicture}
+                            alt=""
+                            referrerPolicy="no-referrer"
+                            className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-border"
+                          />
+                        ) : (
+                          <span
+                            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary ring-1 ring-primary/25"
+                            aria-hidden="true"
+                          >
+                            {(userName || userEmail || '?')
+                              .trim()
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          {userName ? (
+                            <p className="truncate text-xs font-semibold text-text">
+                              {userName}
+                            </p>
+                          ) : null}
+                          {userEmail ? (
+                            <p className="truncate text-[11px] text-text-muted">
+                              {userEmail}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    )}
 
                     <button
                       type="button"

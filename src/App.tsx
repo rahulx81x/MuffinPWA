@@ -293,6 +293,9 @@ export default function App() {
           </div>
           <HeaderMenu
             buttonClassName={headerBtnClass}
+            userName={auth.user.name}
+            userEmail={auth.user.email}
+            userPicture={auth.user.picture}
             onAbout={() => openModal({ kind: 'about' })}
             onRecipe={() => openModal({ kind: 'recipe' })}
             onGuide={() => openModal({ kind: 'guide' })}
@@ -344,7 +347,11 @@ export default function App() {
               transition={pageTransition}
             >
               {activeTab === 'home' ? (
-                <HomeView metrics={metrics} transactions={sheetTransactions} />
+                <HomeView
+                  metrics={metrics}
+                  transactions={sheetTransactions}
+                  userName={auth.user.name || auth.user.email}
+                />
               ) : activeTab === 'planner' ? (
                 <PlannerView
                   sheetTransactions={sheetTransactions}

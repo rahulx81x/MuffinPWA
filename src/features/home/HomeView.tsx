@@ -10,6 +10,8 @@ import { KpiCard, type KpiTone } from './KpiCard';
 interface HomeViewProps {
   metrics: FinancialMetrics;
   transactions: Transaction[];
+  /** First name / display name for the home greeting. */
+  userName?: string;
 }
 
 interface CardDef {
@@ -23,10 +25,21 @@ interface CardDef {
   breakup?: Record<string, number>;
 }
 
-export function HomeView({ metrics, transactions }: HomeViewProps) {
+function greetingForHour(hour: number): string {
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+export function HomeView({ metrics, transactions, userName }: HomeViewProps) {
   const { masked, formatCurrency, formatSignedCurrency } = useMask();
   const [showMore, setShowMore] = useState(false);
   const [activeMetric, setActiveMetric] = useState<MetricKey | null>(null);
+
+  const firstName = userName?.trim().split(/\s+/)[0] || '';
+  const greeting = `${greetingForHour(new Date().getHours())}${
+    firstName ? `, ${firstName}` : ''
+  }`;
 
   const breakupTotal = useMemo(
     () =>
@@ -179,6 +192,15 @@ export function HomeView({ metrics, transactions }: HomeViewProps) {
 
   return (
     <section className="space-y-4">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
+          {greeting}
+        </p>
+        <h2 className="mt-1 font-display text-lg font-bold tracking-[-0.02em] text-text">
+          Your money at a glance
+        </h2>
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
         {defaultCards.map((card) => (
           <KpiCard
