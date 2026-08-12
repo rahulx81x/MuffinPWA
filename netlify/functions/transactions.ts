@@ -102,9 +102,7 @@ async function getSheet(doc: GoogleSpreadsheet, tabName: SheetTabName) {
       statusCode: 400,
     });
   }
-  if (!sheet.headerValues) {
-    await sheet.loadHeaderRow();
-  }
+  await sheet.loadHeaderRow();
   return sheet;
 }
 
