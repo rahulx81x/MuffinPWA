@@ -241,32 +241,33 @@ Tab names are matched exactly, so avoid trailing spaces or extra tabs with the s
 **Income tab** â€” row 1 headers, then data:
 
 ```text
-Date,Category,Amount,Comment
-2026-01-05,Salary,55000,Monthly salary credit
-2026-01-18,Freelance,8000,Logo design project
+Id,Date,Category,Amount,Comment
+mfn_sample_inc_1,2026-01-05,Salary,55000,Monthly salary credit
+mfn_sample_inc_2,2026-01-18,Freelance,8000,Logo design project
 ```
 
 **Expense tab:**
 
 ```text
-Date,Category,Amount,Comment
-2026-01-10,Groceries,4200,
-2026-01-12,Rent,15000,
-2026-01-22,Utilities,2200,Electricity + water
+Id,Date,Category,Amount,Comment
+mfn_sample_exp_1,2026-01-10,Groceries,4200,
+mfn_sample_exp_2,2026-01-12,Rent,15000,
+mfn_sample_exp_3,2026-01-22,Utilities,2200,Electricity + water
 ```
 
 **Investment tab** (note the extra **Investment Type** column):
 
 ```text
-Date,Category,Amount,Investment Type,Comment
-2026-01-08,Mutual Fund SIP,10000,Mutual Fund,Index fund SIP
-2026-02-09,Stocks,5000,Equities,Bought blue-chip shares
+Id,Date,Category,Amount,Investment Type,Comment
+mfn_sample_inv_1,2026-01-08,Mutual Fund SIP,10000,Mutual Fund,Index fund SIP
+mfn_sample_inv_2,2026-02-09,Stocks,5000,Equities,Bought blue-chip shares
 ```
 
 You can also copy from the repo files under `templates/` (`income_sheet_template.csv`, etc.): in Sheets use **File â†’ Import â†’ Upload**, importing each CSV into its matching tab.
 
 #### Column rules (important)
 
+- **Id (optional):** present on app-created workbooks and templates; stable handle for edit/delete. Linked legacy sheets without Id still work via row index + fingerprint.
 - **Date:** prefer `YYYY-MM-DD` (e.g. `2026-01-05`). `DD/MM/YYYY` also works.
 - **Amount:** digits only â€” `55000` not `â‚¹55,000` (commas are stripped automatically, but keep it simple).
 - **Do not leave the header row out** â€” the app skips the first row as headers.
@@ -450,43 +451,33 @@ Runtime UI deps stay lean (`react`, `react-dom`, `react-select`, `framer-motion`
 
 ```text
 MuffinPWA/
+├── shared/                    # Client+server domain (tabs, recipe sanitize, dates, DTOs)
 ├── src/
-│   ├── main.tsx              # React entry + Theme / Mask / Recipe providers; FOUC theme bootstrap
-│   ├── App.tsx                # Shell: auth, sheet load, tour, tabs, planner, gear menu, modals
-│   ├── config.ts              # Currency helpers + Recipe defaults / local cache helpers
-│   ├── types.ts                # Shared TypeScript types
-│   ├── index.css               # Tailwind + 6 muffin theme tokens (`data-theme`)
-│   ├── components/             # Home, Planner, Ledger, Monthly, HeaderMenu, RecipeModal, TourModal, charts, nav
-│   ├── hooks/                  # Theme, Mask, RecipeConfig, PwaInstall
-│   └── lib/
-│       ├── api.ts               # Client → Netlify auth / sheet / recipe / tour / transactions
-│       ├── themes.ts            # Theme catalog, persistence helpers, chart palettes
-│       ├── motion.ts            # Shared Framer Motion springs / variants
-│       ├── parseSheet.ts        # ID helper (used by Planner)
-│       ├── metrics.ts            # Aggregations and KPI builders
-│       └── providentFund.ts      # PF detection helpers
-├── scripts/
-│   ├── capture-showcase.mjs     # Playwright Galaxy A55 screenshots (amounts masked)
-│   └── build-showcase-ppt.mjs   # Builds docs/showcase/Muffin_Showcase.pptx
+│   ├── main.tsx               # React entry + Theme / Mask / Recipe providers
+│   ├── App.tsx                # Thin shell: tabs, modal host, wires hooks
+│   ├── config.ts              # Currency helpers + Recipe local cache
+│   ├── index.css              # Tailwind + muffin theme tokens
+│   ├── api/client.ts          # Typed client → Netlify functions
+│   ├── domain/                # metrics, providentFund, evaluateAmount, UI types
+│   ├── features/              # auth, home, ledger, planner, monthly, settings
+│   ├── components/ui/         # SoftButton, FloatingNav, ConfirmModal, …
+│   ├── hooks/                 # useAuthSession, useSheetTransactions, usePlannerStore,
+│   │                          # useAppModals, theme, mask, recipe, PWA install
+│   └── lib/                   # themes, fonts, motion, muffinIcon
+├── scripts/                   # showcase capture / PPT
 ├── docs/showcase/
-│   ├── Muffin_Showcase.pptx     # Product showcase deck
-│   └── screens/                 # Captured PNGs (gitignored; regenerate via npm run showcase)
-├── public/icons/                # PWA icon (muffin-icon.svg)
-├── netlify/functions/           # auth-*, sheet-*, recipe, tour-complete, transactions, health
-├── netlify/lib/                 # Shared helpers (env, session, Blobs user store, Sheets, recipe/tour)
-├── templates/                   # Per-tab CSV examples (Income / Expense / Investment)
-├── dist/                        # Build output (generated)
-├── netlify.toml                 # Build, publish, redirects, functions, secrets-scan omit
-├── vite.config.ts               # React + PWA + dev proxy
-├── tailwind.config.js           # Theme token colors, radii, warm shadows
-├── index.html                   # Shell + Google Fonts + theme-color + inline theme bootstrap
-├── .env.example                 # GOOGLE_* / SESSION_SECRET names for local + prod redirect notes
+├── public/icons/
+├── netlify/functions/         # TypeScript: auth-*, sheet-*, recipe, tour, transactions, health
+├── netlify/lib/               # session, userStore, handler (withSession), sheetBootstrap, …
+├── templates/                 # Per-tab CSV examples (include optional Id column)
+├── dist/
+├── netlify.toml
+├── vite.config.ts
 ├── package.json
 └── README.md
 ```
 
-The project evolved from an early CSV-publish prototype to a typed React SPA, then to **six muffin-inspired themes**, then from CSV-publish to **OAuth Google Sheets**, and most recently to **per-user Google Sign-In** with sheet ID + Recipe stored in **Netlify Blobs**.
-
+The project evolved from an early CSV-publish prototype to a typed React SPA, then to **six muffin-inspired themes**, then from CSV-publish to **OAuth Google Sheets**, then **per-user Google Sign-In** with sheet ID + Recipe in **Netlify Blobs**, and most recently to a **feature-folder frontend**, **shared TypeScript domain**, and **stable sheet row Ids**.
 ### 3.3 Runtime architecture and data flow
 
 ```mermaid
@@ -521,18 +512,18 @@ sequenceDiagram
 - Browser code only calls same-origin function paths.
 - The OAuth Client ID/Secret stay in Netlify / local env; each user’s refresh token lives in an encrypted httpOnly session cookie — never in client bundles.
 - Sheet ID, Recipe, and tour completion are stored in Netlify Blobs keyed by Google user id.
-- Read and write share one transactions API surface (`src/lib/api.ts` → `transactions` function).
+- Read and write share one transactions API surface (`src/api/client.ts` → `transactions` function). Mutating responses return the refreshed `Transaction[]` so the client can skip an extra GET when possible.
 
 ### 3.4 Domain model and API
 
-Core types live in `src/types.ts`:
+Core transaction / sheet DTOs live in `shared/` (imported by both the SPA and Netlify functions). UI-only types (`FinancialMetrics`, `MetricKey`, …) live in `src/domain/types.ts`:
 
 - `TransactionType`: `'income' | 'expense' | 'investment'`
 - `SheetTabName`: `'Income' | 'Expense' | 'Investment'`
-- `Transaction`: `id`, `date` (ISO `YYYY-MM-DD`), `category`, `type`, `amount`, `comment`, optional `investmentType`, optional `tabName` / `rowIndex` for sheet writes
+- `Transaction`: `id`, optional stable `rowId`, `date`, `category`, `type`, `amount`, `comment`, optional `investmentType`, optional `tabName` / `rowIndex` for sheet writes
 - `FinancialMetrics` (includes `providentFundBalance`), `MonthlyKPI`, planner input types, KPI modal kinds (`MetricKey` includes `providentFund`)
 
-**Client API** (`src/lib/api.ts`):
+**Client API** (`src/api/client.ts`):
 
 - Auth: `getMe`, `logout`, `AUTH_START_URL` → `auth-me` / `auth-logout` / `auth-start` (+ `auth-callback` for OAuth redirect)
 - Sheet onboarding: `linkSheet`, `createSheet`, `unlinkSheet`
@@ -540,26 +531,27 @@ Core types live in `src/types.ts`:
 - Tour: `completeTour` → `POST /.netlify/functions/tour-complete`
 - Transactions: `getTransactions`, `createTransaction` / `updateTransaction` / `deleteTransaction`
 
-**Blobs user record** (`netlify/lib/userStore.js`, store `muffin-users`):
+**Blobs user record** (`netlify/lib/userStore.ts`, store `muffin-users`):
 
 - `spreadsheetId` / `spreadsheetTitle` / `linkedAt`
 - `recipe` — `{ openingBalance, investments[], updatedAt }`
 - `tourCompletedAt` — set when the first-run tour is finished or skipped
 
-**Sheets function** (`netlify/functions/transactions.js`):
+**Sheets function** (`netlify/functions/transactions.ts`):
 
 - Authenticates with the signed-in user’s refresh token (`OAuth2Client`) and opens the workbook with `google-spreadsheet`'s `GoogleSpreadsheet`
 - Reads all rows from the fixed `Income`, `Expense`, `Investment` tabs and maps them to typed `Transaction` objects (`GET`)
-- Appends (`POST`), updates (`PUT`), or deletes (`DELETE`) a single row identified by tab name + row index
-- Returns JSON with `Cache-Control: no-store`; errors carry a `statusCode` (e.g. 400 for a missing tab, 404 for a missing row, 401 when not signed in)
+- Appends (`POST`), updates (`PUT`), or deletes (`DELETE`) a row; prefers stable `Id` / `rowId` when present, otherwise `rowIndex` + `expectedRow` fingerprint (date + category + amount)
+- Mutation responses include `{ ok, transactions }` so the SPA can refresh without a follow-up GET
+- App-created workbooks include an `Id` column; linked legacy sheets without `Id` keep working
 
-**PF helpers** (`src/lib/providentFund.ts`):
+**PF helpers** (`src/domain/providentFund.ts`):
 
 - `isProvidentFund` / `isCountedInvestment` / `sumProvidentFund` — used by metrics, planner, and chart lists
 
 ### 3.5 Metrics engine
 
-`src/lib/metrics.ts` is pure (no I/O). Provident Fund helpers live in `src/lib/providentFund.ts`.
+`src/domain/metrics.ts` is pure (no I/O). Provident Fund helpers live in `src/domain/providentFund.ts`.
 
 - `buildMonthlyKPIs` — groups by `YYYY-MM`, tracks expense categories, rolls **closing liquid** from `getOpeningBalance()` (Recipe); **excludes PF** from monthly investment
 - `buildInvestmentBreakup` — seeds from Recipe initial investments (`getInitialInvestments()`) then adds **counted** investment rows by type/category (**excludes PF**; PF is only on its own card)
@@ -579,13 +571,14 @@ Growth compares current net worth to `initialInvestments + openingBalance` (from
 
 ### 3.6 Frontend application structure
 
-- **`App.tsx`** owns auth + sheet lifecycle, first-run tour, error banner, `metrics` (recomputed when sheet rows or Recipe config change), active tab, gear-menu modals (About / Recipe / manage transaction), planner CRUD with `localStorage` key `plannerTransactions`, and tab `AnimatePresence` transitions.
-- **Views:** `HomeView` (KPI grid + `ChartModal` + More Details / PF), `PlannerView`, `LedgerView`, `MonthlyView`.
-- **Shared UI:** `KpiCard`, `FloatingNav` (layout-animated active pill), `HeaderMenu` (gear dropdown + nested theme panel), `RecipeModal`, `TourModal`, `SoftButton`, `TransactionList`, `ChartModal` (list / pie / line; portaled sheet with enter/exit), `ManageTransactionModal`, `AboutModal`, `SignInScreen`, `SheetOnboarding`, `MuffinIcon`.
+- **`App.tsx`** is a thin shell: wires hooks, hosts tabs/modals, recomputes metrics when sheet rows or Recipe change.
+- **Lifecycle hooks:** `useAuthSession` (boot, logout, visibility health probe), `useSheetTransactions` (load/mutate/refresh), `usePlannerStore` (`plannerTransactions` localStorage), `useAppModals` (single discriminated modal union).
+- **Feature folders:** `features/auth`, `home`, `ledger`, `planner`, `monthly`, `settings` — views and feature-owned modals live with their domain.
+- **Shared UI:** `components/ui` (`SoftButton`, `FloatingNav`, `ConfirmModal`, `ShimmerSkeleton`, `MuffinIcon`).
 - **`KpiCard` tones:** semantic colors for income/expense/investment; Net Worth uses the theme **hero** primary gradient.
 - **Themes:** `src/lib/themes.ts` catalogs six variants; `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color`. Charts pull per-theme `chartColors`.
 - **Motion:** shared springs/variants in `src/lib/motion.ts` (Framer Motion).
-- **Hooks:** `useTheme`, `useMask`, `useRecipeConfig` (local cache + `persistConfig` → Blobs), `usePwaInstall` (`beforeinstallprompt`).
+- **Hooks:** also `useTheme`, `useMask`, `useRecipeConfig` (local cache + `persistConfig` → Blobs), `usePwaInstall` (`beforeinstallprompt`).
 - Layout is mobile-first (`max-w-lg`), branded sticky header with a single gear control, floating bottom nav width-matched to cards, themed modals/forms portaled above the nav.
 
 ### 3.7 PWA behavior
@@ -638,10 +631,10 @@ From `netlify.toml`:
 ### 3.10 Extensibility
 
 - **New KPI:** extend `FinancialMetrics` / `MetricKey`, compute in `metrics.ts`, add a card in `HomeView`, wire a modal kind in `ChartModal` if interactive.
-- **New column:** update the Sheets row mapping in `netlify/functions/transactions.js` and the matching templates; keep header-row assumptions documented.
-- **Different backend:** replace the transactions function with any API that returns the same shapes expected by `src/lib/api.ts`.
+- **New column:** update the Sheets row mapping in `netlify/functions/transactions.ts` and the matching templates / `shared/sheets.ts` headers; keep header-row assumptions documented.
+- **Different backend:** replace the transactions function with any API that returns the same shapes expected by `src/api/client.ts`.
 - **Multi-currency:** display helpers are centralized in `config.ts` / `useMask`, but amounts are stored as plain numbers with no FX conversion today.
-- **PF-like carve-outs:** extend `providentFund.ts` matching rules if you need another display-only bucket.
+- **PF-like carve-outs:** extend `src/domain/providentFund.ts` matching rules if you need another display-only bucket.
 - **Service account instead of OAuth:** the function could be adapted to use a Google service account JSON key (share the sheet with the service account's email) instead of a user refresh token, trading the one-time OAuth Playground step for key-file management.
 
 ### 3.11 AI-assisted development
@@ -700,14 +693,16 @@ node scripts/capture-showcase.mjs http://localhost:8888
   - `npm run showcase:capture` / `npm run showcase:ppt` â€” run capture or PPT build alone
 
 - **Project layout (key folders):**
-  - `src/` — React + TypeScript app (`main.tsx`, `App.tsx`, views and components)
-  - `src/config.ts` — currency helpers + Recipe defaults / local cache (`muffinRecipe`)
-  - `netlify/functions/` — auth-*, sheet-*, `recipe`, `tour-complete`, transactions, health
-  - `netlify/lib/` — shared env, session, Blobs user store (sheet + recipe + tour), Sheets bootstrap helpers
-  - `scripts/` — showcase capture (`capture-showcase.mjs`) and PPT builder (`build-showcase-ppt.mjs`)
-  - `docs/showcase/` — product showcase deck + regenerated screen PNGs
-  - `public/` — static assets and icons
-  - `templates/` — CSV templates for the three required sheet tabs
+  - `shared/` — DTOs, tab constants, recipe sanitize, date parsing (SPA + functions)
+  - `src/features/` — feature UI (auth, home, ledger, planner, monthly, settings)
+  - `src/domain/` — metrics engine, PF helpers, amount evaluator
+  - `src/api/client.ts` — typed Netlify function client
+  - `src/hooks/` — auth/sheet/planner/modals plus theme/mask/recipe/PWA
+  - `netlify/functions/` — TypeScript auth-*, sheet-*, `recipe`, `tour-complete`, transactions, health
+  - `netlify/lib/` — session, Blobs user store, `withSession` handler, Sheets bootstrap
+  - `templates/` — CSV templates (optional `Id` column + Date/Category/Amount/…)
+  - `scripts/` / `docs/showcase/` — product showcase tooling
+  - `public/` — static assets, `/guide`, `/technical-guide`
 
 - **Build & runtime notes:**
   - The `build` script runs `tsc -b` (TypeScript project references) then `vite build`.
@@ -718,16 +713,15 @@ node scripts/capture-showcase.mjs http://localhost:8888
   - Showcase capture expects the app reachable (usually `http://localhost:8888`) with sheet data loading; amounts are masked in every shot.
   - There are no automated tests or linters configured in this repo currently.
 
-- **Notable dependencies:** React 19, Vite, TypeScript, Netlify CLI, `@netlify/blobs`, `google-auth-library`, `google-spreadsheet`, `framer-motion`, `lucide-react`, `vite-plugin-pwa`; showcase tooling: `playwright`, `pptxgenjs`.
-
 - **Maintenance suggestions:**
   - Add CI (build + basic lint/tests) and README badges for clarity.
-  - Consider migrating serverless functions to TypeScript for type safety and DX.
-  - Add a short `DEVELOPER.md` with recommended environment variables and a `.env.example` reference (there is already an `.env.example` present).
+  - Unit-test `shared/` date/recipe helpers and `src/domain/metrics.ts`.
+  - Restrict CORS Origin allowlist in `netlify/lib/http.ts` for production hardening.
 
 - **Where to look next:**
-  - App entry: `src/main.tsx` and `src/App.tsx` for routing and bootstrapping.
-  - Server functions: `netlify/functions/transactions.js` for read/write logic against Google Sheets.
+  - App entry: `src/main.tsx` and `src/App.tsx` for shell wiring.
+  - Server functions: `netlify/functions/transactions.ts` for read/write against Google Sheets.
+  - Shared domain: `shared/` for tab headers, recipe sanitize, and transaction DTOs.
   - Templates: `templates/` for sample sheet layouts.
 
 ## 5. Credits

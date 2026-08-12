@@ -358,17 +358,17 @@
       <div class="grid-2">
         <div class="feature-card">
           <h4><code>Income</code> tab</h4>
-          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
+          <p>Columns: <code>Id</code> (optional), <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
           <p style="margin-top:6px;"><em>Sample:</em> 2026-08-01, Salary, 75000, Monthly pay</p>
         </div>
         <div class="feature-card">
           <h4><code>Expense</code> tab</h4>
-          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
+          <p>Columns: <code>Id</code> (optional), <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Comment</code></p>
           <p style="margin-top:6px;"><em>Sample:</em> 2026-08-02, Groceries, 3500, Supermarket</p>
         </div>
         <div class="feature-card">
           <h4><code>Investment</code> tab</h4>
-          <p>Columns: <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Investment Type</code>, <code>Comment</code></p>
+          <p>Columns: <code>Id</code> (optional), <code>Date</code>, <code>Category</code>, <code>Amount</code>, <code>Investment Type</code>, <code>Comment</code></p>
           <p style="margin-top:6px;"><em>Sample:</em> 2026-08-05, SIP, 10000, Mutual Fund, Nifty Index</p>
         </div>
       </div>
@@ -376,6 +376,7 @@
       <div class="callout">
         <strong>Column rules:</strong> Prefer dates as <code>YYYY-MM-DD</code> (<code>DD/MM/YYYY</code> also works).
         Amounts should be digits only (e.g. <code>15000</code>). Keep the header row — the app skips it.
+        App-created sheets include a stable <code>Id</code> column for safer edit/delete; linked legacy sheets without it still work.
         For PF, put <code>Provident Fund</code>, <code>PF</code>, <code>EPF</code>, or <code>PPF</code> in Category or Investment Type.
       </div>
     </div>

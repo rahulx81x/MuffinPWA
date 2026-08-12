@@ -5,79 +5,29 @@ export const CURRENCY = {
 
 export const RECIPE_STORAGE_KEY = 'muffinRecipe';
 
-export interface RecipeInvestment {
-  id: string;
-  type: string;
-  amount: number;
-}
+export type { RecipeConfig, RecipeInvestment } from '@shared';
+export {
+  createEmptyInvestment,
+  getDefaultRecipeConfig,
+  hasMeaningfulRecipe,
+} from '@shared';
 
-export interface RecipeConfig {
-  openingBalance: number;
-  investments: RecipeInvestment[];
-}
+import type { RecipeConfig, RecipeInvestment } from '@shared';
+import {
+  getDefaultRecipeConfig,
+  sanitizeRecipe,
+} from '@shared';
 
 type RecipeListener = () => void;
 
 let recipeCache: RecipeConfig | null = null;
 const recipeListeners = new Set<RecipeListener>();
 
-function newInvestmentId(): string {
-  return `inv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export function createEmptyInvestment(
-  type = '',
-  amount = 0
-): RecipeInvestment {
-  return { id: newInvestmentId(), type, amount };
-}
-
-export function getDefaultRecipeConfig(): RecipeConfig {
-  return {
-    openingBalance: 0,
-    investments: [],
-  };
-}
-
-function sanitizeRecipeConfig(raw: unknown): RecipeConfig {
-  const fallback = getDefaultRecipeConfig();
-  if (!raw || typeof raw !== 'object') return fallback;
-
-  const data = raw as Partial<RecipeConfig>;
-  const openingBalance = Number(data.openingBalance);
-  const investments = Array.isArray(data.investments)
-    ? data.investments
-        .map((item) => {
-          if (!item || typeof item !== 'object') return null;
-          const row = item as Partial<RecipeInvestment>;
-          const type = String(row.type ?? '').trim();
-          const amount = Number(row.amount);
-          if (!type && !(amount > 0)) return null;
-          return {
-            id:
-              typeof row.id === 'string' && row.id
-                ? row.id
-                : newInvestmentId(),
-            type: type || 'Investment',
-            amount: Number.isFinite(amount) ? Math.max(0, amount) : 0,
-          } satisfies RecipeInvestment;
-        })
-        .filter((row): row is RecipeInvestment => row != null)
-    : fallback.investments;
-
-  return {
-    openingBalance: Number.isFinite(openingBalance)
-      ? Math.max(0, openingBalance)
-      : fallback.openingBalance,
-    investments,
-  };
-}
-
 function readRecipeFromStorage(): RecipeConfig {
   try {
     const stored = localStorage.getItem(RECIPE_STORAGE_KEY);
     if (!stored) return getDefaultRecipeConfig();
-    return sanitizeRecipeConfig(JSON.parse(stored) as unknown);
+    return sanitizeRecipe(JSON.parse(stored) as unknown);
   } catch {
     return getDefaultRecipeConfig();
   }
@@ -92,7 +42,7 @@ export function getRecipeConfig(): RecipeConfig {
 
 /** Persist to local cache (and notify listeners). Server sync is separate. */
 export function saveRecipeConfig(config: RecipeConfig): RecipeConfig {
-  const next = sanitizeRecipeConfig(config);
+  const next = sanitizeRecipe(config);
   recipeCache = next;
   try {
     localStorage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(next));
@@ -105,7 +55,7 @@ export function saveRecipeConfig(config: RecipeConfig): RecipeConfig {
 
 /** Apply recipe loaded from Netlify Blobs (source of truth when signed in). */
 export function hydrateRecipeConfig(raw: unknown): RecipeConfig {
-  return saveRecipeConfig(sanitizeRecipeConfig(raw));
+  return saveRecipeConfig(sanitizeRecipe(raw));
 }
 
 export function clearRecipeConfig(): RecipeConfig {
@@ -117,12 +67,6 @@ export function clearRecipeConfig(): RecipeConfig {
   recipeCache = getDefaultRecipeConfig();
   recipeListeners.forEach((listener) => listener());
   return recipeCache;
-}
-
-/** True when the recipe has any non-zero opening balance or investments. */
-export function hasMeaningfulRecipe(config: RecipeConfig): boolean {
-  if ((config.openingBalance || 0) > 0) return true;
-  return config.investments.some((row) => (row.amount || 0) > 0 || row.type.trim());
 }
 
 export function subscribeRecipeConfig(listener: RecipeListener): () => void {
