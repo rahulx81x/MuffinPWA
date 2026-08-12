@@ -1,16 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 500" width="100%" height="100%" role="img">
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
+const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 500" width="100%" height="100%" role="img">
   <defs>
     <style>
       :root, svg {
-        --bg-color: #1e222d;
-        --top-light: #ffecb3;
-        --top-dark: #d87c4b;
-        --cup-light: #e69a5e;
-        --cup-dark: #5e2b15;
+        --bg-color: #FAF5EF;
+        --top-light: #FFECB3;
+        --top-dark: #D97706;
+        --cup-light: #F3E8DC;
+        --cup-dark: #7C5A43;
         --cup-highlight: rgba(255, 235, 180, 0.25);
-        --glow-color: #ffca28;
-        --line-color: #3a1e12;
-        --chip-color: #3a1e12;
+        --glow-color: #D97706;
+        --line-color: #3D2314;
+        --chip-color: #3D2314;
       }
     </style>
 
@@ -43,24 +52,20 @@
     <path id="top-shape" d="M 130 270 C 105 245, 110 195, 145 175 C 175 140, 205 125, 250 125 C 295 125, 325 140, 355 175 C 390 195, 395 245, 370 270 C 345 285, 305 282, 285 273 C 265 284, 235 284, 215 273 C 195 282, 155 285, 130 270 Z" />
   </defs>
 
-  <rect width="100%" height="100%" rx="96" fill="var(--bg-color)" />
+  <rect width="100%" height="100%" fill="var(--bg-color)" />
 
-  <!-- Outer Blurred Glow (Neon highlights) -->
   <g filter="url(#neon-glow)">
     <use href="#cup-outline" xlink:href="#cup-outline" stroke="var(--glow-color)" stroke-width="26" stroke-linejoin="round" stroke-linecap="round" fill="none" />
     <use href="#top-shape" xlink:href="#top-shape" stroke="var(--glow-color)" stroke-width="26" stroke-linejoin="round" fill="none" />
   </g>
 
-  <!-- Crisp Outer Neon Border -->
   <use href="#cup-outline" xlink:href="#cup-outline" stroke="var(--glow-color)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" fill="none" />
   <use href="#top-shape" xlink:href="#top-shape" stroke="var(--glow-color)" stroke-width="18" stroke-linejoin="round" fill="none" />
 
-  <!-- Cup Base & Fill -->
   <use href="#cup-fill" xlink:href="#cup-fill" fill="url(#cupGrad)" />
   <use href="#cup-fill" xlink:href="#cup-fill" fill="url(#cupHighlight)" />
   <use href="#cup-outline" xlink:href="#cup-outline" stroke="var(--line-color)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" fill="none" />
   
-  <!-- Cup Folds / Lines -->
   <g fill="none" stroke="var(--line-color)" stroke-width="7" stroke-linecap="round">
     <path d="M 185 285 L 205 410" />
     <path d="M 225 290 L 235 418" />
@@ -68,10 +73,8 @@
     <path d="M 315 285 L 295 410" />
   </g>
 
-  <!-- Muffin Top -->
   <use href="#top-shape" xlink:href="#top-shape" stroke="var(--line-color)" stroke-width="12" stroke-linejoin="round" fill="url(#topGrad)" />
 
-  <!-- Scattered Chocolate Chips -->
   <g fill="var(--chip-color)">
     <path d="M 235 160 C 242 154, 252 162, 242 170 C 232 168, 230 164, 235 160 Z" />
     <path d="M 185 185 C 192 180, 198 188, 185 192 C 180 190, 178 186, 185 185 Z" />
@@ -82,4 +85,34 @@
     <path d="M 285 215 C 292 208, 298 216, 288 222 C 282 220, 280 216, 285 215 Z" />
     <path d="M 205 225 C 212 218, 218 226, 208 232 C 202 230, 200 226, 205 225 Z" />
   </g>
-</svg>
+</svg>`;
+
+async function generateIcons() {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+
+  const html = `<!DOCTYPE html><html><head><style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#FAF5EF;}</style></head><body>${svgContent}</body></html>`;
+  await page.setContent(html);
+
+  const iconsDir = path.resolve(rootDir, 'public', 'icons');
+  if (!fs.existsSync(iconsDir)) {
+    fs.mkdirSync(iconsDir, { recursive: true });
+  }
+
+  // 192x192
+  await page.setViewportSize({ width: 192, height: 192 });
+  await page.screenshot({ path: path.resolve(iconsDir, 'icon_192.png'), omitBackground: false });
+  console.log('Generated icon_192.png');
+
+  // 512x512
+  await page.setViewportSize({ width: 512, height: 512 });
+  await page.screenshot({ path: path.resolve(iconsDir, 'icon_512.png'), omitBackground: false });
+  console.log('Generated icon_512.png');
+
+  await browser.close();
+}
+
+generateIcons().catch((err) => {
+  console.error('Failed to generate PNG icons:', err);
+  process.exit(1);
+});
