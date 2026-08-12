@@ -358,7 +358,7 @@ Until you add the OAuth app credentials, users cannot sign in or sync sheets.
 
 5. Remove legacy single-user vars if present: `GOOGLE_SPREADSHEET_ID`, `GOOGLE_REFRESH_TOKEN`.
 6. Save the variables and **trigger a new deploy** (env changes do not apply until redeploy).
-7. Open the live site → **Sign in with Google** → paste an existing sheet URL/ID or **Create a sheet for me**.
+7. Open the live site → **Sign in with Google** → paste an existing sheet URL/ID or **Create a sheet for me** (you can set the workbook name).
 
 While the OAuth consent screen is in **Testing**, add each Google account as a test user.
 

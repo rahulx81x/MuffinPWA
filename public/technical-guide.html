@@ -852,7 +852,7 @@ netlify/
         <div class="accordion-content">
           <ul style="margin:0 0 10px; padding-left:1.1rem;">
             <li><code>POST sheet-link</code> — body <code>{ spreadsheetId }</code> (raw ID or Sheets URL). Validates access, persists to Blobs.</li>
-            <li><code>POST sheet-create</code> — creates a workbook with the three required tabs / headers, then links it.</li>
+            <li><code>POST sheet-create</code> — body optional <code>{ title }</code> (default <code>Muffin Finances</code>); creates a workbook with the three required tabs / headers, then links it. Idempotent if a sheet is already linked.</li>
             <li><code>POST sheet-unlink</code> — clears <code>spreadsheetId</code> on the user record (does not delete the Google Sheet).</li>
           </ul>
           <p>Missing sheet yields client <code>NeedsSheetError</code> (<code>code: 'needsSheet'</code>) so the SPA can show onboarding.</p>

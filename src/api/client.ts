@@ -128,11 +128,16 @@ export async function linkSheet(spreadsheetIdOrUrl: string): Promise<{
   };
 }
 
-export async function createSheet(): Promise<{
+export async function createSheet(title?: string): Promise<{
   spreadsheetId: string;
   spreadsheetTitle: string;
 }> {
-  const response = await apiFetch(SHEET_CREATE, { method: 'POST' });
+  const trimmed = title?.trim();
+  const response = await apiFetch(SHEET_CREATE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(trimmed ? { title: trimmed } : {}),
+  });
   await assertOk(response);
   return (await response.json()) as {
     spreadsheetId: string;

@@ -229,13 +229,16 @@ export default function App() {
       <SheetOnboarding
         userName={auth.user.name || auth.user.email}
         onLinked={(info) => {
-          setAuth({
-            ...auth,
-            spreadsheetId: info.spreadsheetId,
-            spreadsheetTitle: info.spreadsheetTitle,
-            needsSheet: false,
-            showTour: Boolean(auth.showTour),
-          });
+          setAuth((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  spreadsheetId: info.spreadsheetId,
+                  spreadsheetTitle: info.spreadsheetTitle,
+                  needsSheet: false,
+                }
+              : prev
+          );
           setStatusMessage(
             info.spreadsheetTitle
               ? `Linked “${info.spreadsheetTitle}”.`

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { SoftButton } from '../../components/ui/SoftButton';
 import { MuffinIcon } from '../../components/ui/MuffinIcon';
 import { createSheet, linkSheet } from '../../api/client';
@@ -8,37 +8,54 @@ interface SheetOnboardingProps {
   onLinked: (info: { spreadsheetId: string; spreadsheetTitle: string }) => void;
 }
 
+const DEFAULT_SHEET_TITLE = 'Muffin Finances';
+
 export function SheetOnboarding({ userName, onLinked }: SheetOnboardingProps) {
-  const [mode, setMode] = useState<'choose' | 'link'>('choose');
+  const [mode, setMode] = useState<'choose' | 'create' | 'link'>('choose');
   const [sheetInput, setSheetInput] = useState('');
+  const [sheetTitle, setSheetTitle] = useState(DEFAULT_SHEET_TITLE);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Guards double-submit before React re-renders `busy`. */
+  const inFlightRef = useRef(false);
 
-  async function handleCreate() {
+  async function handleCreate(event: FormEvent) {
+    event.preventDefault();
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setBusy(true);
     setError(null);
     try {
-      const result = await createSheet();
+      const result = await createSheet(sheetTitle.trim() || DEFAULT_SHEET_TITLE);
       onLinked(result);
+      // Keep inFlight locked — success leaves this screen.
     } catch (err) {
+      inFlightRef.current = false;
       setError(err instanceof Error ? err.message : 'Could not create sheet.');
-    } finally {
       setBusy(false);
     }
   }
 
   async function handleLink(event: FormEvent) {
     event.preventDefault();
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setBusy(true);
     setError(null);
     try {
       const result = await linkSheet(sheetInput.trim());
       onLinked(result);
     } catch (err) {
+      inFlightRef.current = false;
       setError(err instanceof Error ? err.message : 'Could not link sheet.');
-    } finally {
       setBusy(false);
     }
+  }
+
+  function goChoose() {
+    if (busy) return;
+    setMode('choose');
+    setError(null);
   }
 
   return (
@@ -84,15 +101,55 @@ export function SheetOnboarding({ userName, onLinked }: SheetOnboardingProps) {
             </SoftButton>
             <SoftButton
               disabled={busy}
-              onClick={() => void handleCreate()}
+              onClick={() => {
+                setMode('create');
+                setError(null);
+              }}
               className="rounded-2xl bg-primary px-4 py-3 text-left text-sm font-semibold text-on-primary shadow-glow"
             >
-              {busy ? 'Creating…' : 'Create a sheet for me'}
+              Create a sheet for me
               <span className="mt-1 block text-xs font-normal text-on-primary/80">
                 New workbook in your Google Drive
               </span>
             </SoftButton>
           </div>
+        ) : mode === 'create' ? (
+          <form className="mt-6 space-y-3" onSubmit={(e) => void handleCreate(e)}>
+            <label className="block text-left text-sm font-medium text-text">
+              Sheet name
+              <input
+                value={sheetTitle}
+                onChange={(e) => setSheetTitle(e.target.value)}
+                placeholder={DEFAULT_SHEET_TITLE}
+                maxLength={120}
+                className="mt-1.5 w-full rounded-xl border border-border bg-surface-strong px-3 py-2.5 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40"
+                autoFocus
+                disabled={busy}
+              />
+            </label>
+            <p className="text-xs text-text-muted">
+              Muffin will create Income, Expense, and Investment tabs in this
+              workbook.
+            </p>
+            <div className="flex gap-2">
+              <SoftButton
+                type="button"
+                disabled={busy}
+                onClick={goChoose}
+                className="flex-1 rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-text"
+                glow={false}
+              >
+                Back
+              </SoftButton>
+              <SoftButton
+                type="submit"
+                disabled={busy}
+                className="flex-1 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-glow"
+              >
+                {busy ? 'Creating…' : 'Create sheet'}
+              </SoftButton>
+            </div>
+          </form>
         ) : (
           <form className="mt-6 space-y-3" onSubmit={(e) => void handleLink(e)}>
             <label className="block text-left text-sm font-medium text-text">
@@ -114,10 +171,7 @@ export function SheetOnboarding({ userName, onLinked }: SheetOnboardingProps) {
               <SoftButton
                 type="button"
                 disabled={busy}
-                onClick={() => {
-                  setMode('choose');
-                  setError(null);
-                }}
+                onClick={goChoose}
                 className="flex-1 rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-text"
                 glow={false}
               >

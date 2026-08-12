@@ -43,16 +43,19 @@ export function useSheetTransactions({
         return true;
       }
       if (err instanceof NeedsSheetError) {
-        setAuth((prev) =>
-          prev
-            ? {
-                ...prev,
-                needsSheet: true,
-                spreadsheetId: null,
-                spreadsheetTitle: null,
-              }
-            : prev
-        );
+        // After create/link the client may already have a spreadsheetId while
+        // Blobs is briefly stale. Never wipe a known link — that bounces the
+        // user back to onboarding and a second Create makes another Drive file.
+        setAuth((prev) => {
+          if (!prev) return prev;
+          if (prev.spreadsheetId && !prev.needsSheet) return prev;
+          return {
+            ...prev,
+            needsSheet: true,
+            spreadsheetId: null,
+            spreadsheetTitle: null,
+          };
+        });
         return true;
       }
       return false;
@@ -67,6 +70,12 @@ export function useSheetTransactions({
       setSheetTransactions(transactions);
       return transactions;
     } catch (err) {
+      if (err instanceof NeedsSheetError && spreadsheetId) {
+        setError(
+          "Your sheet is linked, but data hasn't loaded yet. Try again in a moment."
+        );
+        throw err;
+      }
       if (applyAuthError(err)) throw err;
       console.error('Error loading sheet data', err);
       setError(
@@ -75,7 +84,7 @@ export function useSheetTransactions({
       setSheetTransactions([]);
       throw err;
     }
-  }, [applyAuthError]);
+  }, [applyAuthError, spreadsheetId]);
 
   const applyTransactions = useCallback((transactions: Transaction[]) => {
     setSheetTransactions(transactions);
@@ -100,6 +109,15 @@ export function useSheetTransactions({
         setSheetTransactions(transactions);
       } catch (err) {
         if (cancelled) return;
+        if (err instanceof NeedsSheetError && spreadsheetId) {
+          // Linked in client, but server briefly disagrees — keep the shell.
+          console.warn('Sheet link not visible yet; keeping client link', err);
+          setError(
+            "Your sheet is linked, but data hasn't loaded yet. Pull to refresh in a moment."
+          );
+          setSheetTransactions([]);
+          return;
+        }
         if (applyAuthError(err)) return;
         console.error('Error loading sheet data', err);
         setError(
