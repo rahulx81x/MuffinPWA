@@ -95,12 +95,15 @@ async function getDocForSession(session: SessionUser) {
   return doc;
 }
 
-function getSheet(doc: GoogleSpreadsheet, tabName: SheetTabName) {
+async function getSheet(doc: GoogleSpreadsheet, tabName: SheetTabName) {
   const sheet = doc.sheetsByTitle[tabName];
   if (!sheet) {
     throw Object.assign(new Error(`Sheet tab "${tabName}" was not found.`), {
       statusCode: 400,
     });
+  }
+  if (!sheet.headerValues) {
+    await sheet.loadHeaderRow();
   }
   return sheet;
 }
@@ -175,7 +178,7 @@ async function handlePost(doc: GoogleSpreadsheet, body: Record<string, unknown>)
     });
   }
 
-  const sheet = getSheet(doc, tabName);
+  const sheet = await getSheet(doc, tabName);
   const payload: SheetRowData = { ...rowData };
   if (sheetHasIdColumn(sheet)) {
     payload.Id = String(payload.Id || '').trim() || newRowId();
@@ -215,7 +218,7 @@ async function handlePut(doc: GoogleSpreadsheet, body: Record<string, unknown>) 
     });
   }
 
-  const sheet = getSheet(doc, tabName);
+  const sheet = await getSheet(doc, tabName);
   const rows = await sheet.getRows();
   if (index >= rows.length && !expectedRow && !rowId) {
     throw Object.assign(new Error('Row not found.'), { statusCode: 404 });
@@ -268,7 +271,7 @@ async function handleDelete(
     });
   }
 
-  const sheet = getSheet(doc, tabName);
+  const sheet = await getSheet(doc, tabName);
   const rows = await sheet.getRows();
   if (index >= rows.length && !expectedRow && !rowId) {
     throw Object.assign(new Error('Row not found.'), { statusCode: 404 });
