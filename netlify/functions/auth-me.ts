@@ -1,9 +1,9 @@
 import { oauthConfigured } from '../lib/googleAuth';
 import { json, noContent } from '../lib/http';
+import { getOrMigrateUserRecipe } from '../lib/recipeStore';
 import { readSession } from '../lib/session';
 import {
   bindBlobsEvent,
-  getUserRecipe,
   getUserRecord,
   markTourComplete,
   shouldShowTour,
@@ -51,7 +51,8 @@ export async function handler(event: NetlifyEvent) {
 
     const spreadsheetId = record?.spreadsheetId || '';
     const spreadsheetTitle = record?.spreadsheetTitle || '';
-    const recipe = getUserRecipe(record);
+    const recipe = await getOrMigrateUserRecipe(session, record);
+
 
     return json(event, 200, {
       user: {

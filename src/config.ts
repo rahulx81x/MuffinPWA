@@ -53,7 +53,7 @@ export function saveRecipeConfig(config: RecipeConfig): RecipeConfig {
   return next;
 }
 
-/** Apply recipe loaded from Netlify Blobs (source of truth when signed in). */
+/** Apply recipe loaded from Google Sheet (source of truth when signed in). */
 export function hydrateRecipeConfig(raw: unknown): RecipeConfig {
   return saveRecipeConfig(sanitizeRecipe(raw));
 }

@@ -71,7 +71,7 @@ export function PrivacyModal({ open, onClose }: PrivacyModalProps) {
 
             <div className="mt-4 space-y-3.5 text-xs text-text-secondary">
               <p>
-                At <strong>Muffin</strong>, your privacy is paramount. Your financial transactions and personal records are stored inside your own personal Google Account spreadsheet.
+                At <strong>Muffin</strong>, your privacy is paramount. All your financial transactions, opening balances, and investment baselines are stored inside your own personal Google Account spreadsheet across dedicated <code>Income</code>, <code>Expense</code>, <code>Investment</code>, and <code>Recipe</code> tabs. Zero financial values are stored in central cloud databases or Blobs.
               </p>
 
               <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3.5 text-text">

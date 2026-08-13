@@ -168,6 +168,7 @@ export function getUserRecipe(record: UserRecord | null) {
   return sanitizeRecipe(record.recipe);
 }
 
+/** Legacy helper: writes recipe to Blobs. Deprecated in favor of Google Sheet storage. */
 export async function setUserRecipe(googleSub: string, recipe: unknown) {
   const existing = (await getUserRecord(googleSub)) || {};
   const nextRecipe = sanitizeRecipe(recipe);
@@ -181,6 +182,17 @@ export async function setUserRecipe(googleSub: string, recipe: unknown) {
   await writeRaw(googleSub, JSON.stringify(next));
   return nextRecipe;
 }
+
+/** Purge legacy financial recipe amounts from Blobs for user privacy after migrating to Sheet. */
+export async function purgeLegacyBlobRecipe(googleSub: string) {
+  const existing = await getUserRecord(googleSub);
+  if (!existing || existing.recipe === undefined) return;
+
+  const next: UserRecord = { ...existing };
+  delete next.recipe;
+  await writeRaw(googleSub, JSON.stringify(next));
+}
+
 
 const RETURNING_USER_LINK_AGE_MS = 60 * 60 * 1000; // 1 hour
 

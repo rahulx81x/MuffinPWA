@@ -40,7 +40,7 @@ const STEPS = [
     id: 'recipe',
     eyebrow: 'Recipe Setup',
     title: 'Set your starting balances',
-    body: 'Add your initial liquid cash balance and starting investments (FDs, mutual funds, etc.). These seed net worth before sheet transactions and sync across your account via Netlify Blobs.',
+    body: 'Add your initial liquid cash balance and starting investments (FDs, mutual funds, etc.). These seed net worth before sheet transactions and sync across your account via your Google Sheet (Recipe tab).',
     Icon: BookOpen,
   },
 ] as const;

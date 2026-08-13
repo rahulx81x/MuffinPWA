@@ -151,7 +151,7 @@ Also included:
 - **Seven switchable display fonts** — Muffin (Outfit + Plus Jakarta Sans, default), Josefin — Elegant, Fredoka — Playful, Exo 2 — Futuristic, Atkinson — Clear, Syne — Bold, Bricolage — Quirky. Selected from the settings menu → **Font** sub-panel; choice persists in `localStorage`.
 - **Google Sign-In (multi-user)** — Each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token.
 - **Header settings (⚙️)** — One menu, in order: **Mask amounts**, **Theme** (sub-panel), **Font** (sub-panel), **About**, **Recipe**, **Guides** (sub-panel → User Guide + Technical Guide), **Privacy Policy**, **Terms of Service**, **Download App** (PWA install), signed-in account chip, and **Log out**.
-- **Recipe** — View/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in Netlify Blobs for the signed-in user; local cache for snappy UI).
+- **Recipe** — View/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in your Google Sheet's `Recipe` tab; local cache for snappy UI).
 - **First-run tour** — Short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again. Replay anytime from settings → Guides → User Guide → Replay First-Run Tour.
 
 ### 1.6 Everyday data flow
@@ -159,19 +159,19 @@ Also included:
 1. You sign in with Google in the app, then link an existing workbook (paste URL/ID) or create a new one.
 2. New users get a short **tour** covering the dashboard, main tabs, and Recipe; completing or skipping it is stored on your account.
 3. You add, edit, or delete rows via the in-app Ledger / **+** button, or directly in Google Sheets.
-4. A **Netlify Function** uses your signed-in Google session (refresh token in an httpOnly cookie) and your linked spreadsheet ID (stored in Netlify Blobs per Google user) to read/write the `Income`, `Expense`, and `Investment` tabs. App OAuth client secrets never ship to the browser.
-5. The React app fetches transactions from that function on load (and after every add/edit/delete), builds metrics client-side, and updates Home / Ledger / Monthly.
-6. Planner entries stay on-device and never write back to Sheets. Recipe starting balances sync via Blobs so they follow you across devices.
+4. A **Netlify Function** uses your signed-in Google session (refresh token in an httpOnly cookie) and your linked spreadsheet ID (stored in Netlify Blobs per Google user) to read/write the `Income`, `Expense`, `Investment`, and `Recipe` tabs. App OAuth client secrets never ship to the browser.
+5. The React app fetches transactions and recipe config from that function on load (and after every add/edit/delete), builds metrics client-side, and updates Home / Ledger / Monthly.
+6. Planner entries stay on-device and never write back to Sheets. Recipe starting balances sync via your Google Sheet (`Recipe` tab) so they follow you across devices while keeping zero financial data on central servers.
 
 ### 1.7 Where data lives
 
 | Data | Location |
 | --- | --- |
-| Real transactions | Your Google Sheet (`Income`, `Expense`, `Investment` tabs) |
+| Real transactions & Recipe starting balances | Your Google Sheet (`Income`, `Expense`, `Investment`, and `Recipe` tabs) |
 | Google OAuth app credentials | Netlify / local env (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`) |
-| Per-user sheet link + Recipe + tour flag | Netlify Blobs (`muffin-users`, keyed by Google user id) |
+| Per-user sheet link + tour flag | Netlify Blobs (`muffin-users`, keyed by Google user id) |
 | Signed-in session | httpOnly cookie (encrypted refresh token) |
-| Recipe local cache | Browser `localStorage` (`muffinRecipe`) — hydrated from Blobs on sign-in |
+| Recipe local cache | Browser `localStorage` (`muffinRecipe`) — hydrated from Google Sheet on sign-in |
 | Legal pages & redirects | Static `public/privacy.html`, `public/terms.html`, and `public/_redirects` |
 | Developer support contact | `rahulgouri072@gmail.com` |
 | Currency display | `src/config.ts` (`CURRENCY`) |
@@ -186,9 +186,9 @@ Also included:
 - Muffin is an independently developed software project created by Rahul Gouri; Google OAuth verification is completed/pending for public production use.
 - Not a bank aggregator — you enter transactions yourself (sheet or in-app forms).
 - Read and write always travel together for the signed-in Google account.
-- The three tabs (`Income`, `Expense`, `Investment`) are fixed by the server; a single combined tab with a `Type` column is not read by the current backend.
+- The four tabs (`Income`, `Expense`, `Investment`, `Recipe`) are handled by the server; a single combined tab with a `Type` column is not read by the current backend.
 - The Planner does not sync across devices or back into Sheets.
-- Recipe starting balances sync across devices via Blobs; theme / mask / planner stay browser-local.
+- Recipe starting balances sync across devices via your Google Sheet (`Recipe` tab); theme / mask / planner stay browser-local.
 - Provident Fund rows are tracked for display but do not change net worth / liquid / investment totals.
 - If the function cannot reach the sheet (revoked access, sheet renamed, missing tabs), the UI shows a soft warning and falls back to configured starting balances.
 
@@ -390,9 +390,9 @@ You do **not** need a redeploy to set starting balances. In the live app (while 
 2. View / copy the linked spreadsheet ID.
 3. Set **Initial opening balance** (liquid cash before sheet history).
 4. Add one or more **Initial investments** (type + amount), e.g. Fixed Deposits, Mutual Funds.
-5. Save — values are written to **Netlify Blobs** for your Google account (and cached locally as `muffinRecipe` for the UI). They feed net worth / investment breakup on every device you sign into.
+5. Save — values are written to the **Recipe** tab in your Google Sheet (and cached locally as `muffinRecipe` for the UI). They feed net worth / investment breakup on every device you sign into.
 
-If you had Recipe values only in the browser before Blobs sync shipped, the first successful sign-in migrates a non-empty local Recipe to Blobs automatically.
+If you had Recipe values in Netlify Blobs from an earlier version, the first successful sign-in migrates them to your Google Sheet `Recipe` tab automatically and purges financial numbers from Blobs.
 
 Optional code defaults (used when no Recipe exists yet) and currency live in `src/config.ts` (`INITIAL_*`, `CURRENCY`). Changing currency still requires a rebuild/redeploy.
 
@@ -413,9 +413,9 @@ Optional code defaults (used when no Recipe exists yet) and currency live in `sr
 | Warning that the sheet couldn't load | Check all four required env vars (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`); confirm the signed-in Google account still has access to the spreadsheet |
 | Sign-in redirect / OAuth error | Redirect URI in Google Cloud, Netlify `GOOGLE_REDIRECT_URI`, and the live site URL must match exactly (prod: `https://YOUR-SITE.netlify.app/.netlify/functions/auth-callback`; local: `http://localhost:8888/.netlify/functions/auth-callback`) |
 | Numbers stuck at starting balances only | Env vars missing, deploy not triggered after adding them, or sheet not linked yet — also check Recipe opening balance / investments (gear → Recipe) |
-| Recipe missing on another device | Sign in with the same Google account; Recipe syncs via Blobs after Save |
+| Recipe missing on another device | Sign in with the same Google account; Recipe syncs from your Google Sheet `Recipe` tab after Save |
 | First-run tour keeps appearing | Complete or skip the tour (writes `tourCompletedAt` on your Blobs user record); returning accounts with an older linked sheet are auto-skipped |
-| "Sheet tab X was not found" error | Confirm tabs are named exactly `Income`, `Expense`, `Investment` (case-sensitive, no extra spaces) |
+| "Sheet tab X was not found" error | Confirm tabs are named exactly `Income`, `Expense`, `Investment`, and `Recipe` (case-sensitive, no extra spaces) |
 | Some months missing | Dates invalid or Amount cells not plain numbers |
 | Investments missing from breakup | Fill in **Investment Type** on the Investment tab (falls back to Category if blank) |
 | PF showing in net worth / liquid | Tag PF with Investment Type `Provident Fund`, `PF`, `EPF`, or `PPF` so it is excluded from those totals |
@@ -517,7 +517,7 @@ sequenceDiagram
 
 - Browser code only calls same-origin function paths.
 - The OAuth Client ID/Secret stay in Netlify / local env; each user’s refresh token lives in an encrypted httpOnly session cookie — never in client bundles.
-- Sheet ID, Recipe, and tour completion are stored in Netlify Blobs keyed by Google user id.
+- Sheet ID and tour completion are stored in Netlify Blobs keyed by Google user id; Recipe config lives in the user's Google Sheet `Recipe` tab for maximum privacy.
 - Read and write share one transactions API surface (`src/api/client.ts` → `transactions` function). Mutating responses return the refreshed `Transaction[]` so the client can skip an extra GET when possible.
 
 ### 3.4 Domain model and API
@@ -540,8 +540,8 @@ Core transaction / sheet DTOs live in `shared/` (imported by both the SPA and Ne
 **Blobs user record** (`netlify/lib/userStore.ts`, store `muffin-users`):
 
 - `spreadsheetId` / `spreadsheetTitle` / `linkedAt`
-- `recipe` — `{ openingBalance, investments[], updatedAt }`
 - `tourCompletedAt` — set when the first-run tour is finished or skipped
+- *(Note: Recipe starting balances live in the user's Google Sheet `Recipe` tab; zero financial numbers exist in Blobs)*
 
 **Sheets function** (`netlify/functions/transactions.ts`):
 
@@ -649,7 +649,7 @@ From `netlify.toml`:
 - Google OAuth Client ID/Secret live only in Netlify / local env and are used server-side by auth and Sheets functions; the browser never sees them.
 - Each user’s Google refresh token is stored in an encrypted httpOnly session cookie (`SESSION_SECRET`); treat that secret like a password and rotate it if exposed.
 - End users must **Sign in with Google**; sheet access is limited to the signed-in account’s linked workbook (ID in Netlify Blobs).
-- Recipe starting balances and the first-run tour completion flag also live on the Blobs user record (cross-device). Planner data, theme, and mask preference remain local to one browser profile.
+- Recipe starting balances live in the user's Google Sheet (`Recipe` tab); the first-run tour completion flag lives on the Blobs user record. Zero financial numbers are stored in Netlify Blobs.
 - Auth error redirects use short codes (not long Google messages) so the address bar stays clean; the SPA also strips leftover OAuth query params on load.
 - Function responses use `Cache-Control: no-store` to reduce accidental CDN caching of financial payloads.
 - `.gitignore` excludes `.env` and `.env.*` (except `.env.example`) so local credential files aren't committed by accident.

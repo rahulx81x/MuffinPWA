@@ -20,9 +20,9 @@ interface RecipeConfigContextValue {
   config: RecipeConfig;
   openingBalance: number;
   investments: RecipeInvestment[];
-  /** Update local cache only (e.g. after loading from Blobs). */
+  /** Update local cache only (e.g. after loading from API / Google Sheet). */
   setConfig: (next: RecipeConfig) => void;
-  /** Persist to Netlify Blobs, then update local cache. */
+  /** Persist to Google Sheet Recipe tab via API, then update local cache. */
   persistConfig: (next: RecipeConfig) => Promise<RecipeConfig>;
   updateOpeningBalance: (amount: number) => void;
   updateInvestments: (investments: RecipeInvestment[]) => void;

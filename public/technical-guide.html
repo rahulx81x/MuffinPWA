@@ -628,8 +628,9 @@
           <h4>BFF + Spreadsheet-as-DB</h4>
           <p>
             Browser SPA → same-origin serverless functions → Google Sheets API.
-            Per-user metadata (sheet link, Recipe, tour flag) lives in Netlify Blobs.
-            No traditional app database for transactions.
+            Per-user metadata (sheet link, tour flag) lives in Netlify Blobs.
+            Recipe opening balances &amp; investment baselines live in the user's Google Sheet <code>Recipe</code> tab.
+            No traditional app database for transactions or financial values.
           </p>
         </div>
         <div class="card">
@@ -637,7 +638,7 @@
           <h4>User-owned data plane</h4>
           <p>
             Each Google account authenticates itself; sheet access is scoped to that user’s
-            linked workbook. Financial rows never leave Google’s sheet + the request path through
+            linked workbook. Financial rows and recipe values never leave Google’s sheet + the request path through
             your Netlify function.
           </p>
         </div>
@@ -655,10 +656,10 @@
           <span class="badge">Key invariants</span>
           <h4>Contract the UI depends on</h4>
           <ul>
-            <li>Three fixed sheet tabs: <code>Income</code>, <code>Expense</code>, <code>Investment</code></li>
+            <li>Four fixed sheet tabs: <code>Income</code>, <code>Expense</code>, <code>Investment</code>, <code>Recipe</code></li>
             <li>Transaction type = tab membership (not a column)</li>
             <li>PF rows are display-only carve-outs from net worth</li>
-            <li>Recipe balances seed opening liquid + initial investments</li>
+            <li>Recipe balances (in <code>Recipe</code> tab) seed opening liquid + initial investments</li>
           </ul>
         </div>
       </div>
@@ -680,7 +681,7 @@
             <tr><td>PWA</td><td>vite-plugin-pwa + Workbox</td><td>Static manifest (PNG any/maskable), SW precache, autoUpdate, themed status bar</td></tr>
             <tr><td>BFF</td><td>Netlify Functions</td><td>Auth, sheet link/create, CRUD proxy, recipe, tour</td></tr>
             <tr><td>Sheets</td><td>google-spreadsheet + google-auth-library</td><td>OAuth2Client + workbook row I/O</td></tr>
-            <tr><td>User store</td><td>Netlify Blobs (<code>muffin-users</code>)</td><td>spreadsheetId, recipe, tourCompletedAt</td></tr>
+            <tr><td>User store</td><td>Netlify Blobs (<code>muffin-users</code>)</td><td>spreadsheetId, tourCompletedAt (Recipe in Google Sheet)</td></tr>
             <tr><td>Hosting</td><td>Netlify CDN</td><td><code>dist</code> + functions + SPA redirects</td></tr>
           </tbody>
         </table>
@@ -852,7 +853,7 @@ netlify/
         <div class="accordion-content">
           <ul style="margin:0 0 10px; padding-left:1.1rem;">
             <li><code>POST sheet-link</code> — body <code>{ spreadsheetId }</code> (raw ID or Sheets URL). Validates access, persists to Blobs.</li>
-            <li><code>POST sheet-create</code> — body optional <code>{ title }</code> (default <code>Muffin Finances</code>); creates a workbook with the three required tabs / headers, then links it. Idempotent if a sheet is already linked.</li>
+            <li><code>POST sheet-create</code> — body optional <code>{ title }</code> (default <code>Muffin Finances</code>); creates a workbook with the four required tabs / headers (Income, Expense, Investment, Recipe), then links it. Idempotent if a sheet is already linked.</li>
             <li><code>POST sheet-unlink</code> — clears <code>spreadsheetId</code> on the user record (does not delete the Google Sheet).</li>
           </ul>
           <p>Missing sheet yields client <code>NeedsSheetError</code> (<code>code: 'needsSheet'</code>) so the SPA can show onboarding.</p>
@@ -874,7 +875,7 @@ netlify/
                 <tr>
                   <td>GET</td>
                   <td>—</td>
-                  <td>Reads all rows from three tabs → <code>Transaction[]</code>. <code>Cache-Control: no-store</code>.</td>
+                  <td>Reads all rows from transaction tabs → <code>Transaction[]</code>. <code>Cache-Control: no-store</code>.</td>
                 </tr>
                 <tr>
                   <td>POST</td>
@@ -914,7 +915,7 @@ netlify/
         </div>
         <div class="accordion-content">
           <ul style="margin:0; padding-left:1.1rem;">
-            <li><code>GET /recipe</code> · <code>PUT /recipe</code> with <code>{ recipe: { openingBalance, investments[] } }</code> — persisted on Blobs user record; SPA also caches <code>muffinRecipe</code> in localStorage. Primary hydrate path is <code>auth-me.recipe</code> via <code>hydrateRecipeConfig</code>; the client saves with <code>saveRecipe</code> (PUT). There is no separate client <code>getRecipe()</code> helper.</li>
+            <li><code>GET /recipe</code> · <code>PUT /recipe</code> with <code>{ recipe: { openingBalance, investments[] } }</code> — persisted in your Google Sheet <code>Recipe</code> tab (with automatic Blobs-to-Sheet migration for existing users); SPA also caches <code>muffinRecipe</code> in localStorage. Primary hydrate path is <code>auth-me.recipe</code> via <code>hydrateRecipeConfig</code>; the client saves with <code>saveRecipe</code> (PUT).</li>
             <li><code>POST /tour-complete</code> — sets <code>tourCompletedAt</code> so returning users skip the first-run tour.</li>
           </ul>
         </div>

@@ -1,12 +1,14 @@
 import { oauthClientFromRefreshToken } from '../lib/googleAuth';
 import { withSession } from '../lib/handler';
 import { json, parseBody } from '../lib/http';
+import { getOrMigrateUserRecipe } from '../lib/recipeStore';
 import {
   assertRequiredTabs,
+  ensureRecipeTab,
   openSpreadsheet,
   parseSpreadsheetId,
 } from '../lib/sheetBootstrap';
-import { setUserSheet } from '../lib/userStore';
+import { getUserRecord, setUserSheet } from '../lib/userStore';
 
 export const handler = withSession(
   async ({ event, session }) => {
@@ -25,11 +27,16 @@ export const handler = withSession(
     const auth = oauthClientFromRefreshToken(session.refreshToken);
     const doc = await openSpreadsheet(auth, spreadsheetId);
     assertRequiredTabs(doc);
+    await ensureRecipeTab(doc);
 
+    const existingRecord = await getUserRecord(session.sub);
     const record = await setUserSheet(session.sub, {
       spreadsheetId,
       spreadsheetTitle: doc.title || '',
     });
+
+    // Automatically trigger recipe migration if legacy Blobs recipe exists
+    await getOrMigrateUserRecipe(session, record || existingRecord);
 
     return json(event, 200, {
       ok: true,
@@ -39,3 +46,4 @@ export const handler = withSession(
   },
   { methods: ['POST', 'OPTIONS'] }
 );
+

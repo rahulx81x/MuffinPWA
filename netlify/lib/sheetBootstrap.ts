@@ -1,9 +1,12 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import type { OAuth2Client } from 'google-auth-library';
 import {
+  RECIPE_TAB_HEADERS,
+  RECIPE_TAB_NAME,
   TAB_HEADERS,
   TAB_NAMES,
   parseSpreadsheetId,
+  serializeRecipeToRows,
   type SheetTabName,
 } from '../../shared/index';
 
@@ -30,9 +33,20 @@ export function assertRequiredTabs(doc: GoogleSpreadsheet) {
   }
 }
 
+export async function ensureRecipeTab(doc: GoogleSpreadsheet) {
+  let sheet = doc.sheetsByTitle[RECIPE_TAB_NAME];
+  if (!sheet) {
+    sheet = await doc.addSheet({ title: RECIPE_TAB_NAME });
+    await sheet.setHeaderRow([...RECIPE_TAB_HEADERS]);
+    await doc.loadInfo();
+  }
+  return doc.sheetsByTitle[RECIPE_TAB_NAME] || sheet;
+}
+
 export async function createMuffinWorkbook(
   auth: OAuth2Client,
-  title = 'Muffin Finances'
+  title = 'Muffin Finances',
+  initialRecipe?: { openingBalance: number; investments: Array<{ id?: string; type: string; amount: number }> }
 ) {
   const doc = await GoogleSpreadsheet.createNewSpreadsheetDocument(auth, {
     title,
@@ -48,6 +62,16 @@ export async function createMuffinWorkbook(
   const investment = await doc.addSheet({ title: 'Investment' });
   await investment.setHeaderRow(TAB_HEADERS.Investment);
 
+  const recipeSheet = await doc.addSheet({ title: RECIPE_TAB_NAME });
+  await recipeSheet.setHeaderRow([...RECIPE_TAB_HEADERS]);
+
+  const defaultRows = serializeRecipeToRows(
+    initialRecipe || { openingBalance: 0, investments: [] }
+  );
+  if (defaultRows.length > 0) {
+    await recipeSheet.addRows(defaultRows as unknown as Record<string, string | number>[]);
+  }
+
   await doc.loadInfo();
   return doc;
 }
@@ -55,3 +79,4 @@ export async function createMuffinWorkbook(
 export function headersForTab(tabName: SheetTabName) {
   return TAB_HEADERS[tabName];
 }
+

@@ -2,7 +2,11 @@ import { oauthClientFromRefreshToken } from '../lib/googleAuth';
 import { withSession } from '../lib/handler';
 import { json, parseBody } from '../lib/http';
 import { createMuffinWorkbook } from '../lib/sheetBootstrap';
-import { getUserRecord, setUserSheet } from '../lib/userStore';
+import {
+  getUserRecord,
+  purgeLegacyBlobRecipe,
+  setUserSheet,
+} from '../lib/userStore';
 
 const DEFAULT_TITLE = 'Muffin Finances';
 
@@ -26,12 +30,17 @@ export const handler = withSession(
         .slice(0, 120) || DEFAULT_TITLE;
 
     const auth = oauthClientFromRefreshToken(session.refreshToken);
-    const doc = await createMuffinWorkbook(auth, title);
+    const doc = await createMuffinWorkbook(auth, title, existing?.recipe);
 
     const record = await setUserSheet(session.sub, {
       spreadsheetId: doc.spreadsheetId,
       spreadsheetTitle: doc.title || title,
     });
+
+    if (existing?.recipe) {
+      await purgeLegacyBlobRecipe(session.sub);
+    }
+
 
     return json(event, 201, {
       ok: true,
