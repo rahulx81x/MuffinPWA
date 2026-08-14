@@ -8,6 +8,8 @@ import {
 } from '../../lib/motion';
 import { SoftButton } from '../../components/ui/SoftButton';
 import { MuffinIcon } from '../../components/ui/MuffinIcon';
+import { FocusTrap } from '../../components/atoms/FocusTrap';
+import { useEffect } from 'react';
 
 interface AboutModalProps {
   open: boolean;
@@ -22,6 +24,15 @@ export function AboutModal({
   onPrivacy,
   onTerms,
 }: AboutModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -38,17 +49,18 @@ export function AboutModal({
             onClick={onClose}
           />
 
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="about-title"
-            variants={popoverVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springSoft}
-            className="relative z-10 w-full max-w-sm sm:max-w-md rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
-          >
+          <FocusTrap active={open}>
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="about-title"
+              variants={popoverVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={springSoft}
+              className="relative z-10 w-full max-w-sm sm:max-w-md rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
+            >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
@@ -67,7 +79,7 @@ export function AboutModal({
               </div>
               <SoftButton
                 onClick={onClose}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
+                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
@@ -130,9 +142,10 @@ export function AboutModal({
               )}
             </div>
           </motion.div>
-        </div>
-      )}
-    </AnimatePresence>,
+        </FocusTrap>
+      </div>
+    )}
+  </AnimatePresence>,
     document.body
   );
 }

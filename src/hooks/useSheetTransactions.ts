@@ -3,9 +3,11 @@ import type { AuthMeResponse } from '../api/client';
 import {
   AuthRequiredError,
   NeedsSheetError,
+  createTransaction,
   deleteTransaction,
   getTransactions,
 } from '../api/client';
+import type { StatusMessage } from './useAuthSession';
 import type { Transaction } from '../domain/types';
 
 type SetAuth = React.Dispatch<React.SetStateAction<AuthMeResponse | null>>;
@@ -14,7 +16,7 @@ interface UseSheetTransactionsOptions {
   ready: boolean;
   spreadsheetId: string | null | undefined;
   setAuth: SetAuth;
-  setStatusMessage: (message: string | null) => void;
+  setStatusMessage: (message: StatusMessage | null) => void;
 }
 
 export function useSheetTransactions({
@@ -157,7 +159,46 @@ export function useSheetTransactions({
         } else {
           await refreshTransactions();
         }
-        setStatusMessage('Transaction deleted.');
+
+        const tabName = tx.tabName;
+        const rowData =
+          tx.type === 'investment'
+            ? {
+                Date: tx.date,
+                Category: tx.category,
+                Amount: tx.amount,
+                'Investment Type': tx.investmentType || '',
+                Comment: tx.comment || '',
+                ...(tx.rowId ? { Id: tx.rowId } : {}),
+              }
+            : {
+                Date: tx.date,
+                Category: tx.category,
+                Amount: tx.amount,
+                Comment: tx.comment || '',
+                ...(tx.rowId ? { Id: tx.rowId } : {}),
+              };
+
+        setStatusMessage({
+          text: 'Transaction deleted.',
+          undoFn: async () => {
+            try {
+              setMutating(true);
+              const restoreResult = await createTransaction(tabName, rowData);
+              if (restoreResult.transactions.length) {
+                applyTransactions(restoreResult.transactions);
+              } else {
+                await refreshTransactions();
+              }
+              setStatusMessage('Transaction restored.');
+            } catch (err) {
+              console.error('Failed to undo delete', err);
+              setError('Could not restore transaction.');
+            } finally {
+              setMutating(false);
+            }
+          },
+        });
         return true;
       } catch (err) {
         if (err instanceof AuthRequiredError) {

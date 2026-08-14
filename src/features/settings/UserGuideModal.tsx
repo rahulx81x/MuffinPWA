@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import {
   Calculator,
   ChevronRight,
@@ -15,6 +16,7 @@ import { evaluateAmountExpression } from '../../domain/evaluateAmount';
 import { backdropVariants, popoverVariants } from '../../lib/motion';
 import { MuffinIcon } from '../../components/ui/MuffinIcon';
 import { SoftButton } from '../../components/ui/SoftButton';
+import { FocusTrap } from '../../components/atoms/FocusTrap';
 
 interface UserGuideModalProps {
   isOpen: boolean;
@@ -35,11 +37,20 @@ export function UserGuideModal({
   const [calcInput, setCalcInput] = useState('1000 * 18%');
   const calcResult = evaluateAmountExpression(calcInput);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
         {/* Backdrop */}
         <motion.div
           variants={backdropVariants}
@@ -51,13 +62,17 @@ export function UserGuideModal({
         />
 
         {/* Modal Container */}
-        <motion.div
-          variants={popoverVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="relative flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-border/80 bg-surface-strong shadow-elevate"
-        >
+        <FocusTrap active={isOpen}>
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-guide-title"
+            variants={popoverVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="relative flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-border/80 bg-surface-strong shadow-elevate"
+          >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
             <div className="flex items-center gap-3">
@@ -65,11 +80,11 @@ export function UserGuideModal({
                 <MuffinIcon className="muffin-icon h-5 w-5 text-primary" />
               </div>
               <div>
-                <h2 className="font-display text-lg font-bold text-text">
+                <h2 id="user-guide-title" className="font-display text-lg font-bold text-text">
                   Interactive User Guide
                 </h2>
                 <p className="text-xs text-text-muted">
-                  Learn the essentials here — open the full web guide for tabs, Recipe,
+                  Learn the essentials here — open the full web guide for tabs, Starting Balances,
                   install, and deeper FAQs.
                 </p>
               </div>
@@ -77,7 +92,7 @@ export function UserGuideModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-surface-muted/50 text-text-muted transition hover:bg-surface-muted hover:text-text"
+              className="inline-flex min-h-11 min-w-11 h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-surface-muted/50 text-text-muted transition hover:bg-surface-muted hover:text-text"
               aria-label="Close user guide"
             >
               <X className="h-5 w-5" />
@@ -399,7 +414,9 @@ export function UserGuideModal({
             </SoftButton>
           </div>
         </motion.div>
-      </div>
-    </AnimatePresence>
+      </FocusTrap>
+    </div>
+  </AnimatePresence>,
+    document.body
   );
 }

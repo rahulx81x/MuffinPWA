@@ -7,6 +7,7 @@ import {
   springSoft,
 } from '../../lib/motion';
 import { SoftButton } from './SoftButton';
+import { FocusTrap } from '../atoms/FocusTrap';
 
 interface ConfirmModalProps {
   open: boolean;
@@ -69,49 +70,51 @@ export function ConfirmModal({
             }}
           />
 
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="confirm-modal-title"
-            aria-describedby="confirm-modal-message"
-            variants={popoverVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springSoft}
-            className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
-          >
-            <h2
-              id="confirm-modal-title"
-              className="font-display text-base font-bold text-text"
+          <FocusTrap active={open}>
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="confirm-modal-title"
+              aria-describedby="confirm-modal-message"
+              variants={popoverVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={springSoft}
+              className="relative z-10 w-full max-w-sm rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
             >
-              {title}
-            </h2>
-            <p
-              id="confirm-modal-message"
-              className="mt-2 text-sm leading-relaxed text-text-secondary"
-            >
-              {message}
-            </p>
+              <h2
+                id="confirm-modal-title"
+                className="font-display text-base font-bold text-text"
+              >
+                {title}
+              </h2>
+              <p
+                id="confirm-modal-message"
+                className="mt-2 text-sm leading-relaxed text-text-secondary"
+              >
+                {message}
+              </p>
 
-            <div className="mt-5 flex gap-2.5">
-              <SoftButton
-                onClick={onCancel}
-                disabled={busy}
-                glow={false}
-                className="inline-flex flex-1 items-center justify-center rounded-xl border border-border bg-canvas px-4 py-2.5 text-sm font-semibold text-text-secondary shadow-warm-sm disabled:opacity-50"
-              >
-                {cancelLabel}
-              </SoftButton>
-              <SoftButton
-                onClick={onConfirm}
-                disabled={busy}
-                className={confirmClass}
-              >
-                {busy ? 'Working…' : confirmLabel}
-              </SoftButton>
-            </div>
-          </motion.div>
+              <div className="mt-5 flex gap-2.5">
+                <SoftButton
+                  onClick={onCancel}
+                  disabled={busy}
+                  glow={false}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl border border-border bg-canvas px-4 py-2.5 text-sm font-semibold text-text-secondary shadow-warm-sm disabled:opacity-50"
+                >
+                  {cancelLabel}
+                </SoftButton>
+                <SoftButton
+                  onClick={onConfirm}
+                  disabled={busy}
+                  className={confirmClass}
+                >
+                  {busy ? 'Working…' : confirmLabel}
+                </SoftButton>
+              </div>
+            </motion.div>
+          </FocusTrap>
         </div>
       )}
     </AnimatePresence>,

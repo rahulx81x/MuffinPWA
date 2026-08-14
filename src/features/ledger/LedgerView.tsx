@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useEffect, useDeferredValue, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowDownRight,
@@ -9,7 +9,9 @@ import {
   Home as HomeIcon,
   MoreVertical,
   Pencil,
+  Search,
   ShoppingBag,
+  SlidersHorizontal,
   Trash2,
   TrendingUp,
   Utensils,
@@ -18,6 +20,7 @@ import {
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { useMask } from '../../hooks/useMask';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import {
   backdropVariants,
   popoverVariants,
@@ -25,6 +28,8 @@ import {
 } from '../../lib/motion';
 import { monthKey, monthLabel } from '../../domain/metrics';
 import type { Transaction, TransactionType } from '../../domain/types';
+import { FocusTrap } from '../../components/atoms/FocusTrap';
+import { EmptyState } from '../../components/molecules/EmptyState';
 import { SoftButton } from '../../components/ui/SoftButton';
 
 interface LedgerViewProps {
@@ -32,6 +37,9 @@ interface LedgerViewProps {
   onEdit: (tx: Transaction) => void;
   onDelete: (tx: Transaction) => void;
   mutating?: boolean;
+  initialMonthFilter?: string;
+  onRefresh?: () => Promise<void>;
+  onAddTransaction?: () => void;
 }
 
 type TypeFilter = 'all' | TransactionType;
@@ -195,24 +203,163 @@ function TransactionIcon({
   );
 }
 
+function SwipeableTransactionRow({
+  tx,
+  onView,
+  onEdit,
+  onDelete,
+  onOpenMenu,
+  mutating,
+  masked,
+  formatCurrency,
+}: {
+  tx: Transaction;
+  onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onOpenMenu: () => void;
+  mutating?: boolean;
+  masked: boolean;
+  formatCurrency: (amount: number) => string;
+}) {
+  const [swiped, setSwiped] = useState(false);
+  const THRESHOLD = 60;
+
+  return (
+    <div className="relative overflow-hidden bg-surface-muted/50 first:rounded-t-2xl last:rounded-b-2xl">
+      {/* Revealed action buttons */}
+      <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 pr-2.5 z-0">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          disabled={mutating || tx.tabName == null || tx.rowIndex == null}
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/20 text-primary transition active:scale-95 disabled:opacity-40"
+          aria-label="Edit transaction"
+          title="Edit"
+        >
+          <Pencil className="h-4 w-4" strokeWidth={2.2} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          disabled={mutating || tx.tabName == null || tx.rowIndex == null}
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 transition active:scale-95 disabled:opacity-40"
+          aria-label="Delete transaction"
+          title="Delete"
+        >
+          <Trash2 className="h-4 w-4" strokeWidth={2.2} />
+        </button>
+      </div>
+
+      {/* Draggable Row Card */}
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: -106, right: 0 }}
+        dragElastic={0.08}
+        onDragEnd={(_, info) => {
+          if (info.offset.x < -THRESHOLD) {
+            setSwiped(true);
+            navigator.vibrate?.(8);
+          } else {
+            setSwiped(false);
+          }
+        }}
+        animate={{ x: swiped ? -100 : 0 }}
+        transition={springSoft}
+        onClick={onView}
+        className="relative z-10 flex cursor-pointer items-center justify-between gap-3 bg-surface-strong p-3.5 transition-colors hover:bg-surface-muted/30"
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <TransactionIcon type={tx.type} category={tx.category} />
+          <div className="min-w-0 flex-1">
+            <h4 className="truncate font-display text-sm font-bold text-text">
+              {tx.category || '—'}
+            </h4>
+            {tx.comment?.trim() ? (
+              <p className="truncate text-xs text-text-muted">{tx.comment}</p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2.5">
+          <p
+            className={`font-display text-base font-bold tabular-nums ${amountClass(tx.type)}`}
+          >
+            {amountPrefix(tx.type, masked)}
+            {formatCurrency(tx.amount)}
+          </p>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenMenu();
+            }}
+            className="inline-flex min-h-9 min-w-9 h-9 w-9 items-center justify-center rounded-xl text-text-muted transition active:scale-95 hover:bg-surface-muted/80 hover:text-text"
+            aria-label="Transaction options"
+            title="Options"
+          >
+            <MoreVertical className="h-4.5 w-4.5" strokeWidth={2} />
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export function LedgerView({
   transactions,
   onEdit,
   onDelete,
   mutating = false,
+  initialMonthFilter = '',
+  onRefresh,
+  onAddTransaction,
 }: LedgerViewProps) {
   const { masked, formatCurrency } = useMask();
   const [query, setQuery] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
-  const [dateMode, setDateMode] = useState<DateMode>('all');
-  const [monthFilter, setMonthFilter] = useState<string>('');
+  const [dateMode, setDateMode] = useState<DateMode>(
+    initialMonthFilter ? 'month' : 'all'
+  );
+  const [monthFilter, setMonthFilter] = useState<string>(initialMonthFilter);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
   // Action menu portal & View Modal state
   const [activeMenuTx, setActiveMenuTx] = useState<Transaction | null>(null);
   const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
+
+  const { containerRef, pullDistance, refreshing } = usePullToRefresh<HTMLDivElement>({
+    onRefresh: onRefresh || (() => {}),
+    disabled: !onRefresh,
+  });
+
+  useEffect(() => {
+    if (initialMonthFilter) {
+      setDateMode('month');
+      setMonthFilter(initialMonthFilter);
+    }
+  }, [initialMonthFilter]);
+
+  // Escape key handlers for active popovers
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        if (activeMenuTx) setActiveMenuTx(null);
+        if (viewingTx) setViewingTx(null);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeMenuTx, viewingTx]);
 
   const deferredQuery = useDeferredValue(query);
   const searchTerm = normalizeSearch(deferredQuery);
@@ -346,258 +493,236 @@ export function LedgerView({
     setMonthFilter('');
     setFromDate('');
     setToDate('');
-  }
-
-  function selectAllDates() {
-    setDateMode('all');
-    setMonthFilter('');
-    setFromDate('');
-    setToDate('');
+    setQuery('');
   }
 
   function selectMonth(key: string) {
+    if (dateMode === 'month' && monthFilter === key) {
+      setDateMode('all');
+      setMonthFilter('');
+      return;
+    }
     setDateMode('month');
     setMonthFilter(key);
-    setFromDate('');
-    setToDate('');
-  }
-
-  function selectCustom() {
-    setDateMode('custom');
-    setMonthFilter('');
   }
 
   return (
-    <section className="space-y-4">
-      {/* Search & Filter Bar */}
-      <div className="relative sticky top-[calc(env(safe-area-inset-top,0px)+3.75rem-2px)] z-20 -mx-4 space-y-2 border-b border-border/70 bg-surface/80 px-4 py-2 backdrop-blur-xl transition-theme before:pointer-events-none before:absolute before:inset-x-0 before:-top-2 before:h-2 before:bg-surface/80 before:backdrop-blur-xl before:content-['']">
+    <section ref={containerRef} className="space-y-4">
+      {/* Pull to refresh indicator */}
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="flex items-center justify-center transition-all"
+          style={{ height: refreshing ? 48 : pullDistance }}
+        >
+          <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text shadow-warm-sm">
+            <span
+              className={`inline-block h-3.5 w-3.5 rounded-full border-2 border-primary border-t-transparent ${
+                refreshing ? 'animate-spin' : ''
+              }`}
+              style={{
+                transform: refreshing ? undefined : `rotate(${pullDistance * 4}deg)`,
+              }}
+            />
+            <span>{refreshing ? 'Refreshing transactions…' : 'Pull down to refresh'}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Search & Filter Header Bar */}
+      <div className="space-y-2.5">
         <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <svg
-              viewBox="0 0 24 24"
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+          {/* Search Box */}
+          <div className="relative flex-1">
+            <Search
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
               aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path strokeLinecap="round" d="m20 20-3.5-3.5" />
-            </svg>
+            />
             <input
-              type="search"
+              type="text"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search category or note"
-              className="field-cozy pl-10 pr-10"
-              aria-label="Search ledger by category or note"
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search category or note…"
+              className="w-full rounded-2xl border border-border bg-surface-strong pl-10 pr-9 py-2.5 text-sm text-text placeholder-text-muted outline-none transition-theme focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
             />
             {query && (
               <button
                 type="button"
-                onClick={() => {
-                  setQuery('');
-                }}
-                className="absolute right-2.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-text-muted transition active:scale-95 hover:bg-surface-muted/60"
+                onClick={() => setQuery('')}
+                className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-text-muted hover:text-text"
                 aria-label="Clear search"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 6l12 12M18 6 6 18"
-                  />
-                </svg>
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
 
-          <button
+          {/* Filters Toggle Button */}
+          <SoftButton
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setFiltersOpen((open) => !open);
-            }}
-            className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition active:scale-95 ${
+            onClick={() => setFiltersOpen((o) => !o)}
+            className={`inline-flex min-h-10 min-w-10 h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition-theme ${
               filtersOpen || hasActiveFilters
-                ? 'border-primary bg-primary text-primary-foreground shadow-glow'
-                : 'border-border bg-surface-strong text-text-secondary shadow-warm-sm'
+                ? 'border-primary/50 bg-primary/20 text-primary'
+                : 'border-border bg-surface-strong text-text-secondary'
             }`}
+            aria-label="Toggle filters"
             aria-expanded={filtersOpen}
-            aria-label={filtersOpen ? 'Hide filters' : 'Show filters'}
-            title={filtersOpen ? 'Hide filters' : 'Show filters'}
           >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 6h16M7 12h10M10 18h4"
-              />
-            </svg>
-            {hasActiveFilters && (
-              <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-warm-sm">
-                {activeChips.length}
-              </span>
-            )}
-          </button>
+            <SlidersHorizontal className="h-4 w-4" strokeWidth={2.2} />
+          </SoftButton>
         </div>
 
-        {!filtersOpen && hasActiveFilters && (
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Active Filter Chips */}
+        {activeChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             {activeChips.map((chip) => (
-              <button
+              <span
                 key={chip.id}
-                type="button"
-                onClick={chip.onRemove}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition active:scale-95 shadow-warm-sm"
-                aria-label={`Remove filter ${chip.label}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary"
               >
-                <span className="max-w-[12rem] truncate">{chip.label}</span>
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-3.5 w-3.5 shrink-0 opacity-80"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
+                <span>{chip.label}</span>
+                <button
+                  type="button"
+                  onClick={chip.onRemove}
+                  className="rounded-full p-0.5 hover:bg-primary/20"
+                  aria-label={`Remove filter ${chip.label}`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 6l12 12M18 6 6 18"
-                  />
-                </svg>
-              </button>
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
             ))}
             <button
               type="button"
               onClick={clearFilters}
-              className="shrink-0 rounded-full border border-border bg-surface-strong px-3 py-1.5 text-xs font-semibold text-text-secondary transition active:scale-95"
+              className="text-xs font-bold text-text-muted hover:text-text hover:underline ml-1"
             >
-              Clear all
+              Reset all
             </button>
           </div>
         )}
 
+        {/* Expandable Filter Panel */}
         <div
-          className={`grid transition-all duration-300 ease-out ${
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-cozy ${
             filtersOpen
               ? 'grid-rows-[1fr] opacity-100'
-              : 'grid-rows-[0fr] opacity-0'
+              : 'grid-rows-[0fr] opacity-0 pointer-events-none'
           }`}
         >
           <div className="overflow-hidden">
-            <div className="space-y-2 pb-0.5 pt-0.5">
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {TYPE_FILTERS.map((filter) => {
-                  const active = typeFilter === filter.id;
-                  return (
-                    <button
-                      key={filter.id}
-                      type="button"
-                      onClick={() => {
-                        setTypeFilter(filter.id);
-                      }}
-                      className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 ${
-                        active
-                          ? 'bg-primary text-primary-foreground shadow-warm-sm'
-                          : 'border border-border bg-surface-strong text-text-secondary'
-                      }`}
-                      aria-pressed={active}
-                    >
-                      {filter.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <button
-                  type="button"
-                  onClick={selectAllDates}
-                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 ${
-                    dateMode === 'all'
-                      ? 'bg-primary/20 text-primary border border-primary/40'
-                      : 'border border-border bg-surface-strong text-text-secondary'
-                  }`}
-                  aria-pressed={dateMode === 'all'}
-                >
-                  All dates
-                </button>
-                <button
-                  type="button"
-                  onClick={selectCustom}
-                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 ${
-                    dateMode === 'custom'
-                      ? 'bg-primary/20 text-primary border border-primary/40'
-                      : 'border border-border bg-surface-strong text-text-secondary'
-                  }`}
-                  aria-pressed={dateMode === 'custom'}
-                >
-                  Custom
-                </button>
-                {monthOptions.map((key) => {
-                  const active = dateMode === 'month' && monthFilter === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => selectMonth(key)}
-                      className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 ${
-                        active
-                          ? 'bg-primary/20 text-primary border border-primary/40'
-                          : 'border border-border bg-surface-strong text-text-secondary'
-                      }`}
-                      aria-pressed={active}
-                    >
-                      {monthLabel(key)}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {dateMode === 'custom' && (
-                <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-surface-strong p-3">
-                  <label className="block">
-                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-text-muted">
-                      From
-                    </span>
-                    <input
-                      type="date"
-                      value={fromDate}
-                      max={toDate || undefined}
-                      onChange={(event) => setFromDate(event.target.value)}
-                      className="field-cozy py-1.5 text-xs"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-text-muted">
-                      To
-                    </span>
-                    <input
-                      type="date"
-                      value={toDate}
-                      min={fromDate || undefined}
-                      onChange={(event) => setToDate(event.target.value)}
-                      className="field-cozy py-1.5 text-xs"
-                    />
-                  </label>
+            <div className="space-y-3 rounded-2xl border border-border bg-surface-strong p-3.5 shadow-warm-sm">
+              {/* Type Filter Buttons */}
+              <div>
+                <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+                  Type
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {TYPE_FILTERS.map((f) => {
+                    const active = typeFilter === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setTypeFilter(f.id)}
+                        className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                          active
+                            ? 'bg-primary text-primary-foreground shadow-warm-sm font-bold'
+                            : 'border border-border bg-canvas text-text-secondary hover:bg-surface-muted/60'
+                        }`}
+                        aria-pressed={active}
+                      >
+                        {f.label}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+
+              {/* Month Selector Pills */}
+              <div>
+                <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+                  Date Mode
+                </span>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateMode('all');
+                      setMonthFilter('');
+                    }}
+                    className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                      dateMode === 'all'
+                        ? 'bg-primary text-primary-foreground shadow-warm-sm font-bold'
+                        : 'border border-border bg-canvas text-text-secondary'
+                    }`}
+                    aria-pressed={dateMode === 'all'}
+                  >
+                    All Dates
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateMode('custom');
+                      setMonthFilter('');
+                    }}
+                    className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                      dateMode === 'custom'
+                        ? 'bg-primary text-primary-foreground shadow-warm-sm font-bold'
+                        : 'border border-border bg-canvas text-text-secondary'
+                    }`}
+                    aria-pressed={dateMode === 'custom'}
+                  >
+                    Custom Range
+                  </button>
+                  {monthOptions.map((key) => {
+                    const active = dateMode === 'month' && monthFilter === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => selectMonth(key)}
+                        className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                          active
+                            ? 'bg-primary/20 text-primary border border-primary/40 font-bold'
+                            : 'border border-border bg-canvas text-text-secondary'
+                        }`}
+                        aria-pressed={active}
+                      >
+                        {monthLabel(key)}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {dateMode === 'custom' && (
+                  <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-xl border border-border bg-canvas p-2.5">
+                    <label className="block">
+                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                        From
+                      </span>
+                      <input
+                        type="date"
+                        value={fromDate}
+                        max={toDate || undefined}
+                        onChange={(e) => setFromDate(e.target.value)}
+                        className="field-cozy py-1.5 text-xs"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                        To
+                      </span>
+                      <input
+                        type="date"
+                        value={toDate}
+                        min={fromDate || undefined}
+                        onChange={(e) => setToDate(e.target.value)}
+                        className="field-cozy py-1.5 text-xs"
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -615,13 +740,31 @@ export function LedgerView({
         </div>
 
         {groupedTransactions.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border bg-surface-strong/80 px-4 py-12 text-center text-sm text-text-muted">
-            {sortedTransactions.length === 0
-              ? 'No transactions logged yet.'
-              : 'No transactions match your search filters.'}
-          </p>
+          <EmptyState
+            icon={<Search className="h-6 w-6" />}
+            title={
+              sortedTransactions.length === 0
+                ? 'No transactions yet'
+                : 'No matching entries'
+            }
+            description={
+              sortedTransactions.length === 0
+                ? 'Transactions logged from your Google Sheet or added using the + button will appear here in chronological order.'
+                : 'Try adjusting your search terms or clearing your date/type filters to view more transactions.'
+            }
+            action={
+              sortedTransactions.length === 0 && onAddTransaction
+                ? { label: 'Add First Transaction', onClick: onAddTransaction }
+                : hasActiveFilters || query
+                  ? { label: 'Clear Filters', onClick: clearFilters }
+                  : undefined
+            }
+          />
         ) : (
           <div className="space-y-4">
+            <p className="text-[11px] text-text-muted text-right pr-1">
+              Tip: Swipe left on any row for quick actions
+            </p>
             {groupedTransactions.map((group) => (
               <div key={group.dateIso} className="space-y-1.5">
                 {/* Date Section Header */}
@@ -644,61 +787,21 @@ export function LedgerView({
                 </div>
 
                 {/* Grouped Transactions Card */}
-                <motion.div
-                  whileHover={{ y: -1 }}
-                  transition={springSoft}
-                  className="cozy-card overflow-hidden divide-y divide-border/60 p-0 shadow-warm-sm border-border/80"
-                >
+                <div className="cozy-card overflow-hidden divide-y divide-border/60 p-0 shadow-warm-sm border-border/80">
                   {group.transactions.map((tx) => (
-                    <div
+                    <SwipeableTransactionRow
                       key={tx.id}
-                      onClick={() => {
-                        setViewingTx(tx);
-                      }}
-                      className="group flex cursor-pointer items-center justify-between gap-3 p-3.5 transition-colors hover:bg-surface-muted/30"
-                    >
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <TransactionIcon
-                          type={tx.type}
-                          category={tx.category}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <h4 className="truncate font-display text-sm font-bold text-text">
-                            {tx.category || '—'}
-                          </h4>
-                          {tx.comment?.trim() ? (
-                            <p className="truncate text-xs text-text-muted">
-                              {tx.comment}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="flex shrink-0 items-center gap-2.5">
-                        <p
-                          className={`font-display text-base font-bold tabular-nums ${amountClass(tx.type)}`}
-                        >
-                          {amountPrefix(tx.type, masked)}
-                          {formatCurrency(tx.amount)}
-                        </p>
-
-                        {/* 3 Dots Action Trigger */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenuTx(tx);
-                          }}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-text-muted transition active:scale-95 hover:bg-surface-muted/80 hover:text-text"
-                          aria-label="Transaction options"
-                          title="Options"
-                        >
-                          <MoreVertical className="h-4.5 w-4.5" strokeWidth={2} />
-                        </button>
-                      </div>
-                    </div>
+                      tx={tx}
+                      onView={() => setViewingTx(tx)}
+                      onEdit={() => onEdit(tx)}
+                      onDelete={() => onDelete(tx)}
+                      onOpenMenu={() => setActiveMenuTx(tx)}
+                      mutating={mutating}
+                      masked={masked}
+                      formatCurrency={formatCurrency}
+                    />
                   ))}
-                </motion.div>
+                </div>
               </div>
             ))}
           </div>
@@ -722,78 +825,80 @@ export function LedgerView({
                 onClick={() => setActiveMenuTx(null)}
               />
 
-              <motion.div
-                role="dialog"
-                aria-modal="true"
-                aria-label="Transaction options"
-                variants={popoverVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={springSoft}
-                className="relative z-10 w-full max-w-xs overflow-hidden rounded-2xl border border-border bg-surface-strong p-2.5 shadow-elevate"
-              >
-                <div className="mx-auto mb-2 h-1.5 w-10 shrink-0 rounded-full bg-border/80 sm:hidden" />
-                <div className="mb-1.5 border-b border-border/50 pb-2.5 px-3 text-center">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                    Options
-                  </span>
-                  <p className="truncate font-display text-xs font-bold text-text">
-                    {activeMenuTx.category || 'Transaction'}
-                  </p>
-                </div>
+              <FocusTrap active={Boolean(activeMenuTx)}>
+                <motion.div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Transaction options"
+                  variants={popoverVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={springSoft}
+                  className="relative z-10 w-full max-w-xs overflow-hidden rounded-2xl border border-border bg-surface-strong p-2.5 shadow-elevate"
+                >
+                  <div className="mx-auto mb-2 h-1.5 w-10 shrink-0 rounded-full bg-border/80 sm:hidden" />
+                  <div className="mb-1.5 border-b border-border/50 pb-2.5 px-3 text-center">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                      Options
+                    </span>
+                    <p className="truncate font-display text-xs font-bold text-text">
+                      {activeMenuTx.category || 'Transaction'}
+                    </p>
+                  </div>
 
-                <div className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const tx = activeMenuTx;
-                      setActiveMenuTx(null);
-                      setViewingTx(tx);
-                    }}
-                    className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold text-text transition active:scale-98 hover:bg-surface-muted/60"
-                  >
-                    <Eye className="h-4 w-4 text-primary" strokeWidth={2.2} />
-                    <span>View Details</span>
-                  </button>
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const tx = activeMenuTx;
+                        setActiveMenuTx(null);
+                        setViewingTx(tx);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold text-text transition active:scale-98 hover:bg-surface-muted/60"
+                    >
+                      <Eye className="h-4 w-4 text-primary" strokeWidth={2.2} />
+                      <span>View Details</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const tx = activeMenuTx;
-                      setActiveMenuTx(null);
-                      onEdit(tx);
-                    }}
-                    disabled={
-                      mutating ||
-                      activeMenuTx.tabName == null ||
-                      activeMenuTx.rowIndex == null
-                    }
-                    className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold text-text transition active:scale-98 hover:bg-surface-muted/60 disabled:opacity-40"
-                  >
-                    <Pencil className="h-4 w-4 text-text-secondary" strokeWidth={2.2} />
-                    <span>Edit Transaction</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const tx = activeMenuTx;
+                        setActiveMenuTx(null);
+                        onEdit(tx);
+                      }}
+                      disabled={
+                        mutating ||
+                        activeMenuTx.tabName == null ||
+                        activeMenuTx.rowIndex == null
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold text-text transition active:scale-98 hover:bg-surface-muted/60 disabled:opacity-40"
+                    >
+                      <Pencil className="h-4 w-4 text-text-secondary" strokeWidth={2.2} />
+                      <span>Edit Transaction</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const tx = activeMenuTx;
-                      setActiveMenuTx(null);
-                      onDelete(tx);
-                    }}
-                    disabled={
-                      mutating ||
-                      activeMenuTx.tabName == null ||
-                      activeMenuTx.rowIndex == null
-                    }
-                    className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold text-rose-600 transition active:scale-98 hover:bg-rose-500/10 dark:text-rose-400 disabled:opacity-40"
-                  >
-                    <Trash2 className="h-4 w-4 text-rose-500" strokeWidth={2.2} />
-                    <span>Delete Transaction</span>
-                  </button>
-                </div>
-              </motion.div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const tx = activeMenuTx;
+                        setActiveMenuTx(null);
+                        onDelete(tx);
+                      }}
+                      disabled={
+                        mutating ||
+                        activeMenuTx.tabName == null ||
+                        activeMenuTx.rowIndex == null
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold text-rose-600 transition active:scale-98 hover:bg-rose-500/10 dark:text-rose-400 disabled:opacity-40"
+                    >
+                      <Trash2 className="h-4 w-4 text-rose-500" strokeWidth={2.2} />
+                      <span>Delete Transaction</span>
+                    </button>
+                  </div>
+                </motion.div>
+              </FocusTrap>
             </div>
           )}
         </AnimatePresence>,
@@ -817,147 +922,149 @@ export function LedgerView({
                 onClick={() => setViewingTx(null)}
               />
 
-              <motion.div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="view-tx-title"
-                variants={popoverVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={springSoft}
-                className="relative z-10 w-full max-w-sm overflow-hidden rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:max-w-md sm:rounded-2xl"
-              >
-                <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80 sm:hidden" />
+              <FocusTrap active={Boolean(viewingTx)}>
+                <motion.div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="view-tx-title"
+                  variants={popoverVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={springSoft}
+                  className="relative z-10 w-full max-w-sm overflow-hidden rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:max-w-md sm:rounded-2xl"
+                >
+                  <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80 sm:hidden" />
 
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                      Transaction Details
-                    </p>
-                    <h2
-                      id="view-tx-title"
-                      className="mt-1 font-display text-base font-bold text-text"
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
+                        Transaction Details
+                      </p>
+                      <h2
+                        id="view-tx-title"
+                        className="mt-1 font-display text-base font-bold text-text"
+                      >
+                        {viewingTx.category || 'Transaction'}
+                      </h2>
+                    </div>
+                    <SoftButton
+                      onClick={() => {
+                        setViewingTx(null);
+                      }}
+                      className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
+                      aria-label="Close"
                     >
-                      {viewingTx.category || 'Transaction'}
-                    </h2>
-                  </div>
-                  <SoftButton
-                    onClick={() => {
-                      setViewingTx(null);
-                    }}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
-                    aria-label="Close"
-                  >
-                    <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                  </SoftButton>
-                </div>
-
-                {/* Main Details Body */}
-                <div className="mt-4 space-y-4">
-                  {/* Amount Pill */}
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-border/80 bg-canvas/90 p-4 text-center">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                      Amount
-                    </span>
-                    <p
-                      className={`mt-1 font-display text-2xl font-bold tabular-nums ${amountClass(viewingTx.type)}`}
-                    >
-                      {amountPrefix(viewingTx.type, masked)}
-                      {formatCurrency(viewingTx.amount)}
-                    </p>
+                      <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                    </SoftButton>
                   </div>
 
-                  <div className="space-y-2.5 rounded-2xl border border-border/70 bg-surface-strong p-4 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-text-muted">
-                        Category
+                  {/* Main Details Body */}
+                  <div className="mt-4 space-y-4">
+                    {/* Amount Pill */}
+                    <div className="flex flex-col items-center justify-center rounded-2xl border border-border/80 bg-canvas/90 p-4 text-center">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        Amount
                       </span>
-                      <span className="font-bold text-text">
-                        {viewingTx.category}
-                      </span>
+                      <p
+                        className={`mt-1 font-display text-2xl font-bold tabular-nums ${amountClass(viewingTx.type)}`}
+                      >
+                        {amountPrefix(viewingTx.type, masked)}
+                        {formatCurrency(viewingTx.amount)}
+                      </p>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-text-muted">
-                        Date
-                      </span>
-                      <span className="font-bold text-text">
-                        {formatFullDate(viewingTx.date)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-text-muted">
-                        Type
-                      </span>
-                      <span className="capitalize font-bold text-text">
-                        {viewingTx.type}
-                      </span>
-                    </div>
-
-                    {viewingTx.investmentType && (
-                      <div className="flex items-center justify-between border-t border-border/50 pt-2">
-                        <span className="font-semibold text-primary">
-                          Investment Type
+                    <div className="space-y-2.5 rounded-2xl border border-border/70 bg-surface-strong p-4 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-text-muted">
+                          Category
                         </span>
-                        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 font-bold text-primary">
-                          {viewingTx.investmentType}
+                        <span className="font-bold text-text">
+                          {viewingTx.category}
                         </span>
                       </div>
-                    )}
 
-                    {viewingTx.comment?.trim() && (
-                      <div className="border-t border-border/50 pt-2">
-                        <span className="block font-semibold text-text-muted">
-                          Notes / Comment
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-text-muted">
+                          Date
                         </span>
-                        <p className="mt-1 leading-relaxed text-text">
-                          {viewingTx.comment}
-                        </p>
+                        <span className="font-bold text-text">
+                          {formatFullDate(viewingTx.date)}
+                        </span>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Modal Action Buttons */}
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const tx = viewingTx;
-                        setViewingTx(null);
-                        onEdit(tx);
-                      }}
-                      disabled={
-                        mutating ||
-                        viewingTx.tabName == null ||
-                        viewingTx.rowIndex == null
-                      }
-                      className="soft-glow flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-strong px-4 py-2.5 text-xs font-semibold text-text shadow-warm-sm active:scale-95 disabled:opacity-40"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const tx = viewingTx;
-                        setViewingTx(null);
-                        onDelete(tx);
-                      }}
-                      disabled={
-                        mutating ||
-                        viewingTx.tabName == null ||
-                        viewingTx.rowIndex == null
-                      }
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 active:scale-95 disabled:opacity-40"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Delete
-                    </button>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-text-muted">
+                          Type
+                        </span>
+                        <span className="capitalize font-bold text-text">
+                          {viewingTx.type}
+                        </span>
+                      </div>
+
+                      {viewingTx.investmentType && (
+                        <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                          <span className="font-semibold text-primary">
+                            Investment Type
+                          </span>
+                          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 font-bold text-primary">
+                            {viewingTx.investmentType}
+                          </span>
+                        </div>
+                      )}
+
+                      {viewingTx.comment?.trim() && (
+                        <div className="border-t border-border/50 pt-2">
+                          <span className="block font-semibold text-text-muted">
+                            Notes / Comment
+                          </span>
+                          <p className="mt-1 leading-relaxed text-text">
+                            {viewingTx.comment}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Modal Action Buttons */}
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const tx = viewingTx;
+                          setViewingTx(null);
+                          onEdit(tx);
+                        }}
+                        disabled={
+                          mutating ||
+                          viewingTx.tabName == null ||
+                          viewingTx.rowIndex == null
+                        }
+                        className="soft-glow flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-strong px-4 py-2.5 text-xs font-semibold text-text shadow-warm-sm active:scale-95 disabled:opacity-40"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const tx = viewingTx;
+                          setViewingTx(null);
+                          onDelete(tx);
+                        }}
+                        disabled={
+                          mutating ||
+                          viewingTx.tabName == null ||
+                          viewingTx.rowIndex == null
+                        }
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 active:scale-95 disabled:opacity-40"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              </FocusTrap>
             </div>
           )}
         </AnimatePresence>,

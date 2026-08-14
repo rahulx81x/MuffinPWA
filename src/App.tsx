@@ -8,6 +8,7 @@ import { ConfirmModal } from './components/ui/ConfirmModal';
 import { FloatingNav } from './components/ui/FloatingNav';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { MuffinIcon } from './components/ui/MuffinIcon';
+import { SkeletonKpiGrid } from './components/atoms/SkeletonKpiGrid';
 import { SignInScreen } from './features/auth/SignInScreen';
 import { SheetOnboarding } from './features/auth/SheetOnboarding';
 import { HomeView } from './features/home/HomeView';
@@ -84,6 +85,7 @@ export default function App() {
   } = useAppModals();
 
   const [activeTab, setActiveTab] = useState<AppTab>('home');
+  const [ledgerMonthFilter, setLedgerMonthFilter] = useState('');
   const [metrics, setMetrics] = useState<FinancialMetrics>(EMPTY_METRICS);
 
   const manageMode =
@@ -214,7 +216,7 @@ export default function App() {
   }
 
   const headerBtnClass =
-    'inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border/80 bg-surface-strong/90 text-text-secondary shadow-warm-sm backdrop-blur-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40';
+    'inline-flex min-h-10 min-w-10 h-10 w-10 items-center justify-center rounded-xl border border-border/80 bg-surface-strong/90 text-text-secondary shadow-warm-sm backdrop-blur-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40';
 
   if (authBooting) {
     return <LoadingScreen />;
@@ -249,6 +251,15 @@ export default function App() {
     );
   }
 
+  const toastText =
+    typeof statusMessage === 'string'
+      ? statusMessage
+      : statusMessage?.text ?? null;
+  const toastUndo =
+    typeof statusMessage === 'object' && statusMessage !== null
+      ? statusMessage.undoFn
+      : undefined;
+
   return (
     <div className="relative min-h-dvh bg-canvas text-text transition-theme">
       <motion.div
@@ -275,9 +286,9 @@ export default function App() {
                 </span>
               </h1>
             </div>
-            <p className="mt-1 flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-[0.14em] text-text-muted">
+            <p className="mt-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted">
               <span
-                className="inline-block h-1 w-1 shrink-0 rounded-full bg-primary shadow-[0_0_0_2px] shadow-primary/20"
+                className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary shadow-[0_0_0_2px] shadow-primary/20"
                 aria-hidden="true"
               />
               <button
@@ -332,9 +343,8 @@ export default function App() {
               animate="animate"
               exit="exit"
               transition={pageTransition}
-              className="py-16 text-center text-sm text-text-muted"
             >
-              Baking your money muffins…
+              <SkeletonKpiGrid />
             </motion.div>
           ) : (
             <motion.div
@@ -350,6 +360,10 @@ export default function App() {
                   metrics={metrics}
                   transactions={sheetTransactions}
                   userName={auth.user.name || auth.user.email}
+                  onRefresh={async () => {
+                    await refreshTransactions();
+                  }}
+                  onAddTransaction={openAddModal}
                 />
               ) : activeTab === 'planner' ? (
                 <PlannerView
@@ -365,9 +379,21 @@ export default function App() {
                   onEdit={openEditModal}
                   onDelete={handleDelete}
                   mutating={mutating}
+                  initialMonthFilter={ledgerMonthFilter}
+                  onRefresh={async () => {
+                    await refreshTransactions();
+                  }}
+                  onAddTransaction={openAddModal}
                 />
               ) : (
-                <MonthlyView transactions={ledgerTransactions} />
+                <MonthlyView
+                  transactions={ledgerTransactions}
+                  onSelectMonth={(mKey) => {
+                    setLedgerMonthFilter(mKey);
+                    setActiveTab('ledger');
+                  }}
+                  onAddTransaction={openAddModal}
+                />
               )}
             </motion.div>
           )}
@@ -375,7 +401,7 @@ export default function App() {
       </main>
 
       <AnimatePresence>
-        {statusMessage && (
+        {toastText && (
           <motion.div
             key="toast"
             initial={{ opacity: 0, y: -10, scale: 0.96 }}
@@ -386,11 +412,22 @@ export default function App() {
             role="status"
             aria-live="polite"
           >
-            <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-primary/25 bg-surface-strong/95 px-4 py-3 text-sm text-text shadow-elevate backdrop-blur-xl">
-              <p className="min-w-0 flex-1 leading-snug">{statusMessage}</p>
+            <div className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border border-primary/25 bg-surface-strong/95 px-4 py-3 text-sm text-text shadow-elevate backdrop-blur-xl">
+              <p className="min-w-0 flex-1 leading-snug">{toastText}</p>
+              {toastUndo && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void toastUndo();
+                  }}
+                  className="shrink-0 rounded-lg bg-primary/15 px-2.5 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/25 active:scale-95"
+                >
+                  Undo
+                </button>
+              )}
               <SoftButton
                 onClick={() => setStatusMessage(null)}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-text-secondary outline-none hover:bg-surface-muted/70"
+                className="inline-flex min-h-8 min-w-8 h-8 w-8 shrink-0 items-center justify-center rounded-xl text-text-secondary outline-none hover:bg-surface-muted/70"
                 aria-label="Dismiss notification"
                 glow={false}
               >

@@ -7,6 +7,8 @@ import {
   springSoft,
 } from '../../lib/motion';
 import { SoftButton } from '../../components/ui/SoftButton';
+import { FocusTrap } from '../../components/atoms/FocusTrap';
+import { useEffect } from 'react';
 
 interface TermsModalProps {
   open: boolean;
@@ -14,6 +16,15 @@ interface TermsModalProps {
 }
 
 export function TermsModal({ open, onClose }: TermsModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -30,17 +41,18 @@ export function TermsModal({ open, onClose }: TermsModalProps) {
             onClick={onClose}
           />
 
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="terms-title"
-            variants={popoverVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springSoft}
-            className="relative z-10 max-h-[85dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:max-w-md sm:rounded-2xl"
-          >
+          <FocusTrap active={open}>
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="terms-title"
+              variants={popoverVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={springSoft}
+              className="relative z-10 max-h-[85dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:max-w-md sm:rounded-2xl"
+            >
             <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80 sm:hidden" />
 
             <div className="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
@@ -62,7 +74,7 @@ export function TermsModal({ open, onClose }: TermsModalProps) {
               </div>
               <SoftButton
                 onClick={onClose}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
+                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
@@ -107,9 +119,10 @@ export function TermsModal({ open, onClose }: TermsModalProps) {
               </div>
             </div>
           </motion.div>
-        </div>
-      )}
-    </AnimatePresence>,
+        </FocusTrap>
+      </div>
+    )}
+  </AnimatePresence>,
     document.body
   );
 }
