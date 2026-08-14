@@ -15,7 +15,14 @@ import {
 } from '../api/client';
 
 const SESSION_PROBE_MIN_INTERVAL_MS = 30_000;
-const STATUS_TOAST_MS = 3_500;
+const STATUS_TOAST_MS = 5_000;
+
+export type StatusMessage =
+  | string
+  | {
+      text: string;
+      undoFn?: () => void | Promise<void>;
+    };
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   denied: 'Google sign-in was denied.',
@@ -97,7 +104,7 @@ export function useAuthSession() {
   const [authError, setAuthError] = useState<string | null>(() =>
     readAuthErrorFromUrl()
   );
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
 
   const needsSheet = Boolean(auth && auth.needsSheet);
   const ready = Boolean(auth && !auth.needsSheet);

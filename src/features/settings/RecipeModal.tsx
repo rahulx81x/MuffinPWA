@@ -13,6 +13,7 @@ import {
   springSoft,
 } from '../../lib/motion';
 import { SoftButton } from '../../components/ui/SoftButton';
+import { FocusTrap } from '../../components/atoms/FocusTrap';
 
 interface RecipeModalProps {
   open: boolean;
@@ -59,7 +60,15 @@ export function RecipeModal({
     );
     setCopied(false);
     setError(null);
-  }, [open, config]);
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !saving) {
+        onClose();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, config, saving, onClose]);
 
   async function handleCopyId() {
     if (!spreadsheetId) return;
@@ -155,17 +164,18 @@ export function RecipeModal({
             onClick={onClose}
           />
 
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            variants={popoverVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springSoft}
-            className="relative z-10 max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:rounded-2xl"
-          >
+          <FocusTrap active={open}>
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              variants={popoverVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={springSoft}
+              className="relative z-10 max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:rounded-2xl"
+            >
             <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80" />
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -176,15 +186,15 @@ export function RecipeModal({
                   id={titleId}
                   className="mt-1 font-display text-base font-bold text-text"
                 >
-                  Recipe Starting Balances
+                  Starting Balances
                 </h2>
                 <p className="mt-0.5 text-xs text-text-secondary">
-                  Configure initial cash & investments synced to your account across all devices.
+                  Configure initial cash & investments synced across your devices.
                 </p>
               </div>
               <SoftButton
                 onClick={onClose}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
+                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
@@ -192,7 +202,7 @@ export function RecipeModal({
             </div>
 
             <div className="mt-3.5 rounded-2xl border border-primary/25 bg-primary/10 p-3 text-xs text-text">
-              <p className="font-semibold text-primary">🍳 Welcome to Recipe Setup!</p>
+              <p className="font-semibold text-primary">🍳 Welcome to Starting Balances Setup!</p>
               <p className="mt-0.5 text-[11px] text-text-secondary leading-snug">
                 Enter your starting liquid cash balance and initial investments below to seed your Net Worth dashboard.
               </p>
@@ -337,16 +347,18 @@ export function RecipeModal({
                 <SoftButton
                   type="submit"
                   disabled={saving}
+                  loading={saving}
                   className="flex-1 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow disabled:opacity-60"
                 >
-                  {saving ? 'Saving…' : 'Save recipe'}
+                  Save starting balances
                 </SoftButton>
               </div>
             </form>
           </motion.div>
-        </div>
-      )}
-    </AnimatePresence>,
+        </FocusTrap>
+      </div>
+    )}
+  </AnimatePresence>,
     document.body
   );
 }

@@ -298,7 +298,12 @@ export function HeaderMenu({
                       }}
                     >
                       <UtensilsCrossed className="h-4 w-4 shrink-0 text-text-secondary" />
-                      <span className="min-w-0 flex-1">Recipe</span>
+                      <span className="min-w-0 flex-1 flex flex-col text-left">
+                        <span className="leading-tight">Starting Balances</span>
+                        <span className="text-[10px] font-normal text-text-muted leading-tight">
+                          Opening cash & investments
+                        </span>
+                      </span>
                     </button>
 
                     <button

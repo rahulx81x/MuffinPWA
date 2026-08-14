@@ -21,6 +21,7 @@ import {
 } from '../../lib/motion';
 import { isCountedInvestment, isProvidentFund } from '../../domain/providentFund';
 import type { MetricKey, Transaction } from '../../domain/types';
+import { FocusTrap } from '../../components/atoms/FocusTrap';
 import { TransactionList } from './TransactionList';
 
 interface ChartModalProps {
@@ -39,6 +40,7 @@ const MODAL_KIND: Partial<Record<MetricKey, ModalKind>> = {
   currentMonthIncome: 'list',
   currentMonthExpense: 'list',
   currentMonthInvestment: 'list',
+  currentMonthLiquid: 'line',
   providentFund: 'list',
   totalInvestment: 'pie',
   investmentBreakup: 'pie',
@@ -112,12 +114,18 @@ function PieChart({ data }: { data: Record<string, number> }) {
 
       {/* Donut SVG with Touch Slices */}
       <div className="relative flex items-center justify-center">
-        <svg viewBox="0 0 180 180" className="h-48 w-48 -rotate-90">
+        <svg
+          role="img"
+          aria-label={`Investment breakup donut chart. Total: ${masked ? MASKED_VALUE : formatCurrency(total)}`}
+          viewBox="0 0 180 180"
+          className="h-48 w-48 -rotate-90"
+        >
           {entries.map(([name, amount], index) => {
             const fraction = amount / total;
             const dash = fraction * circumference;
             const color = pieColors[index % pieColors.length];
             const isSelected = index === activeIndex;
+            const share = ((amount / total) * 100).toFixed(1);
 
             const segment = (
               <circle
@@ -138,7 +146,9 @@ function PieChart({ data }: { data: Record<string, number> }) {
                 onClick={() => {
                   setSelectedIndex(index);
                 }}
-              />
+              >
+                <title>{`${name}: ${masked ? MASKED_VALUE : formatCurrency(amount)} (${share}%)`}</title>
+              </circle>
             );
             offset += dash;
             return segment;
@@ -189,6 +199,30 @@ function PieChart({ data }: { data: Record<string, number> }) {
           );
         })}
       </ul>
+
+      {/* Screen Reader Data Table Alternative */}
+      <table className="sr-only" aria-label="Investment breakup data table">
+        <caption>Investment allocation by type</caption>
+        <thead>
+          <tr>
+            <th scope="col">Type</th>
+            <th scope="col">Amount</th>
+            <th scope="col">Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map(([name, amount]) => {
+            const share = ((amount / total) * 100).toFixed(1);
+            return (
+              <tr key={name}>
+                <td>{name}</td>
+                <td>{formatCurrency(amount)}</td>
+                <td>{share}%</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -218,25 +252,34 @@ function formatChartValue(
   return `${sign}${formatCurrencyRaw(abs)}`;
 }
 
+export interface MultiSeriesItem {
+  id: string;
+  name: string;
+  color: string;
+  points: number[];
+}
+
 function LineChart({
   points,
   labels,
+  multiSeries,
   footer,
   asPercent = false,
   masked = false,
 }: {
   points: number[];
   labels: string[];
+  multiSeries?: MultiSeriesItem[];
   footer?: string;
   asPercent?: boolean;
   masked?: boolean;
 }) {
   const { formatCurrency } = useMask();
   const [selectedIndex, setSelectedIndex] = useState<number>(
-    points.length > 0 ? points.length - 1 : 0
+    labels.length > 0 ? labels.length - 1 : 0
   );
 
-  if (points.length < 2) {
+  if (labels.length < 2) {
     return (
       <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-surface-strong p-6 transition-colors duration-200">
         <p className="text-sm font-semibold text-text">Trend chart</p>
@@ -252,12 +295,22 @@ function LineChart({
   const padX = 28;
   const padTop = 28;
   const padBottom = 36;
-  const min = Math.min(...points);
-  const max = Math.max(...points);
+
+  const hasMulti = Boolean(multiSeries && multiSeries.length > 0);
+  const allValues = hasMulti
+    ? multiSeries!.flatMap((s) => s.points)
+    : points;
+
+  const min = Math.min(...allValues);
+  const max = Math.max(...allValues);
   const range = max - min || 1;
 
+  const activeIdx = Math.min(selectedIndex, labels.length - 1);
+  const stepWidth = width / labels.length;
+
+  // Single series coords
   const coords = points.map((value, index) => {
-    const x = padX + (index / (points.length - 1)) * (width - padX * 2);
+    const x = padX + (index / (labels.length - 1)) * (width - padX * 2);
     const y =
       height -
       padBottom -
@@ -265,14 +318,38 @@ function LineChart({
     return { x, y, value, label: labels[index] ?? '' };
   });
 
-  const activeIdx = Math.min(selectedIndex, coords.length - 1);
+  // Multi series coords and paths
+  const multiSeriesData = hasMulti
+    ? multiSeries!.map((s) => {
+        const seriesCoords = s.points.map((value, index) => {
+          const x = padX + (index / (labels.length - 1)) * (width - padX * 2);
+          const y =
+            height -
+            padBottom -
+            ((value - min) / range) * (height - padTop - padBottom);
+          return { x, y, value };
+        });
+        const path = seriesCoords
+          .map((pt, i) => `${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`)
+          .join(' ');
+        return {
+          ...s,
+          coords: seriesCoords,
+          path,
+          activeVal: s.points[activeIdx] ?? 0,
+          activeCoord: seriesCoords[activeIdx],
+        };
+      })
+    : [];
+
+  const activeX = padX + (activeIdx / (labels.length - 1)) * (width - padX * 2);
   const activeCoord = coords[activeIdx] ?? coords[coords.length - 1];
 
-  // Month-over-Month Delta calculation
+  // Month-over-Month Delta calculation (for single series)
   let deltaText = '';
   let isPositive = true;
 
-  if (activeIdx > 0) {
+  if (activeIdx > 0 && !hasMulti) {
     const prevValue = points[activeIdx - 1];
     const diff = activeCoord.value - prevValue;
     const pct = prevValue !== 0 ? (diff / Math.abs(prevValue)) * 100 : 0;
@@ -285,44 +362,66 @@ function LineChart({
     } else {
       deltaText = `${isPositive ? '+' : '−'}${formatCurrency(Math.abs(diff))} (${isPositive ? '+' : ''}${pct.toFixed(1)}%) MoM`;
     }
-  } else {
+  } else if (!hasMulti) {
     deltaText = 'Baseline month';
   }
 
-  const path = coords
+  const singlePath = coords
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
     .join(' ');
-
-  const stepWidth = width / coords.length;
 
   return (
     <div className="space-y-3">
       {/* Interactive Month Callout Header Card */}
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-strong p-3.5 shadow-warm-sm transition-all duration-200">
-        <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-            Selected Month
-          </span>
-          <p className="font-display text-sm font-bold text-text">
-            {activeCoord.label}
-          </p>
+      <div className="rounded-2xl border border-border bg-surface-strong p-3.5 shadow-warm-sm transition-all duration-200">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+              Selected Month
+            </span>
+            <p className="font-display text-sm font-bold text-text">
+              {labels[activeIdx]}
+            </p>
+          </div>
+
+          {!hasMulti ? (
+            <div className="text-right">
+              <p className="font-display text-base font-bold tabular-nums text-text">
+                {formatChartValue(activeCoord.value, asPercent, masked)}
+              </p>
+              <p
+                className={`text-[11px] font-semibold tabular-nums ${
+                  activeIdx === 0
+                    ? 'text-text-muted'
+                    : isPositive
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                {deltaText}
+              </p>
+            </div>
+          ) : null}
         </div>
-        <div className="text-right">
-          <p className="font-display text-base font-bold tabular-nums text-text">
-            {formatChartValue(activeCoord.value, asPercent, masked)}
-          </p>
-          <p
-            className={`text-[11px] font-semibold tabular-nums ${
-              activeIdx === 0
-                ? 'text-text-muted'
-                : isPositive
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-rose-600 dark:text-rose-400'
-            }`}
-          >
-            {deltaText}
-          </p>
-        </div>
+
+        {/* Multi-series stats strip */}
+        {hasMulti && (
+          <div className="mt-2.5 grid grid-cols-3 gap-2 border-t border-border/50 pt-2.5 text-center">
+            {multiSeriesData.map((s) => (
+              <div key={s.id} className="rounded-xl bg-surface/60 p-2">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-text-muted truncate">
+                  {s.name}
+                </span>
+                <span
+                  className="font-display text-sm font-bold tabular-nums"
+                  style={{ color: s.color }}
+                >
+                  {s.activeVal.toFixed(1)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="relative rounded-2xl border border-border bg-surface-strong p-3 shadow-warm-sm transition-colors duration-200">
@@ -334,95 +433,162 @@ function LineChart({
         >
           {/* Vertical Crosshair Line for active point */}
           <line
-            x1={activeCoord.x}
+            x1={activeX}
             y1={padTop - 10}
-            x2={activeCoord.x}
+            x2={activeX}
             y2={height - padBottom}
             stroke="currentColor"
             strokeWidth="1.5"
             strokeDasharray="3 3"
-            className="text-primary/60"
+            className="text-primary/50"
           />
 
-          {/* Line Path */}
-          <path
-            d={path}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-primary"
-          />
+          {/* Render Multi-Series Paths */}
+          {hasMulti
+            ? multiSeriesData.map((s) => (
+                <g key={s.id}>
+                  <path
+                    d={s.path}
+                    fill="none"
+                    stroke={s.color}
+                    strokeWidth={s.id === 'total' ? 2.8 : 2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeDasharray={s.id === 'total' ? undefined : undefined}
+                    opacity={s.id === 'total' ? 1 : 0.85}
+                  />
+                  {s.activeCoord && (
+                    <circle
+                      cx={s.activeCoord.x}
+                      cy={s.activeCoord.y}
+                      r={s.id === 'total' ? 5 : 4}
+                      fill={s.color}
+                      stroke="white"
+                      className="dark:stroke-zinc-900"
+                      strokeWidth={1.5}
+                    />
+                  )}
+                </g>
+              ))
+            : (
+                <path
+                  d={singlePath}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-primary"
+                />
+              )}
 
-          {/* Point Circles & Month Labels */}
-          {coords.map((point, index) => {
+          {/* Month Labels & Touch Catchers */}
+          {labels.map((label, index) => {
+            const x = padX + (index / (labels.length - 1)) * (width - padX * 2);
             const isSelected = index === activeIdx;
             const monthY = height - 10;
             const anchor =
               index === 0
                 ? 'start'
-                : index === coords.length - 1
+                : index === labels.length - 1
                   ? 'end'
                   : 'middle';
 
             return (
-              <g key={`${point.label}-${index}`}>
-                {/* Active Outer Ring */}
-                {isSelected && (
+              <g key={`${label}-${index}`}>
+                {!hasMulti && isSelected && (
                   <circle
-                    cx={point.x}
-                    cy={point.y}
+                    cx={x}
+                    cy={coords[index]?.y ?? 0}
                     r="12"
                     className="fill-primary/20 animate-pulse"
                   />
                 )}
-                {/* Main Circle */}
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r={isSelected ? 6 : 4}
-                  className={`transition-all duration-200 ${
-                    isSelected
-                      ? 'fill-primary stroke-white dark:stroke-zinc-900'
-                      : 'fill-primary'
-                  }`}
-                  strokeWidth={isSelected ? 2 : 0}
-                />
+                {!hasMulti && (
+                  <circle
+                    cx={x}
+                    cy={coords[index]?.y ?? 0}
+                    r={isSelected ? 6 : 4}
+                    className={`transition-all duration-200 ${
+                      isSelected
+                        ? 'fill-primary stroke-white dark:stroke-zinc-900'
+                        : 'fill-primary'
+                    }`}
+                    strokeWidth={isSelected ? 2 : 0}
+                  />
+                )}
                 <text
-                  x={point.x}
+                  x={x}
                   y={monthY}
                   textAnchor={anchor}
                   className={isSelected ? 'fill-primary font-bold' : 'fill-text-muted'}
                   style={{ fontSize: isSelected ? '10px' : '9px' }}
                 >
-                  {point.label}
+                  {label}
                 </text>
 
                 {/* Wide Touch Catchers for 1-Tap & Drag selection */}
                 <rect
-                  x={point.x - stepWidth / 2}
+                  x={x - stepWidth / 2}
                   y={0}
                   width={stepWidth}
                   height={height}
                   fill="transparent"
                   className="cursor-pointer"
-                  onClick={() => {
-                    setSelectedIndex(index);
-                  }}
-                  onTouchStart={() => {
-                    setSelectedIndex(index);
-                  }}
+                  onClick={() => setSelectedIndex(index)}
+                  onTouchStart={() => setSelectedIndex(index)}
                 />
               </g>
             );
           })}
         </svg>
+
+        {/* Legend for Multi-Series */}
+        {hasMulti && (
+          <div className="mt-2.5 flex items-center justify-center gap-4 border-t border-border/40 pt-2 text-[11px] font-semibold">
+            {multiSeriesData.map((s) => (
+              <div key={s.id} className="flex items-center gap-1.5">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: s.color }}
+                />
+                <span className="text-text-secondary">{s.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {footer && (
         <p className="text-center text-xs text-text-muted">{footer}</p>
       )}
+
+      {/* Screen Reader Data Table Alternative */}
+      <table className="sr-only" aria-label="Monthly trend data table">
+        <caption>Monthly financial metric progression</caption>
+        <thead>
+          <tr>
+            <th scope="col">Month</th>
+            {hasMulti
+              ? multiSeriesData.map((s) => <th key={s.id} scope="col">{s.name}</th>)
+              : <th scope="col">Value</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {labels.map((label, i) => (
+            <tr key={`${label}-${i}`}>
+              <td>{label}</td>
+              {hasMulti ? (
+                multiSeriesData.map((s) => (
+                  <td key={s.id}>{s.points[i]?.toFixed(1)}%</td>
+                ))
+              ) : (
+                <td>{formatChartValue(points[i] ?? 0, asPercent, masked)}</td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -436,6 +602,7 @@ function buildClosingSeries(
   labels: string[];
   footer: string;
   asPercent: boolean;
+  multiSeries?: MultiSeriesItem[];
 } {
   const monthly = buildMonthlyKPIs(transactions);
   if (!monthly.length) {
@@ -453,7 +620,7 @@ function buildClosingSeries(
     investment += month.investment;
 
     let value = 0;
-    if (metricKey === 'totalLiquid') value = liquid;
+    if (metricKey === 'totalLiquid' || metricKey === 'currentMonthLiquid') value = liquid;
     else if (metricKey === 'netWorth') value = liquid + investment;
     else if (metricKey === 'avgMonthlySavings') {
       value = month.investment + month.liquidSavings;
@@ -463,6 +630,41 @@ function buildClosingSeries(
 
     points.push(value);
     labels.push(month.label);
+  }
+
+  if (metricKey === 'currentMonthSavingsPct') {
+    const multiSeries: MultiSeriesItem[] = [
+      {
+        id: 'total',
+        name: 'Total Savings',
+        color: 'var(--color-primary)',
+        points: monthly.map((m) => m.totalSavingsPct),
+      },
+      {
+        id: 'liquid',
+        name: 'Liquid Retained',
+        color: '#0d9488',
+        points: monthly.map((m) => m.liquidSavingsPct),
+      },
+      {
+        id: 'investment',
+        name: 'Investments',
+        color: '#9333ea',
+        points: monthly.map((m) => m.investmentPct),
+      },
+    ];
+
+    const latestTotal = monthly[monthly.length - 1]?.totalSavingsPct ?? 0;
+    const latestLiquid = monthly[monthly.length - 1]?.liquidSavingsPct ?? 0;
+    const latestInvest = monthly[monthly.length - 1]?.investmentPct ?? 0;
+
+    return {
+      points,
+      labels,
+      multiSeries,
+      asPercent: true,
+      footer: `Latest month: Total ${latestTotal.toFixed(1)}% · Liquid ${latestLiquid.toFixed(1)}% · Invest ${latestInvest.toFixed(1)}%`,
+    };
   }
 
   // When masked, convert absolute currency trajectories into % of peak.
@@ -587,68 +789,71 @@ export function ChartModal({
         />
       )}
       {show && (
-        <motion.div
-          key="chart-sheet"
-          role="dialog"
-          aria-modal="true"
-          aria-label={activeTitle}
-          variants={sheetVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={sheetTransition}
-          className="fixed inset-x-0 bottom-0 z-[101] mx-auto flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl border border-border bg-canvas shadow-elevate transition-theme pb-safe"
-        >
-          <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" />
+        <FocusTrap active={show}>
+          <motion.div
+            key="chart-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={activeTitle}
+            variants={sheetVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={sheetTransition}
+            className="fixed inset-x-0 bottom-0 z-[101] mx-auto flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl border border-border bg-canvas shadow-elevate transition-theme pb-safe"
+          >
+            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" />
 
-          <header className="flex items-start justify-between gap-3 px-4 pb-3 pt-4">
-            <div className="min-w-0">
-              <h2 className="truncate font-display text-lg font-bold text-text">
-                {activeTitle}
-              </h2>
-              {activeSubtitle && (
-                <p className="mt-0.5 text-sm text-text-muted">{activeSubtitle}</p>
+            <header className="flex items-start justify-between gap-3 px-4 pb-3 pt-4">
+              <div className="min-w-0">
+                <h2 className="truncate font-display text-lg font-bold text-text">
+                  {activeTitle}
+                </h2>
+                {activeSubtitle && (
+                  <p className="mt-0.5 text-sm text-text-muted">{activeSubtitle}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-strong text-text-secondary shadow-warm-sm transition-colors duration-200 active:scale-95"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 6l12 12M18 6 6 18"
+                  />
+                </svg>
+              </button>
+            </header>
+
+            <div className="overflow-y-auto px-4 pb-6">
+              {kind === 'list' && (
+                <TransactionList transactions={listTransactions} />
+              )}
+              {kind === 'pie' && <PieChart data={activeBreakup} />}
+              {kind === 'line' && (
+                <LineChart
+                  points={series.points}
+                  labels={series.labels}
+                  multiSeries={series.multiSeries}
+                  footer={series.footer}
+                  asPercent={series.asPercent}
+                  masked={masked}
+                />
               )}
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-strong text-text-secondary shadow-warm-sm transition-colors duration-200 active:scale-95"
-              aria-label="Close"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 6l12 12M18 6 6 18"
-                />
-              </svg>
-            </button>
-          </header>
-
-          <div className="overflow-y-auto px-4 pb-6">
-            {kind === 'list' && (
-              <TransactionList transactions={listTransactions} />
-            )}
-            {kind === 'pie' && <PieChart data={activeBreakup} />}
-            {kind === 'line' && (
-              <LineChart
-                points={series.points}
-                labels={series.labels}
-                footer={series.footer}
-                asPercent={series.asPercent}
-                masked={masked}
-              />
-            )}
-          </div>
-        </motion.div>
+          </motion.div>
+        </FocusTrap>
       )}
     </AnimatePresence>,
     document.body

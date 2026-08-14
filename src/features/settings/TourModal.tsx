@@ -15,6 +15,7 @@ import {
 } from '../../lib/motion';
 import { SoftButton } from '../../components/ui/SoftButton';
 import { MuffinIcon } from '../../components/ui/MuffinIcon';
+import { FocusTrap } from '../../components/atoms/FocusTrap';
 
 interface TourModalProps {
   open: boolean;
@@ -38,7 +39,7 @@ const STEPS = [
   },
   {
     id: 'recipe',
-    eyebrow: 'Recipe Setup',
+    eyebrow: 'Starting Balances Setup',
     title: 'Set your starting balances',
     body: 'Add your initial liquid cash balance and starting investments (FDs, mutual funds, etc.). These seed net worth before sheet transactions and sync across your account via your Google Sheet (Recipe tab).',
     Icon: BookOpen,
@@ -56,6 +57,17 @@ export function TourModal({ open, onComplete }: TourModalProps) {
       setBusy(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !busy) {
+        void finish(false);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, busy]);
 
   async function finish(openRecipe: boolean = false) {
     if (busy) return;
@@ -88,15 +100,16 @@ export function TourModal({ open, onComplete }: TourModalProps) {
             onClick={() => void finish(false)}
           />
 
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            variants={popoverVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={springSoft}
+          <FocusTrap active={open}>
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              variants={popoverVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={springSoft}
             className="relative z-10 w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-surface-strong shadow-elevate"
           >
             <div className="relative overflow-hidden bg-[radial-gradient(ellipse_at_top,rgba(var(--accent-rgb),0.22),transparent_65%)] px-5 pb-4 pt-5">
@@ -115,7 +128,7 @@ export function TourModal({ open, onComplete }: TourModalProps) {
                   type="button"
                   onClick={() => void finish(false)}
                   disabled={busy}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas/90 text-text-secondary shadow-warm-sm disabled:opacity-60"
+                  className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas/90 text-text-secondary shadow-warm-sm disabled:opacity-60"
                   aria-label="Skip tour"
                   glow={false}
                 >
@@ -211,9 +224,10 @@ export function TourModal({ open, onComplete }: TourModalProps) {
               </div>
             </div>
           </motion.div>
-        </div>
-      )}
-    </AnimatePresence>,
+        </FocusTrap>
+      </div>
+    )}
+  </AnimatePresence>,
     document.body
   );
 }
