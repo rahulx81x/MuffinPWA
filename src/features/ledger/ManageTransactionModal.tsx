@@ -111,6 +111,10 @@ export function ManageTransactionModal({
     if (!open) return;
     setError(null);
     setSaving(false);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape' && !saving) {
