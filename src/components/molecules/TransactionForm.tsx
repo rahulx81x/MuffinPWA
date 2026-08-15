@@ -12,7 +12,7 @@ import {
   evaluateAmountExpression,
   looksLikeAmountExpression,
 } from '../../domain/evaluateAmount';
-import type { TransactionType } from '../../domain/types';
+import type { Transaction, TransactionType } from '../../domain/types';
 import { SmartAmountInput } from '../../features/ledger/SmartAmountInput';
 import { SoftButton } from '../ui/SoftButton';
 
@@ -34,6 +34,7 @@ export interface TransactionFormProps {
     comment?: string;
     investmentType?: string;
   };
+  transactions?: Transaction[];
   categoryChips?: string[];
   investmentTypeOptions?: string[];
   submitLabel?: string;
@@ -149,6 +150,7 @@ function buildSelectStyles(): StylesConfig<InvestmentTypeOption, false> {
 
 export function TransactionForm({
   initialValues,
+  transactions = [],
   categoryChips = [],
   investmentTypeOptions = [],
   submitLabel = 'Save transaction',
@@ -168,6 +170,23 @@ export function TransactionForm({
   const [investmentType, setInvestmentType] = useState(initialValues?.investmentType || '');
   const [investmentTypeInput, setInvestmentTypeInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const activeCategoryChips = useMemo(() => {
+    if (transactions && transactions.length > 0) {
+      const counts: Record<string, number> = {};
+      for (const tx of transactions) {
+        if (tx.type !== type) continue;
+        const cat = tx.category?.trim();
+        if (!cat) continue;
+        counts[cat] = (counts[cat] || 0) + 1;
+      }
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([cat]) => cat)
+        .slice(0, 8);
+    }
+    return categoryChips;
+  }, [transactions, categoryChips, type]);
 
   const selectStyles = useMemo(() => buildSelectStyles(), []);
 
@@ -306,9 +325,9 @@ export function TransactionForm({
           />
         </label>
 
-        {categoryChips.length > 0 && (
+        {activeCategoryChips.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {categoryChips.map((cat) => (
+            {activeCategoryChips.map((cat) => (
               <button
                 key={cat}
                 type="button"

@@ -93,20 +93,6 @@ export function ManageTransactionModal({
     return undefined;
   }, [mode, transaction]);
 
-  const dynamicCategoryChips = useMemo(() => {
-    if (!transactions || !transactions.length) return [];
-    const counts: Record<string, number> = {};
-    for (const tx of transactions) {
-      const cat = tx.category?.trim();
-      if (!cat) continue;
-      counts[cat] = (counts[cat] || 0) + 1;
-    }
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([cat]) => cat)
-      .slice(0, 8);
-  }, [transactions]);
-
   useEffect(() => {
     if (!open) return;
     setError(null);
@@ -253,7 +239,7 @@ export function ManageTransactionModal({
                 <TransactionForm
                   key={transaction ? transaction.id : 'new-tx'}
                   initialValues={initialValues}
-                  categoryChips={dynamicCategoryChips}
+                  transactions={transactions}
                   investmentTypeOptions={investmentTypeOptions}
                   submitLabel={mode === 'add' ? 'Add transaction' : 'Save changes'}
                   cancelLabel="Cancel"

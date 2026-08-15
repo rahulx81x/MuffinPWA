@@ -5,11 +5,13 @@ export const CURRENCY = {
 
 export const RECIPE_STORAGE_KEY = 'muffinRecipe';
 
-export type { RecipeConfig, RecipeInvestment } from '@shared';
+export type { RecipeConfig, RecipeInvestment, RecurringRule } from '@shared';
 export {
   createEmptyInvestment,
   getDefaultRecipeConfig,
   hasMeaningfulRecipe,
+  newRecurringRuleId,
+  sanitizeRecurringRule,
 } from '@shared';
 
 import type { RecipeConfig, RecipeInvestment } from '@shared';

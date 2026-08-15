@@ -152,24 +152,25 @@ Also included:
 - **Seven switchable display fonts** — Muffin (Outfit + Plus Jakarta Sans, default), Josefin — Elegant, Fredoka — Playful, Exo 2 — Futuristic, Atkinson — Clear, Syne — Bold, Bricolage — Quirky. Selected from the **Settings** tab → Typography Style; choice persists in `localStorage`.
 - **Google Sign-In (multi-user)** — Each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token.
 - **Profile Header Menu** — Tap the user avatar (top-right header) for a popover showing your Google photo, name, email, and Log out. All main settings live in the dedicated **Settings** tab.
-- **Recipe / Starting Balances** — View/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in your Google Sheet's `Recipe` tab; local cache for snappy UI). Accessible from Settings → Data & Privacy.
-- **First-run tour** — Short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again. Replay anytime from Settings → Help & About → Replay First-Run Tour.
+- **Monthly Recurring Transactions & SIPs Engine** — Zero-database monthly scheduling for regular expenses, salary, and mutual fund SIPs. Stored in your Google Sheet's `Recipe` tab with smart month clamping (e.g. 31st resolves to Feb 28/29, Apr 30), 1-tap batch logging Due Banner on Home/Ledger, auto-prompt locking, and optional end dates.
+- **Recipe / Starting Balances & Automation** — View/copy linked spreadsheet ID; set initial opening balance, starting investments, and recurring rules (synced in your Google Sheet's `Recipe` tab; local cache for snappy UI). Accessible from Settings → Data & Privacy.
+- **First-run tour** — Short guided intro (how the app works, main features, recurring automation, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again. Replay anytime from Settings → Help & About → Replay First-Run Tour.
 
 
 ### 1.6 Everyday data flow
 
 1. You sign in with Google in the app, then link an existing workbook (paste URL/ID) or create a new one.
-2. New users get a short **tour** covering the dashboard, main tabs, and Recipe; completing or skipping it is stored on your account.
-3. You add, edit, or delete rows via the in-app Ledger / **+** button, or directly in Google Sheets.
+2. New users get a short **tour** covering the dashboard, main tabs, recurring automation, and Recipe; completing or skipping it is stored on your account.
+3. You add, edit, or delete rows via the in-app Ledger / **+** button, 1-tap recurring batch logger, or directly in Google Sheets.
 4. A **Netlify Function** uses your signed-in Google session (refresh token in an httpOnly cookie) and your linked spreadsheet ID (stored in Netlify Blobs per Google user) to read/write the `Income`, `Expense`, `Investment`, and `Recipe` tabs. App OAuth client secrets never ship to the browser.
 5. The React app fetches transactions and recipe config from that function on load (and after every add/edit/delete), builds metrics client-side, and updates Home / Ledger / Monthly.
-6. Planner entries stay on-device and never write back to Sheets. Recipe starting balances sync via your Google Sheet (`Recipe` tab) so they follow you across devices while keeping zero financial data on central servers.
+6. Planner entries stay on-device and never write back to Sheets. Recipe starting balances and recurring rules sync via your Google Sheet (`Recipe` tab) so they follow you across devices while keeping zero financial data on central servers.
 
 ### 1.7 Where data lives
 
 | Data | Location |
 | --- | --- |
-| Real transactions & Recipe starting balances | Your Google Sheet (`Income`, `Expense`, `Investment`, and `Recipe` tabs) |
+| Real transactions, starting balances & recurring rules | Your Google Sheet (`Income`, `Expense`, `Investment`, and `Recipe` tabs) |
 | Google OAuth app credentials | Netlify / local env (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `SESSION_SECRET`) |
 | Per-user sheet link + tour flag | Netlify Blobs (`muffin-users`, keyed by Google user id) |
 | Signed-in session | httpOnly cookie (encrypted refresh token) |

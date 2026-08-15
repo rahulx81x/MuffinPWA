@@ -36,20 +36,6 @@ export function PlannerView({
   const { config: recipeConfig } = useRecipeConfig();
   const thisMonth = currentMonthKey();
 
-  const dynamicCategoryChips = useMemo(() => {
-    if (!sheetTransactions.length) return [];
-    const counts: Record<string, number> = {};
-    for (const tx of sheetTransactions) {
-      const cat = tx.category?.trim();
-      if (!cat) continue;
-      counts[cat] = (counts[cat] || 0) + 1;
-    }
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([cat]) => cat)
-      .slice(0, 8);
-  }, [sheetTransactions]);
-
   const monthTx = useMemo(() => {
     const combined = [...sheetTransactions, ...plannerTransactions];
     return combined.filter((t) => monthKey(t.date) === thisMonth);
@@ -146,7 +132,7 @@ export function PlannerView({
       <div className="cozy-card border-border p-4">
         <h3 className="mb-3 text-sm font-bold text-text">Add planning entry</h3>
         <TransactionForm
-          categoryChips={dynamicCategoryChips}
+          transactions={sheetTransactions}
           submitLabel="Add to plan"
           onSubmit={handleFormSubmit}
           layout="inline"

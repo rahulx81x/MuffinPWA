@@ -2,6 +2,8 @@ export type {
   ExpectedRow,
   RecipeConfig,
   RecipeInvestment,
+  RecurrenceType,
+  RecurringRule,
   SheetRowData,
   SheetTabName,
   Transaction,

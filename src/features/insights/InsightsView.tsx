@@ -97,20 +97,6 @@ export function InsightsView({
   }, [transactions, categoryTimeRange, thisMonth]);
 
   // Planner calculations
-  const dynamicCategoryChips = useMemo(() => {
-    if (!transactions.length) return [];
-    const counts: Record<string, number> = {};
-    for (const tx of transactions) {
-      const cat = tx.category?.trim();
-      if (!cat) continue;
-      counts[cat] = (counts[cat] || 0) + 1;
-    }
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([cat]) => cat)
-      .slice(0, 8);
-  }, [transactions]);
-
   const plannerMonthTx = useMemo(() => {
     const combined = [...transactions, ...plannerTransactions];
     return combined.filter((t) => monthKey(t.date) === thisMonth);
@@ -340,13 +326,13 @@ export function InsightsView({
             <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
               Expense Distribution
             </span>
-            <div className="flex rounded-xl border border-border/80 bg-surface/80 p-0.5">
+            <div className="flex items-center rounded-xl border border-border/80 bg-surface/90 p-1 shadow-warm-xs">
               <button
                 type="button"
                 onClick={() => setCategoryTimeRange('month')}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+                className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
                   categoryTimeRange === 'month'
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
+                    ? 'bg-primary text-primary-foreground shadow-warm-xs'
                     : 'text-text-muted hover:text-text'
                 }`}
               >
@@ -355,9 +341,9 @@ export function InsightsView({
               <button
                 type="button"
                 onClick={() => setCategoryTimeRange('all')}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+                className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
                   categoryTimeRange === 'all'
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
+                    ? 'bg-primary text-primary-foreground shadow-warm-xs'
                     : 'text-text-muted hover:text-text'
                 }`}
               >
@@ -555,7 +541,7 @@ export function InsightsView({
               <span className="text-[11px] text-text-muted">In-memory only</span>
             </div>
             <TransactionForm
-              categoryChips={dynamicCategoryChips}
+              transactions={transactions}
               submitLabel="Add to Plan"
               onSubmit={handlePlannerFormSubmit}
               layout="inline"

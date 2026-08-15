@@ -14,6 +14,7 @@ interface HomeViewProps {
   userName?: string;
   onRefresh?: () => Promise<void>;
   onAddTransaction?: () => void;
+  recurringBanner?: React.ReactNode;
 }
 
 interface CardDef {
@@ -79,6 +80,7 @@ export function HomeView({
   userName,
   onRefresh,
   onAddTransaction,
+  recurringBanner,
 }: HomeViewProps) {
   const { masked, formatCurrency, formatSignedCurrency } = useMask();
   const [activeMetric, setActiveMetric] = useState<MetricKey | null>(null);
@@ -635,6 +637,8 @@ export function HomeView({
           Your money at a glance
         </h2>
       </div>
+
+      {recurringBanner}
 
       {transactions.length === 0 && (
         <EmptyState
