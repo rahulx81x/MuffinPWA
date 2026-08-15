@@ -151,6 +151,64 @@ html.dark:not([data-theme]) {
   --shadow-elevate: 0 12px 32px rgba(0, 0, 0, 0.52);
 }
 
+/* Lavender Berry Muffin — sweet floral violet light */
+[data-theme='lavender'] {
+  color-scheme: light;
+  --color-canvas: #f8f6fc;
+  --color-canvas-alt: #efebf8;
+  --color-surface: #efebf8;
+  --color-surface-strong: #fcfbff;
+  --color-surface-muted: #ddd4f0;
+  --color-text: #24183e;
+  --color-text-secondary: #5b3e96;
+  --color-text-muted: #7c68a5;
+  --color-primary: #7c3aed;
+  --color-primary-muted: #6d28d9;
+  --color-on-primary: #faf5ff;
+  --accent-rgb: 124, 58, 237;
+  --color-success: #047857;
+  --color-success-muted: #10b981;
+  --color-destructive: #b91c1c;
+  --color-destructive-muted: #ef4444;
+  --color-warning: #d97706;
+  --color-warning-muted: #f59e0b;
+  --color-border: #d8cef0;
+  --color-divider: #e4dcf5;
+  --shadow-warm: 0 6px 24px rgba(36, 24, 62, 0.08);
+  --shadow-warm-sm: 0 2px 8px rgba(36, 24, 62, 0.06);
+  --shadow-glow: 0 4px 20px rgba(var(--accent-rgb), 0.28);
+  --shadow-elevate: 0 10px 28px rgba(36, 24, 62, 0.12);
+}
+
+/* Midnight Emerald Muffin — deep jewel pine dark */
+[data-theme='emerald'] {
+  color-scheme: dark;
+  --color-canvas: #0b1612;
+  --color-canvas-alt: #13241d;
+  --color-surface: #13241d;
+  --color-surface-strong: #1a2f26;
+  --color-surface-muted: #264438;
+  --color-text: #ecfdf5;
+  --color-text-secondary: #a7f3d0;
+  --color-text-muted: #6ee7b7;
+  --color-primary: #10b981;
+  --color-primary-muted: #059669;
+  --color-on-primary: #062e21;
+  --accent-rgb: 16, 185, 129;
+  --color-success: #34d399;
+  --color-success-muted: #6ee7b7;
+  --color-destructive: #f87171;
+  --color-destructive-muted: #fca5a5;
+  --color-warning: #fbbf24;
+  --color-warning-muted: #fcd34d;
+  --color-border: #234638;
+  --color-divider: #1a2f26;
+  --shadow-warm: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-warm-sm: 0 2px 10px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 4px 22px rgba(var(--accent-rgb), 0.35);
+  --shadow-elevate: 0 12px 32px rgba(0, 0, 0, 0.52);
+}
+
 /* Salted Caramel Muffin — deep golden dark */
 [data-theme='caramel'] {
   color-scheme: dark;
@@ -305,11 +363,11 @@ body {
 
 @layer components {
   .glass-panel {
-    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
-    background-color: color-mix(in srgb, var(--color-surface) 80%, transparent);
-    box-shadow: var(--shadow-warm);
-    backdrop-filter: blur(16px) saturate(1.2);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+    background-color: color-mix(in srgb, var(--color-surface) 68%, transparent);
+    box-shadow: var(--shadow-warm), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     transition:
       background-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
       border-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
@@ -318,15 +376,15 @@ body {
 
   .cozy-card {
     border-radius: 1.25rem;
-    border: 1px solid var(--color-border);
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--color-surface-strong) 95%, var(--color-primary) 5%) 0%,
-      color-mix(in srgb, var(--color-surface) 95%, var(--color-canvas) 5%) 100%
+      color-mix(in srgb, var(--color-surface-strong) 85%, transparent) 0%,
+      color-mix(in srgb, var(--color-surface) 80%, transparent) 100%
     );
-    box-shadow: var(--shadow-warm-sm);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-warm-sm), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
     transition:
       transform 0.35s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
       background-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
@@ -337,11 +395,11 @@ body {
   .cozy-card:hover,
   .cozy-card:focus-visible {
     box-shadow: var(--shadow-elevate);
-    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
-    background-color: color-mix(
-      in srgb,
-      var(--color-surface-strong) 95%,
-      var(--color-primary) 5%
+    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-surface-strong) 92%, var(--color-primary) 8%) 0%,
+      color-mix(in srgb, var(--color-surface) 88%, transparent) 100%
     );
   }
 
@@ -388,20 +446,15 @@ body {
   }
 
   .nav-tab-indicator {
-    border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 80%, transparent);
     background: linear-gradient(
       165deg,
-      color-mix(in srgb, var(--color-primary-muted) 85%, transparent) 0%,
-      color-mix(in srgb, var(--color-primary) 78%, transparent) 100%
+      var(--color-primary-muted) 0%,
+      var(--color-primary) 100%
     );
     box-shadow:
-      inset 0 2px 4px rgba(0, 0, 0, 0.22),
-      inset 0 6px 14px rgba(0, 0, 0, 0.14),
-      inset 0 -1px 0 color-mix(in srgb, var(--color-on-primary) 30%, transparent),
-      0 0 0 1px color-mix(in srgb, var(--color-primary) 20%, transparent),
-      0 0 20px rgba(var(--accent-rgb), 0.35);
-    backdrop-filter: blur(16px) saturate(1.3);
-    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+      0 4px 14px rgba(var(--accent-rgb), 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
   }
 
   .nav-tab-indicator::before {
@@ -490,13 +543,14 @@ body {
   }
 
   .nav-glass {
-  background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
-  border-color: var(--color-border);
-  box-shadow:
-    var(--shadow-elevate),
-    inset 0 0 0 1px color-mix(in srgb, var(--color-text) 12%, transparent);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+    background-color: color-mix(in srgb, var(--color-surface-strong) 88%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--color-border) 90%, transparent);
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, 0.32),
+      0 4px 12px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
   }
 
   .transition-theme {

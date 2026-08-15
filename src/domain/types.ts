@@ -8,7 +8,7 @@ export type {
   TransactionType,
 } from '@shared';
 
-export type AppTab = 'home' | 'planner' | 'ledger' | 'monthly';
+export type AppTab = 'home' | 'ledger' | 'insights' | 'settings';
 
 export type MetricKey =
   | 'currentMonthIncome'

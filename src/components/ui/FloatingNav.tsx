@@ -1,10 +1,10 @@
 import { LayoutGroup, motion } from 'framer-motion';
 import {
-  CalendarDays,
+  BarChart3,
   Home,
-  ListTodo,
   NotebookTabs,
   Plus,
+  Settings,
 } from 'lucide-react';
 import type { AppTab } from '../../domain/types';
 import { springLayout, springSoft } from '../../lib/motion';
@@ -18,24 +18,24 @@ interface FloatingNavProps {
 
 const leftTabs: { id: AppTab; label: string }[] = [
   { id: 'home', label: 'Home' },
-  { id: 'planner', label: 'Planner' },
+  { id: 'insights', label: 'Insights' },
 ];
 
 const rightTabs: { id: AppTab; label: string }[] = [
   { id: 'ledger', label: 'Ledger' },
-  { id: 'monthly', label: 'Months' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 function TabIcon({ id, active }: { id: AppTab; active: boolean }) {
-  const className = `h-5 w-5 ${active ? 'text-primary-foreground' : 'text-text-muted'}`;
-  const stroke = 2;
+  const className = `h-5 w-5 ${active ? 'text-primary-foreground' : 'text-text-secondary group-hover:text-text'}`;
+  const stroke = active ? 2.4 : 2;
 
   if (id === 'home') return <Home className={className} strokeWidth={stroke} />;
-  if (id === 'planner')
-    return <CalendarDays className={className} strokeWidth={stroke} />;
   if (id === 'ledger')
     return <NotebookTabs className={className} strokeWidth={stroke} />;
-  return <ListTodo className={className} strokeWidth={stroke} />;
+  if (id === 'insights')
+    return <BarChart3 className={className} strokeWidth={stroke} />;
+  return <Settings className={className} strokeWidth={stroke} />;
 }
 
 function NavTab({
@@ -56,9 +56,9 @@ function NavTab({
         onSelect(id);
       }}
       whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.96 }}
+      whileTap={{ scale: 0.95 }}
       transition={springSoft}
-      className="relative flex min-h-12 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:px-3"
+      className="group relative flex min-h-12 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:px-3"
       aria-current={active ? 'page' : undefined}
     >
       {active && (
@@ -69,11 +69,11 @@ function NavTab({
           aria-hidden="true"
         />
       )}
-      <span className="relative z-10 flex flex-col items-center gap-1">
+      <span className="relative z-10 flex flex-col items-center gap-0.5">
         <TabIcon id={id} active={active} />
         <span
-          className={`text-[10px] font-semibold ${
-            active ? 'text-primary-foreground' : 'text-text-muted'
+          className={`text-[11px] font-bold tracking-tight ${
+            active ? 'text-primary-foreground' : 'text-text-secondary group-hover:text-text'
           }`}
         >
           {label}
