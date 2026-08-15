@@ -548,6 +548,23 @@ export function HomeView({
         </div>
       )}
 
+      {card.key === 'avgMonthlySavings' && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md dark:bg-white/15">
+            <span>
+              {metrics.avgMonthlySavingsPct < 0 ? '−' : ''}
+              {Math.abs(metrics.avgMonthlySavingsPct).toFixed(1)}%
+            </span>
+            <span className="font-medium opacity-90">avg savings rate</span>
+          </span>
+          {metrics.monthsTracked > 0 && (
+            <span className="text-[11px] font-medium text-white/80">
+              over {metrics.monthsTracked} {metrics.monthsTracked === 1 ? 'month' : 'months'}
+            </span>
+          )}
+        </div>
+      )}
+
       {card.breakup && (
         <div className="mt-3 space-y-2.5">
           {Object.keys(card.breakup).length === 0 ? (

@@ -675,7 +675,7 @@
           <tbody>
             <tr><td>UI</td><td>React 19 + TypeScript</td><td>Component tree, typed domain model, client state</td></tr>
             <tr><td>Build</td><td>Vite 6 + <code>tsc -b</code></td><td>HMR, production bundle, project references</td></tr>
-            <tr><td>Styling</td><td>Tailwind 3 + CSS tokens</td><td>Six muffin themes via <code>data-theme</code></td></tr>
+            <tr><td>Styling</td><td>Tailwind 3 + CSS tokens</td><td>Eight muffin themes via <code>data-theme</code></td></tr>
             <tr><td>Typography</td><td>Outfit (display) + Plus Jakarta Sans (body)</td><td>Default "Muffin" font pair; 7 switchable display fonts via <code>useFont</code></td></tr>
             <tr><td>Motion</td><td>Framer Motion</td><td>Springs, layout pill, portaled sheet enter/exit</td></tr>
             <tr><td>PWA</td><td>vite-plugin-pwa + Workbox</td><td>Static manifest (PNG any/maskable), SW precache, autoUpdate, themed status bar</td></tr>
@@ -1187,26 +1187,27 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
       <p class="lede">
         Mobile-first shell (<code>max-w-lg</code>). <code>App.tsx</code> is a thin shell wired to
         <code>useAuthSession</code>, <code>useSheetTransactions</code>, <code>usePlannerStore</code>,
-        and <code>useAppModals</code>. Session boot shows <code>LoadingScreen</code>, then Sign-in /
-        Sheet onboarding / main tabs. Home greets the signed-in user; HeaderMenu shows account
-        identity above Log out. Feature UI lives under <code>src/features/*</code>.
+        and <code>useAppModals</code>. Navigation uses 4 tabs (<code>Home</code>, <code>Insights</code>,
+        <code>Ledger</code>, <code>Settings</code>) with a center <strong>+</strong> FAB.
+        Session boot shows <code>LoadingScreen</code>. Header shows a profile avatar popover for quick user info and logout.
+        Feature UI lives under <code>src/features/*</code>.
       </p>
 
       <div class="grid-2">
         <div class="card">
           <h4>Views</h4>
           <ul>
-            <li><code>features/home</code> — Welcome greeting, KPI grid, ChartModal, More Details / PF</li>
-            <li><code>features/planner</code> — ephemeral what-if rows</li>
-            <li><code>features/ledger</code> — searchable timeline + manage modal</li>
-            <li><code>features/monthly</code> — per-month KPI breakdown</li>
+            <li><code>features/home</code> — Welcome greeting, KPI grid (with Avg Monthly Savings rate %), ChartModal (dual trendlines), More Details / PF</li>
+            <li><code>features/insights</code> — Unified Insights hub: Trends (with Ledger drill-down), Categories (SVG donut + ranking), and Planner (what-if scenarios)</li>
+            <li><code>features/ledger</code> — Date-grouped timeline + persistent <code>QuickAddStrip</code> (inline expense/income logger) + manage modal</li>
+            <li><code>features/settings</code> — Dedicated Settings tab (8 themes, 7 typography styles, mask toggle, Starting Balances / Recipe, guides, PWA install)</li>
           </ul>
         </div>
         <div class="card">
-          <h4>Cross-cutting</h4>
+          <h4>Cross-cutting &amp; Design System</h4>
           <ul>
-            <li><code>features/settings</code> — HeaderMenu (account chip), Recipe, Tour, Guide, Privacy, Terms, PwaInstall, About</li>
-            <li><code>components/ui</code> — FloatingNav, SoftButton, ConfirmModal, LoadingScreen, MuffinIcon</li>
+            <li><code>features/settings/HeaderMenu</code> — Profile avatar trigger + user popover dialog</li>
+            <li><code>components/ui</code> — FloatingNav (frosted pill with active gradient capsule), SoftButton, ConfirmModal, LoadingScreen, MuffinIcon</li>
             <li><code>shared/</code> — tabs, recipe sanitize, dates, Transaction DTO</li>
             <li>Hooks: auth/sheet/planner/modals + theme, font, mask, recipe, PWA</li>
           </ul>
@@ -1215,18 +1216,18 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
 
       <div class="accordion" style="margin-top:14px;" onclick="toggleAccordion(this)">
         <div class="accordion-header">
-          <span>Theme system</span>
-          <span class="meta">src/lib/themes.ts</span>
+          <span>Theme &amp; Glassmorphism system</span>
+          <span class="meta">src/lib/themes.ts · src/index.css</span>
           <span class="chev">▼</span>
         </div>
         <div class="accordion-content">
-          Six variants (3 light / 3 dark): Classic, Blueberry, Pistachio Matcha, Double Chocolate,
-          Red Velvet, Salted Caramel. Applied via <code>data-theme</code> + optional <code>dark</code> class;
+          Eight variants (4 light / 4 dark): Classic, Blueberry, Pistachio Matcha, Lavender Berry (light) and Double Chocolate,
+          Red Velvet, Salted Caramel, Midnight Emerald (dark). Applied via <code>data-theme</code> + optional <code>dark</code> class;
           persisted as <code>muffinTheme</code>. Charts pull per-theme <code>chartColors</code>.
+          Frosted glassmorphism (<code>.nav-glass</code>, <code>.cozy-card</code>, <code>.glass-panel</code>) uses tuned <code>backdrop-filter</code>,
+          specular rim highlights, and ambient mesh canvas orbs.
           Motion springs/variants centralized in <code>src/lib/motion.ts</code>.
-          <code>applyMuffinIconsToDocument</code> updates the tab favicon SVG and <code>theme-color</code>
-          (canvas background for status-bar match). Install icons stay on static PNG assets in the
-          web manifest — never swapped to <code>blob:</code> / <code>data:</code> URLs.
+          <code>applyMuffinIconsToDocument</code> updates the tab favicon SVG and <code>theme-color</code>.
         </div>
       </div>
 
@@ -1469,14 +1470,14 @@ Type from TYPE_BY_TAB (shared/). Mutations prefer rowId, then rowIndex + expecte
         title: 'Client metrics engine',
         actors: ['React', 'metrics.ts'],
         hot: ['metrics.ts'],
-        detail: 'buildFinancialMetrics(tx) + Recipe seeds. PF isolated. Home/Ledger/Monthly render.',
+        detail: 'buildFinancialMetrics(tx) + Recipe seeds. PF isolated. Home/Insights/Ledger render.',
         code: 'const metrics = buildFinancialMetrics(transactions)'
       },
       {
         title: 'User mutates a row',
         actors: ['User', 'React'],
         hot: ['User', 'React'],
-        detail: 'ManageTransactionModal → create/update/delete via api.ts with tabName + rowData/rowIndex.',
+        detail: 'QuickAddStrip or ManageTransactionModal → create/update/delete via api.ts with tabName + rowData/rowIndex.',
         code: 'POST|PUT|DELETE /.netlify/functions/transactions'
       },
       {

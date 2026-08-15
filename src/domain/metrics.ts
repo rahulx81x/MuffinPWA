@@ -162,6 +162,7 @@ export function buildFinancialMetrics(
   const avgMonthlySavings = monthsTracked
     ? (trackedInvestment + trackedLiquid) / monthsTracked
     : 0;
+  const avgMonthlySavingsPct = totalIncome > 0 ? savingsRate : 0;
 
   const thisMonth = currentMonthKey();
   const monthTx = transactions.filter((t) => monthKey(t.date) === thisMonth);
@@ -198,6 +199,7 @@ export function buildFinancialMetrics(
     growthSinceStart,
     growthSinceStartPct,
     avgMonthlySavings,
+    avgMonthlySavingsPct,
     monthsTracked,
     investmentBreakup: buildInvestmentBreakup(transactions),
   };
@@ -220,6 +222,7 @@ export const EMPTY_METRICS: FinancialMetrics = {
   growthSinceStart: 0,
   growthSinceStartPct: 0,
   avgMonthlySavings: 0,
+  avgMonthlySavingsPct: 0,
   monthsTracked: 0,
   investmentBreakup: {},
 };

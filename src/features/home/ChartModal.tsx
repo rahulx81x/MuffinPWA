@@ -257,6 +257,7 @@ export interface MultiSeriesItem {
   name: string;
   color: string;
   points: number[];
+  unit?: 'currency' | 'percent';
 }
 
 function LineChart({
@@ -319,14 +320,20 @@ function LineChart({
   });
 
   // Multi series coords and paths
+  const isMixedUnits = hasMulti && multiSeries!.some((item) => item.unit !== multiSeries![0].unit);
+
   const multiSeriesData = hasMulti
     ? multiSeries!.map((s) => {
+        const sMin = isMixedUnits ? Math.min(0, ...s.points) : min;
+        const sMax = isMixedUnits ? Math.max(...s.points) || 1 : max;
+        const sRange = sMax - sMin || 1;
+
         const seriesCoords = s.points.map((value, index) => {
           const x = padX + (index / (labels.length - 1)) * (width - padX * 2);
           const y =
             height -
             padBottom -
-            ((value - min) / range) * (height - padTop - padBottom);
+            ((value - sMin) / sRange) * (height - padTop - padBottom);
           return { x, y, value };
         });
         const path = seriesCoords
@@ -406,17 +413,29 @@ function LineChart({
 
         {/* Multi-series stats strip */}
         {hasMulti && (
-          <div className="mt-2.5 grid grid-cols-3 gap-2 border-t border-border/50 pt-2.5 text-center">
+          <div
+            className={`mt-2.5 grid gap-2 border-t border-border/50 pt-2.5 text-center ${
+              multiSeriesData.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+            }`}
+          >
             {multiSeriesData.map((s) => (
               <div key={s.id} className="rounded-xl bg-surface/60 p-2">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-text-muted truncate">
-                  {s.name}
-                </span>
+                <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ backgroundColor: s.color }}
+                  />
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-text-muted truncate">
+                    {s.name}
+                  </span>
+                </div>
                 <span
                   className="font-display text-sm font-bold tabular-nums"
                   style={{ color: s.color }}
                 >
-                  {s.activeVal.toFixed(1)}%
+                  {s.unit === 'currency'
+                    ? formatCurrency(s.activeVal)
+                    : `${s.activeVal.toFixed(1)}%`}
                 </span>
               </div>
             ))}
@@ -632,6 +651,40 @@ function buildClosingSeries(
     labels.push(month.label);
   }
 
+  if (metricKey === 'avgMonthlySavings') {
+    const multiSeries: MultiSeriesItem[] = [
+      {
+        id: 'absolute',
+        name: 'Savings (₹)',
+        color: 'var(--color-primary)',
+        points: monthly.map((m) => m.investment + m.liquidSavings),
+        unit: 'currency',
+      },
+      {
+        id: 'percent',
+        name: 'Savings Rate (%)',
+        color: '#10b981',
+        points: monthly.map((m) => m.totalSavingsPct),
+        unit: 'percent',
+      },
+    ];
+
+    const avgAmount = points.reduce((sum, p) => sum + p, 0) / points.length;
+    const totalInc = monthly.reduce((sum, m) => sum + m.income, 0);
+    const totalSav = points.reduce((sum, p) => sum + p, 0);
+    const avgPct = totalInc > 0 ? ((totalSav / totalInc) * 100).toFixed(1) : '0.0';
+    const latestAmount = points[points.length - 1] ?? 0;
+    const latestPct = monthly[monthly.length - 1]?.totalSavingsPct ?? 0;
+
+    return {
+      points,
+      labels,
+      multiSeries,
+      asPercent: false,
+      footer: `Average: ${formatCurrencyRaw(avgAmount)} (${avgPct}%) · latest ${formatCurrencyRaw(latestAmount)} (${latestPct.toFixed(1)}%)`,
+    };
+  }
+
   if (metricKey === 'currentMonthSavingsPct') {
     const multiSeries: MultiSeriesItem[] = [
       {
@@ -639,18 +692,21 @@ function buildClosingSeries(
         name: 'Total Savings',
         color: 'var(--color-primary)',
         points: monthly.map((m) => m.totalSavingsPct),
+        unit: 'percent',
       },
       {
         id: 'liquid',
         name: 'Liquid Retained',
         color: '#0d9488',
         points: monthly.map((m) => m.liquidSavingsPct),
+        unit: 'percent',
       },
       {
         id: 'investment',
         name: 'Investments',
         color: '#9333ea',
         points: monthly.map((m) => m.investmentPct),
+        unit: 'percent',
       },
     ];
 
@@ -687,11 +743,6 @@ function buildClosingSeries(
   let footer = asPercent
     ? `Latest month: ${latest.toFixed(1)}%`
     : `Latest close: ${formatCurrencyRaw(latest)}`;
-
-  if (metricKey === 'avgMonthlySavings' && points.length > 0 && !asPercent) {
-    const avg = points.reduce((sum, p) => sum + p, 0) / points.length;
-    footer = `Average: ${formatCurrencyRaw(avg)} · latest ${formatCurrencyRaw(latest)}`;
-  }
 
   return { points, labels, footer, asPercent };
 }

@@ -51,6 +51,7 @@ export interface FinancialMetrics {
   growthSinceStart: number;
   growthSinceStartPct: number;
   avgMonthlySavings: number;
+  avgMonthlySavingsPct: number;
   monthsTracked: number;
   investmentBreakup: Record<string, number>;
 }
