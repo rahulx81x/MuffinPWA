@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
+  CalendarSync,
   ChevronRight,
   LayoutDashboard,
   Sparkles,
@@ -33,9 +34,16 @@ const STEPS = [
   {
     id: 'features',
     eyebrow: 'Main features',
-    title: 'Home, months, ledger & planner',
-    body: 'Home shows net worth and KPIs. Monthly breaks down by month. Ledger lists every row with add/edit. Planner helps sketch the current month. Charts, themes, fonts, and amount masking live under the gear menu.',
+    title: 'Home, Insights, Ledger & Settings',
+    body: 'Home shows net worth and KPIs. Insights breaks down trends, categories, and what-if planning. Ledger tracks every transaction with quick log. Settings houses themes, typography, amount masking, and rules.',
     Icon: LayoutDashboard,
+  },
+  {
+    id: 'recurring',
+    eyebrow: 'Recurring Automation',
+    title: 'Monthly bills, SIPs & reminders',
+    body: 'Automate regular expenses, salary, and investment SIPs. Muffin prompts you with a smart 1-tap batch logging banner whenever scheduled payments are due in the current month.',
+    Icon: CalendarSync,
   },
   {
     id: 'recipe',

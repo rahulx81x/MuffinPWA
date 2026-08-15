@@ -34,9 +34,28 @@ export interface RecipeInvestment {
   amount: number;
 }
 
+export type RecurrenceType = 'income' | 'expense' | 'investment';
+
+export interface RecurringRule {
+  id: string;
+  name: string;
+  type: RecurrenceType;
+  category: string;
+  amount: number;
+  investmentType?: string;
+  dayOfMonth: number;
+  comment?: string;
+  active: boolean;
+  autoPrompt?: boolean;
+  lastLoggedMonth?: string;
+  endDate?: string;
+  createdAt: string;
+}
+
 export interface RecipeConfig {
   openingBalance: number;
   investments: RecipeInvestment[];
+  recurringRules?: RecurringRule[];
 }
 
 export interface ExpectedRow {
@@ -44,3 +63,4 @@ export interface ExpectedRow {
   category?: string;
   amount?: number | string;
 }
+

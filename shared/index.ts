@@ -2,6 +2,8 @@ export type {
   ExpectedRow,
   RecipeConfig,
   RecipeInvestment,
+  RecurrenceType,
+  RecurringRule,
   SheetRowData,
   SheetTabName,
   Transaction,
@@ -13,7 +15,9 @@ export {
   getDefaultRecipeConfig,
   hasMeaningfulRecipe,
   newInvestmentId,
+  newRecurringRuleId,
   sanitizeRecipe,
+  sanitizeRecurringRule,
 } from './recipe';
 
 export {

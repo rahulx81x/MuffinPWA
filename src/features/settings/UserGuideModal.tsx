@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import {
   Calculator,
+  CalendarSync,
   ChevronRight,
   Database,
   HelpCircle,
@@ -11,6 +12,7 @@ import {
   Sparkles,
   Tag,
   X,
+  Zap,
 } from 'lucide-react';
 import { evaluateAmountExpression } from '../../domain/evaluateAmount';
 import { backdropVariants, popoverVariants } from '../../lib/motion';
@@ -30,7 +32,7 @@ export function UserGuideModal({
   onReplayTour,
 }: UserGuideModalProps) {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'sheets' | 'calculator' | 'charts' | 'faq'
+    'overview' | 'recurring' | 'sheets' | 'calculator' | 'charts' | 'faq'
   >('overview');
 
   // Interactive Calculator Demo State
@@ -112,6 +114,18 @@ export function UserGuideModal({
             >
               <Sparkles className="h-3.5 w-3.5" />
               Overview
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('recurring')}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
+                activeTab === 'recurring'
+                  ? 'bg-primary text-on-primary shadow-warm-sm'
+                  : 'text-text-muted hover:bg-surface-muted hover:text-text'
+              }`}
+            >
+              <CalendarSync className="h-3.5 w-3.5" />
+              Recurring &amp; SIPs
             </button>
             <button
               type="button"
@@ -215,6 +229,55 @@ export function UserGuideModal({
                     </SoftButton>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'recurring' && (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-text">
+                  <h3 className="font-display font-bold text-primary mb-1 flex items-center gap-2">
+                    <CalendarSync className="h-4 w-4 text-primary" /> Monthly Recurring &amp; SIPs Engine
+                  </h3>
+                  <p className="text-xs text-text-secondary leading-relaxed">
+                    Automate regular financial commitments like Apartment Rent, Electricity Bills, WiFi, Salary, and Mutual Fund SIPs. Muffin detects when transactions are due and prompts you with a frosted Due Banner.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="cozy-card p-3.5 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs font-bold text-primary">
+                      <Zap className="h-4 w-4 fill-current text-primary" /> 1-Tap Batch Logging
+                    </div>
+                    <p className="text-xs text-text-muted">
+                      When scheduled dates arrive, a frosted alert banner appears at the top of Home and Ledger. Tap <strong>Log All Due</strong> to write all entries to your Google Sheet in one step.
+                    </p>
+                  </div>
+
+                  <div className="cozy-card p-3.5 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      <CalendarSync className="h-4 w-4" /> Smart Month Clamping
+                    </div>
+                    <p className="text-xs text-text-muted">
+                      Rules scheduled on the 31st automatically resolve to the 28th/29th in February and the 30th in 30-day months, ensuring you never miss a payment.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="rounded-xl border border-border/80 bg-surface p-3 space-y-1">
+                    <h4 className="text-xs font-bold text-text">Zero-Database Sheet Sync</h4>
+                    <p className="text-xs text-text-muted">
+                      Recurring rules are synced directly to your Google Sheet's <code>Recipe</code> tab. They follow your account across mobile and desktop without external databases.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-border/80 bg-surface p-3 space-y-1">
+                    <h4 className="text-xs font-bold text-text">Optional Duration &amp; End Dates</h4>
+                    <p className="text-xs text-text-muted">
+                      Configure an optional end date (e.g. for EMIs, loans, or temporary subscriptions). Rules automatically stop prompting once their period concludes.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -368,8 +431,8 @@ export function UserGuideModal({
                   </h4>
                   <p className="text-xs text-text-muted leading-relaxed">
                     Yes. Transactions stay in your personal Google Sheet. Muffin does not
-                    sell data or train AI models on it. See Privacy Policy and Terms in the
-                    gear menu.
+                    sell data or train AI models on it. See Privacy Policy and Terms under
+                    Settings.
                   </p>
                 </div>
 

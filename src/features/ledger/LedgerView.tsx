@@ -42,6 +42,7 @@ interface LedgerViewProps {
   onRefresh?: () => Promise<void>;
   onAddTransaction?: () => void;
   onQuickAdd?: (input: NewTransactionInput) => Promise<void> | void;
+  recurringBanner?: React.ReactNode;
 }
 
 type TypeFilter = 'all' | TransactionType;
@@ -343,10 +344,7 @@ function QuickAddStrip({
       .sort((a, b) => b[1] - a[1])
       .map(([c]) => c)
       .slice(0, 5);
-    if (top.length > 0) return top;
-    return type === 'expense'
-      ? ['Food', 'Groceries', 'Transport', 'Shopping', 'Bills']
-      : ['Salary', 'Freelance', 'Dividends', 'Cashback'];
+    return top;
   }, [existingTransactions, type]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -379,13 +377,13 @@ function QuickAddStrip({
       <form onSubmit={handleSubmit} className="space-y-2.5">
         <div className="flex items-center justify-between gap-2">
           {/* Type Switcher */}
-          <div className="flex items-center gap-1 rounded-xl bg-surface/80 p-0.5 border border-border/60">
+          <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-surface/90 p-1 shadow-warm-xs">
             <button
               type="button"
               onClick={() => setType('expense')}
-              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+              className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
                 type === 'expense'
-                  ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold shadow-sm'
+                  ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 shadow-warm-xs'
                   : 'text-text-muted hover:text-text'
               }`}
             >
@@ -394,9 +392,9 @@ function QuickAddStrip({
             <button
               type="button"
               onClick={() => setType('income')}
-              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+              className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
                 type === 'income'
-                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm'
+                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-warm-xs'
                   : 'text-text-muted hover:text-text'
               }`}
             >
@@ -457,32 +455,33 @@ function QuickAddStrip({
             loading={submitting}
             className="inline-flex min-h-10 min-w-10 h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold shadow-warm-sm disabled:opacity-40 active:scale-95"
             aria-label="Add transaction"
-            glow={false}
           >
-            <Plus className="h-4 w-4" strokeWidth={3} />
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
           </SoftButton>
         </div>
 
         {/* Category quick-select chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted shrink-0">
-            Recent:
-          </span>
-          {frequentCategories.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setCategory(cat)}
-              className={`shrink-0 min-h-[28px] rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all active:scale-95 ${
-                category === cat
-                  ? 'border-primary bg-primary/15 text-primary font-bold shadow-xs'
-                  : 'border-border/60 bg-surface/60 text-text-muted hover:border-border hover:text-text'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {frequentCategories.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted shrink-0">
+              Recent:
+            </span>
+            {frequentCategories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategory(cat)}
+                className={`shrink-0 min-h-[28px] rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all active:scale-95 ${
+                  category === cat
+                    ? 'border-primary bg-primary/15 text-primary font-bold shadow-xs'
+                    : 'border-border/60 bg-surface/60 text-text-muted hover:border-border hover:text-text'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
       </form>
     </div>
   );
@@ -497,6 +496,7 @@ export function LedgerView({
   onRefresh,
   onAddTransaction,
   onQuickAdd,
+  recurringBanner,
 }: LedgerViewProps) {
   const { masked, formatCurrency } = useMask();
   const [query, setQuery] = useState('');
@@ -703,6 +703,9 @@ export function LedgerView({
           </div>
         </div>
       )}
+
+      {/* Recurring Due Banner */}
+      {recurringBanner}
 
       {/* Search & Filter Header Bar */}
       <div className="space-y-2.5">

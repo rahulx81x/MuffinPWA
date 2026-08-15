@@ -10,6 +10,7 @@ import { FloatingNav } from './components/ui/FloatingNav';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { MuffinIcon } from './components/ui/MuffinIcon';
 import { SkeletonKpiGrid } from './components/atoms/SkeletonKpiGrid';
+import { RecurringDueBanner } from './components/molecules/RecurringDueBanner';
 import { SignInScreen } from './features/auth/SignInScreen';
 import { SheetOnboarding } from './features/auth/SheetOnboarding';
 import { HomeView } from './features/home/HomeView';
@@ -21,6 +22,7 @@ import { HeaderMenu } from './features/settings/HeaderMenu';
 import { PrivacyModal } from './features/settings/PrivacyModal';
 import { PwaInstallModal } from './features/settings/PwaInstallModal';
 import { RecipeModal } from './features/settings/RecipeModal';
+import { RecurringManagerModal } from './features/settings/RecurringManagerModal';
 import { SettingsView } from './features/settings/SettingsView';
 import { TermsModal } from './features/settings/TermsModal';
 import { TourModal } from './features/settings/TourModal';
@@ -29,6 +31,7 @@ import { useAppModals } from './hooks/useAppModals';
 import { useAuthSession } from './hooks/useAuthSession';
 import { usePlannerStore } from './hooks/usePlannerStore';
 import { useRecipeConfig } from './hooks/useRecipeConfig';
+import { useRecurringAutomation } from './hooks/useRecurringAutomation';
 import { useSheetTransactions } from './hooks/useSheetTransactions';
 import { useTheme } from './hooks/useTheme';
 import { buildFinancialMetrics, EMPTY_METRICS } from './domain/metrics';
@@ -88,6 +91,38 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [ledgerMonthFilter, setLedgerMonthFilter] = useState('');
   const [metrics, setMetrics] = useState<FinancialMetrics>(EMPTY_METRICS);
+
+  const {
+    dueSummary,
+    logging: recurringLogging,
+    showBanner: showRecurringBanner,
+    dismissBanner: dismissRecurringBanner,
+    logSingleRule: handleLogSingleRecurringRule,
+    logAllDue: handleLogAllDueRecurring,
+  } = useRecurringAutomation({
+    onTransactionsCreated: (txs) => {
+      applyTransactions(txs);
+    },
+    onRefreshTransactions: async () => {
+      await refreshTransactions();
+    },
+    onStatusMessage: (msg) => {
+      setStatusMessage(msg);
+    },
+    onError: (err) => {
+      setError(err);
+    },
+  });
+
+  const recurringBanner = showRecurringBanner ? (
+    <RecurringDueBanner
+      summary={dueSummary}
+      logging={recurringLogging}
+      onLogAll={handleLogAllDueRecurring}
+      onReview={() => openModal({ kind: 'recurring' })}
+      onDismiss={dismissRecurringBanner}
+    />
+  ) : null;
 
   const manageMode =
     modal?.kind === 'manage' ? modal.mode : ('add' as const);
@@ -384,6 +419,7 @@ export default function App() {
                     await refreshTransactions();
                   }}
                   onAddTransaction={openAddModal}
+                  recurringBanner={recurringBanner}
                 />
               ) : activeTab === 'ledger' ? (
                 <LedgerView
@@ -397,6 +433,7 @@ export default function App() {
                   }}
                   onAddTransaction={openAddModal}
                   onQuickAdd={handleQuickAdd}
+                  recurringBanner={recurringBanner}
                 />
               ) : activeTab === 'insights' ? (
                 <InsightsView
@@ -419,6 +456,7 @@ export default function App() {
                   spreadsheetTitle={auth.spreadsheetTitle || undefined}
                   onAbout={() => openModal({ kind: 'about' })}
                   onRecipe={() => openModal({ kind: 'recipe' })}
+                  onRecurring={() => openModal({ kind: 'recurring' })}
                   onGuide={() => openModal({ kind: 'guide' })}
                   onTour={() => openModal({ kind: 'tour' })}
                   onPrivacy={() => openModal({ kind: 'privacy' })}
@@ -507,6 +545,15 @@ export default function App() {
         spreadsheetId={auth.spreadsheetId}
         spreadsheetTitle={auth.spreadsheetTitle}
         investmentTypeSuggestions={investmentTypeOptions}
+      />
+      <RecurringManagerModal
+        open={modal?.kind === 'recurring'}
+        onClose={closeModal}
+        onLogSingleRule={handleLogSingleRecurringRule}
+        onLogAllDue={handleLogAllDueRecurring}
+        logging={recurringLogging}
+        transactions={sheetTransactions}
+        investmentTypeOptions={investmentTypeOptions}
       />
       <ManageTransactionModal
         open={modal?.kind === 'manage'}

@@ -4,6 +4,7 @@ import type { Transaction } from '../domain/types';
 export type AppModal =
   | { kind: 'about' }
   | { kind: 'recipe' }
+  | { kind: 'recurring' }
   | { kind: 'tour' }
   | { kind: 'privacy' }
   | { kind: 'terms' }

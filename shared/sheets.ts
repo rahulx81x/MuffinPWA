@@ -1,7 +1,7 @@
-import type { SheetTabName, TransactionType } from './types';
+import type { RecurringRule, SheetTabName, TransactionType } from './types';
+import { sanitizeRecurringRule } from './recipe';
 
 export const TAB_NAMES = ['Income', 'Expense', 'Investment'] as const satisfies readonly SheetTabName[];
-
 export const TYPE_BY_TAB: Record<SheetTabName, TransactionType> = {
   Income: 'income',
   Expense: 'expense',
@@ -57,6 +57,7 @@ export interface RecipeSheetRow {
 export function serializeRecipeToRows(config: {
   openingBalance: number;
   investments: Array<{ id?: string; type: string; amount: number }>;
+  recurringRules?: RecurringRule[];
 }): RecipeSheetRow[] {
   const rows: RecipeSheetRow[] = [
     {
@@ -81,14 +82,30 @@ export function serializeRecipeToRows(config: {
     });
   }
 
+  for (const rule of config.recurringRules || []) {
+    const sanitized = sanitizeRecurringRule(rule);
+    if (!sanitized) continue;
+    rows.push({
+      Type: 'RecurringRule',
+      Amount: sanitized.amount,
+      Id: sanitized.id,
+      Notes: JSON.stringify(sanitized),
+    });
+  }
+
   return rows;
 }
 
 export function parseRecipeFromRows(
   rows: Array<Record<string, unknown> | { get(key: string): unknown }>
-): { openingBalance: number; investments: Array<{ id: string; type: string; amount: number }> } {
+): {
+  openingBalance: number;
+  investments: Array<{ id: string; type: string; amount: number }>;
+  recurringRules: RecurringRule[];
+} {
   let openingBalance = 0;
   const investments: Array<{ id: string; type: string; amount: number }> = [];
+  const recurringRules: RecurringRule[] = [];
 
   for (const row of rows) {
     const getValue = (key: string): unknown => {
@@ -102,15 +119,40 @@ export function parseRecipeFromRows(
     const rawId = String(getValue('Id') ?? '').trim();
     const rawAmt = String(getValue('Amount') ?? '').replace(/,/g, '').trim();
     const amount = Number(rawAmt);
+    const notes = String(getValue('Notes') ?? '').trim();
 
     const isOpeningBalance =
       rawId === 'opening_balance' ||
       type.toLowerCase() === 'opening balance' ||
       type.toLowerCase() === 'openingbalance';
 
+    const isRecurringRule =
+      rawId.startsWith('rec_') ||
+      type.toLowerCase() === 'recurringrule' ||
+      type.toLowerCase() === 'recurring rule';
+
     if (isOpeningBalance) {
       if (Number.isFinite(amount)) {
         openingBalance = Math.max(0, amount);
+      }
+    } else if (isRecurringRule) {
+      let parsedRule: RecurringRule | null = null;
+      if (notes.startsWith('{') && notes.endsWith('}')) {
+        try {
+          parsedRule = sanitizeRecurringRule(JSON.parse(notes));
+        } catch {
+          // ignore json parse error
+        }
+      }
+      if (!parsedRule) {
+        parsedRule = sanitizeRecurringRule({
+          id: rawId,
+          name: type !== 'RecurringRule' ? type : 'Recurring Item',
+          amount,
+        });
+      }
+      if (parsedRule) {
+        recurringRules.push(parsedRule);
       }
     } else if (type || (Number.isFinite(amount) && amount > 0)) {
       investments.push({
@@ -121,6 +163,6 @@ export function parseRecipeFromRows(
     }
   }
 
-  return { openingBalance, investments };
+  return { openingBalance, investments, recurringRules };
 }
 

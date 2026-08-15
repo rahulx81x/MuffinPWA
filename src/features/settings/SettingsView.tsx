@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  CalendarSync,
   Check,
   Download,
   Eye,
@@ -17,6 +18,7 @@ import {
 import { useFont } from '../../hooks/useFont';
 import { useMask } from '../../hooks/useMask';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
+import { useRecipeConfig } from '../../hooks/useRecipeConfig';
 import { useTheme } from '../../hooks/useTheme';
 import { FONTS } from '../../lib/fonts';
 import {
@@ -33,6 +35,7 @@ interface SettingsViewProps {
   spreadsheetTitle?: string;
   onAbout: () => void;
   onRecipe: () => void;
+  onRecurring: () => void;
   onGuide: () => void;
   onTour: () => void;
   onPrivacy: () => void;
@@ -100,6 +103,7 @@ export function SettingsView({
   spreadsheetTitle,
   onAbout,
   onRecipe,
+  onRecurring,
   onGuide,
   onTour,
   onPrivacy,
@@ -108,10 +112,16 @@ export function SettingsView({
   onLogout,
   onInstallGuide,
 }: SettingsViewProps) {
-  const { masked, toggleMask } = useMask();
+  const { masked, toggleMask, formatCurrency } = useMask();
   const { themeId, setTheme } = useTheme();
   const { fontId, setFont } = useFont();
   const { state: installState, install, canPrompt } = usePwaInstall();
+  const { recurringRules } = useRecipeConfig();
+
+  const activeRecurringCount = recurringRules.filter((r) => r.active).length;
+  const activeRecurringTotal = recurringRules
+    .filter((r) => r.active)
+    .reduce((sum, r) => sum + r.amount, 0);
 
   const userInitial = (userName || userEmail || 'U').trim().charAt(0).toUpperCase();
 
@@ -320,6 +330,37 @@ export function SettingsView({
               glow={false}
             >
               Configure
+            </SoftButton>
+          </div>
+
+          {/* Recurring Rules & SIPs */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <CalendarSync className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-xs font-semibold text-text">Recurring Rules & SIPs</p>
+                  {activeRecurringCount > 0 && (
+                    <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                      {activeRecurringCount} Active
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-text-muted">
+                  {activeRecurringCount > 0
+                    ? `${formatCurrency(activeRecurringTotal)}/mo scheduled with smart due alert`
+                    : 'Automate rent, bills, salary, and mutual fund SIPs'}
+                </p>
+              </div>
+            </div>
+            <SoftButton
+              onClick={onRecurring}
+              className="px-3 py-1.5 text-xs font-semibold"
+              glow={false}
+            >
+              Manage
             </SoftButton>
           </div>
         </div>
