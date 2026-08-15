@@ -3,7 +3,7 @@ import { Eye, EyeOff, LogOut, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useMask } from '../../hooks/useMask';
-import { popoverVariants, springSnappy, springSoft } from '../../lib/motion';
+import { popoverVariants, springSnappy } from '../../lib/motion';
 
 interface HeaderMenuProps {
   buttonClassName?: string;

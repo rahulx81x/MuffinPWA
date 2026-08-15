@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  BarChart3,
   Calendar,
   ChevronRight,
+  Layers,
   PieChart as PieChartIcon,
   Sparkles,
   TrendingUp,
-  Layers,
 } from 'lucide-react';
 import { getOpeningBalance } from '../../config';
 import { useRecipeConfig } from '../../hooks/useRecipeConfig';
@@ -55,7 +54,7 @@ export function InsightsView({
 }: InsightsViewProps) {
   const [subTab, setSubTab] = useState<InsightsSubTab>('trends');
   const [categoryTimeRange, setCategoryTimeRange] = useState<'month' | 'all'>('month');
-  const { formatCurrency, masked } = useMask();
+  const { formatCurrency } = useMask();
   const { theme } = useTheme();
   const { config: recipeConfig } = useRecipeConfig();
 
