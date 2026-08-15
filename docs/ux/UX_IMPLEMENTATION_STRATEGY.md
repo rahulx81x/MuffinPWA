@@ -546,164 +546,173 @@ Below each pie chart, add a visually hidden data table:
 
 ---
 
-## Phase 3 — North Star
+## Phase 3 — North Star ✅ Implemented (August 2026)
 **Scope:** IA restructure, new features, design system maturity  
-**Target effort:** 4–8 weeks across multiple streams  
-**Note:** Each item is independently scoped; not all need to ship together.
+**Status:** Core items 3.1–3.3 shipped. Items 3.4–3.7 remain future roadmap.
 
 ---
 
-### 3.1 Dedicated Settings Tab
+### 3.1 Dedicated Settings Tab ✅ Shipped
 
-**New file:** `src/features/settings/SettingsView.tsx`
+**File:** `src/features/settings/SettingsView.tsx`
 
-Replace the gear menu's primary navigation role with a proper tab. The tab contains:
+Implemented full-featured Settings tab replacing the gear-menu sub-panels:
 
 ```
 Settings
 ├── Account
-│   ├── [Avatar] Name · email
+│   ├── [Avatar] Name · email · Connected Sheet
 │   └── Log out
-├── Appearance
-│   ├── Theme picker (current sub-panel UI, promoted)
-│   └── Font picker
+├── Appearance & Themes
+│   ├── Theme picker — 8 cards (4 light, 4 dark) in responsive 2×2 / 2×4 grid
+│   └── Typography Style — 7 font-family swatches
 ├── Data & Privacy
-│   ├── Mask amounts toggle
-│   └── Starting Balances (was "Recipe")
+│   ├── Mask Amounts toggle
+│   └── Starting Balances (Recipe config)
 ├── Help & About
-│   ├── User Guide
-│   ├── Technical Guide
-│   ├── Privacy Policy
-│   └── Terms of Service
-└── Install App (if PWA prompt available)
+│   ├── First-Run Tour replay
+│   ├── User Guide / Technical Guide links
+│   ├── Privacy Policy / Terms of Service
+│   └── About Muffin
+└── Download App (PWA install prompt)
 ```
 
-The `⚙️` gear icon in the header can remain for quick access to Mask Amounts only (the most frequent setting toggle).
+The gear icon was removed from the header. The profile avatar is the only header control, opening a quick user-info + logout popover.
 
-**Nav change:**
+**Nav change (implemented):**
 ```
 Before: Home | Planner | [+] | Ledger | Monthly
-After:  Dashboard | Ledger | [+] | Insights | Settings
+After:  Home | Insights | [+] | Ledger | Settings
 ```
 
-Update [`src/components/ui/FloatingNav.tsx`](../../src/components/ui/FloatingNav.tsx) and [`src/domain/types.ts`](../../src/domain/types.ts) (`AppTab` type).
+Updated [`src/components/ui/FloatingNav.tsx`](../../src/components/ui/FloatingNav.tsx) and [`src/domain/types.ts`](../../src/domain/types.ts) (`AppTab` type: `'home' | 'insights' | 'ledger' | 'settings'`).
 
 ---
 
-### 3.2 Insights Tab (Monthly + Planner merged)
+### 3.2 Insights Tab (Monthly + Planner merged) ✅ Shipped
 
-**New file:** `src/features/insights/InsightsView.tsx`
+**File:** `src/features/insights/InsightsView.tsx`
 
-Tabbed sub-navigation within the Insights screen:
+Segmented control sub-navigation within the Insights screen:
 
 ```
 Insights
-├── Trends (was MonthlyView) — bar/line charts, month-on-month delta
-├── Categories — expense category breakdown pie + top-5 list
-└── Planner — what-if scenario builder (was PlannerView)
+├── Trends — month bar charts with MoM delta; tapping a bar navigates to Ledger filtered by month
+├── Categories — SVG donut ring + ranked category breakdown list
+└── Planner — what-if scenario builder with income/expense/investment toggles
 ```
 
-The Trends sub-tab makes MonthlyView interactive — tapping a bar navigates to filtered Ledger for that month.
+The Trends sub-tab makes monthly analysis fully interactive. `MonthlyView` (`features/monthly/`) remains for backward compatibility but is no longer a primary tab.
 
 ---
 
-### 3.3 Quick-add inline entry on Ledger
+### 3.3 Quick-Add Inline Entry on Ledger ✅ Shipped
 
-Above the date-grouped list in `LedgerView`, add a persistent single-line quick-entry strip:
+**File:** `src/features/ledger/LedgerView.tsx` — `QuickAddStrip` component
+
+Persistent single-line quick-entry pinned above the date-grouped timeline:
 
 ```
-[ Expense ▼ ] [ Category... ] [ ₹ Amount ] [+]
+[ Expense ▼ ] [ Category... ] [ ₹ Amount ] [ + ]
 ```
 
-This allows power users to log a transaction in one thumb gesture without opening a modal. Only category + amount are required; date defaults to today. Tapping [+] submits. For investment transactions (requiring Investment Type), falls back to the full modal.
+- Expense/Income type switcher with animated pill
+- Dynamic recent-category chips (auto-extracted from last transactions)
+- Calculator-capable amount input (inherits `evaluateAmount`)
+- Instant submit via `onQuickAdd` prop wired through `App.tsx`
+- Falls back to full modal for Investment type (requires Investment Type field)
 
 ---
 
-### 3.4 Budget targets
+### 3.4 Budget Targets
 
-**New domain module:** `src/domain/budgets.ts`
+**Status:** Planned — not yet implemented.
 
-- Per-category monthly spending limits
-- Stored in Recipe tab of Google Sheet (new column)
-- Displayed as progress bars on the Dashboard (below expense KPI)
-- Alert when >80% and >100% consumed with toast + haptic
+Per-category monthly spending limits stored in Recipe tab; progress bars on Home; alerts at 80% and 100%.
 
 ---
 
-### 3.5 Responsive desktop layout
+### 3.5 Responsive Desktop Layout
 
-The `max-w-lg / sm:max-w-3xl / lg:max-w-5xl` constraints exist in `App.tsx` but all views are single-column. On wider viewports:
+**Status:** Planned — not yet implemented.
 
-```
-Dashboard (desktop):
-┌──────────────────┬──────────────────┐
-│  KPI cards 2-col │  Net Worth chart │
-│  (left panel)    │  + monthly trend │
-│                  │  (right panel)   │
-└──────────────────┴──────────────────┘
-
-Ledger (desktop):
-┌──────────────┬────────────────────┐
-│  Filter panel│  Transaction list  │
-│  (left side) │  (right side)      │
-└──────────────┴────────────────────┘
-```
+`max-w-lg / sm:max-w-3xl / lg:max-w-5xl` constraints exist; full 2-column desktop layout not yet built.
 
 ---
 
 ### 3.6 Offline-first with IndexedDB
 
-The PWA shell already loads offline. Extend with:
-- Cache transactions in IndexedDB on fetch
-- Show cached data immediately; refresh in background (stale-while-revalidate)
-- Queue mutations offline; sync when connectivity returns
-- UI indicator for "Offline — showing cached data" with last-sync timestamp
+**Status:** Planned — not yet implemented.
+
+PWA shell loads offline; IndexedDB caching and offline mutation queue are future work.
 
 ---
 
-### 3.7 Keyboard shortcut system (desktop/tablet)
+### 3.7 Keyboard Shortcut System
 
-| Key | Action |
-|---|---|
-| `N` | New transaction (open FAB modal) |
-| `/` | Focus search in Ledger |
-| `1`–`4` | Switch tabs (Dashboard, Ledger, Insights, Settings) |
-| `Esc` | Close any open modal |
-| `Ctrl+M` | Toggle amount mask |
-
-Register via a `useKeyboardShortcuts` hook that is no-op on touch-primary devices.
+**Status:** Excluded from scope — power users on mobile PWA do not benefit from desktop hotkeys. Not implemented.
 
 ---
 
-## Implementation Priority Matrix
+### Additional: 8 Themes & Glassmorphism ✅ Shipped
 
-| Item | Phase | Mobile Impact | Effort | Priority |
-|---|---|---|---|---|
-| Fix text-[9px] | 1.1 | High | 5 min | 🔴 P0 |
-| Rename Recipe → Starting Balances | 1.2 | High | 15 min | 🔴 P0 |
-| Escape key dismiss | 1.3 | Medium | 30 min | 🔴 P0 |
-| aria-modal on modals | 1.4 | Medium | 1 hr | 🔴 P0 |
-| Touch target sizes | 1.5 | High | 30 min | 🔴 P0 |
-| SVG chart titles | 1.6 | Low | 1 hr | 🟡 P1 |
-| Dark theme contrast fix | 1.7 | Medium | 30 min | 🟡 P1 |
-| Button loading spinner | 1.8 | Very High | 1 hr | 🔴 P0 |
-| Timed toast + undo | 1.9 | High | 1 hr | 🟡 P1 |
-| Skeleton cards | 1.10 | Very High | 2 hr | 🟡 P1 |
-| Focus trap | 2.1 | High | 3 hr | 🟡 P1 |
-| Shared TransactionForm | 2.2 | Medium | 1 day | 🟡 P1 |
-| Swipe-to-reveal | 2.3 | Very High | 1.5 days | 🟡 P1 |
-| Pull-to-refresh | 2.4 | Very High | 4 hr | 🟡 P1 |
-| Remove More Details toggle | 2.5 | High | 1 day | 🟡 P1 |
-| Empty state components | 2.6 | High | 4 hr | 🟡 P1 |
-| Monthly drill-down | 2.7 | High | 1 day | 🟢 P2 |
-| SR chart data table | 2.8 | Low | 2 hr | 🟢 P2 |
-| Settings tab | 3.1 | Very High | 1 week | 🟢 P2 |
-| Insights tab | 3.2 | High | 2 weeks | 🟢 P2 |
-| Quick-add inline entry | 3.3 | Very High | 1 week | 🟢 P2 |
-| Budget targets | 3.4 | Very High | 2 weeks | 🟢 P2 |
-| Desktop responsive layout | 3.5 | Low | 1 week | 🔵 P3 |
-| Offline-first IndexedDB | 3.6 | Very High | 3 weeks | 🔵 P3 |
-| Keyboard shortcuts | 3.7 | Low | 3 days | 🔵 P3 |
+**Themes added in Phase 3:**
+- 🌸 **Lavender Berry** (light) — violet pastel with `#7C3AED` accent
+- 🌿 **Midnight Emerald** (dark) — deep pine with `#10B981` accent
+
+**Glassmorphism system hardened:**
+- `.nav-glass`: `backdrop-filter: blur(28px) saturate(200%)` at 88% `surface-strong` opacity
+- Specular rim highlights on cards (`inset 0 1px 0 rgba(255,255,255,0.2)`)
+- Ambient canvas orbs boosted to `primary/20` and `primary-muted/25` with full opacity animation
+- Header: `bg-surface/75 backdrop-blur-2xl`
+- Nav active tab: full solid gradient capsule with `0 4px 14px rgba(accent, 0.45)` glow
+
+---
+
+### Additional: Simplified Header Menu ✅ Shipped
+
+**File:** `src/features/settings/HeaderMenu.tsx`
+
+The gear/settings sub-panel was fully removed from the header. The header now shows only the profile avatar button (`ring-2 ring-primary/70`, gradient fill for initial letter). Clicking opens a `createPortal` popover (z-9999) with:
+- Google photo / avatar initial
+- User display name and email
+- Log out button
+
+All settings (themes, fonts, mask, recipe, guides) are in the Settings tab.
+
+---
+
+## Implementation Priority Matrix (Updated)
+
+| Item | Phase | Status | Priority |
+|---|---|---|---|
+| Fix text-[9px] | 1.1 | ✅ Done | 🔴 P0 |
+| Rename Recipe → Starting Balances | 1.2 | ✅ Done | 🔴 P0 |
+| Escape key dismiss | 1.3 | ✅ Done | 🔴 P0 |
+| aria-modal on modals | 1.4 | ✅ Done | 🔴 P0 |
+| Touch target sizes | 1.5 | ✅ Done | 🔴 P0 |
+| SVG chart titles | 1.6 | ✅ Done | 🟡 P1 |
+| Dark theme contrast fix | 1.7 | ✅ Done | 🟡 P1 |
+| Button loading spinner | 1.8 | ✅ Done | 🔴 P0 |
+| Timed toast + undo | 1.9 | ✅ Done | 🟡 P1 |
+| Skeleton cards | 1.10 | ✅ Done | 🟡 P1 |
+| Focus trap | 2.1 | ✅ Done | 🟡 P1 |
+| Shared TransactionForm | 2.2 | ✅ Done | 🟡 P1 |
+| Swipe-to-reveal | 2.3 | ✅ Done | 🟡 P1 |
+| Pull-to-refresh | 2.4 | ✅ Done | 🟡 P1 |
+| Remove More Details toggle | 2.5 | ✅ Done | 🟡 P1 |
+| Empty state components | 2.6 | ✅ Done | 🟡 P1 |
+| Monthly drill-down | 2.7 | ✅ Done | 🟢 P2 |
+| SR chart data table | 2.8 | ✅ Done | 🟢 P2 |
+| Settings tab | 3.1 | ✅ **Shipped** | 🟢 P2 |
+| Insights tab | 3.2 | ✅ **Shipped** | 🟢 P2 |
+| Quick-add inline entry | 3.3 | ✅ **Shipped** | 🟢 P2 |
+| 8 themes + glassmorphism | 3.x | ✅ **Shipped** | 🟢 P2 |
+| Simplified header menu | 3.x | ✅ **Shipped** | 🟢 P2 |
+| Budget targets | 3.4 | 🔲 Planned | 🔵 P3 |
+| Desktop responsive layout | 3.5 | 🔲 Planned | 🔵 P3 |
+| Offline-first IndexedDB | 3.6 | 🔲 Planned | 🔵 P3 |
+| Keyboard shortcuts | 3.7 | ❌ Excluded | — |
 
 ---
 
@@ -714,11 +723,10 @@ Register via a `useKeyboardShortcuts` hook that is no-op on touch-primary device
 |---|---|
 | `src/App.tsx` | Text size fix, touch targets, toast timer + undo |
 | `src/index.css` | Chocolate theme contrast fix |
-| `src/features/settings/HeaderMenu.tsx` | Rename Recipe label |
-| `src/features/settings/RecipeModal.tsx` | Rename title |
+| `src/features/settings/HeaderMenu.tsx` | Simplified to profile avatar + logout popover |
+| `src/features/settings/RecipeModal.tsx` | Rename title to Starting Balances |
 | `src/features/ledger/ManageTransactionModal.tsx` | Escape key, aria-modal, spinner |
 | `src/features/home/ChartModal.tsx` | Escape key, aria-modal, SVG titles |
-| `src/features/settings/RecipeModal.tsx` | Escape key, aria-modal |
 | `src/components/ui/ConfirmModal.tsx` | Escape key, aria-modal |
 | `src/features/settings/AboutModal.tsx` | Escape key, aria-modal |
 | `src/components/ui/SoftButton.tsx` | Add `loading` prop |
@@ -732,22 +740,24 @@ Register via a `useKeyboardShortcuts` hook that is no-op on touch-primary device
 | `src/components/molecules/TransactionForm.tsx` | **NEW** (extracted from below) |
 | `src/features/ledger/ManageTransactionModal.tsx` | Refactored to use TransactionForm |
 | `src/features/planner/PlannerView.tsx` | Refactored to use TransactionForm |
-| `src/features/ledger/LedgerView.tsx` | Swipe-to-reveal, pull-to-refresh |
+| `src/features/ledger/LedgerView.tsx` | Swipe-to-reveal, pull-to-refresh, QuickAddStrip |
 | `src/features/home/HomeView.tsx` | Remove More Details toggle; always-visible sections |
 | `src/components/molecules/EmptyState.tsx` | **NEW** |
 | `src/features/monthly/MonthlyView.tsx` | Drill-down to Ledger |
 | `src/features/home/ChartModal.tsx` | SR data table |
 
-### Phase 3 files created
+### Phase 3 files created / modified
 | File | Notes |
 |---|---|
-| `src/features/settings/SettingsView.tsx` | Full settings tab |
-| `src/features/insights/InsightsView.tsx` | Merged monthly + planner |
-| `src/domain/budgets.ts` | Budget targets domain logic |
-| `src/hooks/usePullToRefresh.ts` | Pull-to-refresh hook |
-| `src/hooks/useKeyboardShortcuts.ts` | Desktop shortcut registry |
-| `src/domain/types.ts` | Updated `AppTab` union |
-| `src/components/ui/FloatingNav.tsx` | Updated tabs |
+| `src/features/settings/SettingsView.tsx` | **NEW** — full settings tab (8 themes, 7 fonts, account, privacy, guides) |
+| `src/features/settings/HeaderMenu.tsx` | **MODIFIED** — simplified to profile avatar + logout popover only |
+| `src/features/insights/InsightsView.tsx` | **NEW** — unified Trends + Categories + Planner hub |
+| `src/features/ledger/LedgerView.tsx` | **MODIFIED** — added persistent `QuickAddStrip` |
+| `src/domain/types.ts` | **MODIFIED** — `AppTab` is now `'home' \| 'insights' \| 'ledger' \| 'settings'` |
+| `src/components/ui/FloatingNav.tsx` | **MODIFIED** — new left/right tab items and icons |
+| `src/lib/themes.ts` | **MODIFIED** — `ThemeId` + `THEMES` array extended with `lavender` and `emerald` |
+| `src/index.css` | **MODIFIED** — CSS blocks for `lavender`, `emerald` themes; glassmorphism tuned |
+| `src/App.tsx` | **MODIFIED** — wired `insights`, `settings` tabs; `handleQuickAdd`; enhanced ambient orbs |
 
 ---
 

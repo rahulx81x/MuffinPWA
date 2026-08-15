@@ -2,9 +2,11 @@ export type ThemeId =
   | 'classic'
   | 'blueberry'
   | 'pistachio'
+  | 'lavender'
   | 'chocolate'
   | 'velvet'
-  | 'caramel';
+  | 'caramel'
+  | 'emerald';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -89,6 +91,26 @@ export const THEMES: ThemeDefinition[] = [
     ],
   },
   {
+    id: 'lavender',
+    name: 'Lavender Berry',
+    mode: 'light',
+    background: '#F8F6FC',
+    card: '#EFEBF8',
+    accent: '#7C3AED',
+    text: '#24183E',
+    border: '#D8CEF0',
+    chartColors: [
+      '#7C3AED',
+      '#6D28D9',
+      '#8B5CF6',
+      '#A78BFA',
+      '#047857',
+      '#E11D48',
+      '#D97706',
+      '#0284C7',
+    ],
+  },
+  {
     id: 'chocolate',
     name: 'Double Chocolate',
     mode: 'dark',
@@ -146,6 +168,26 @@ export const THEMES: ThemeDefinition[] = [
       '#F87171',
       '#FCD34D',
       '#C2410C',
+    ],
+  },
+  {
+    id: 'emerald',
+    name: 'Midnight Emerald',
+    mode: 'dark',
+    background: '#0B1612',
+    card: '#13241D',
+    accent: '#10B981',
+    text: '#ECFDF5',
+    border: '#234638',
+    chartColors: [
+      '#10B981',
+      '#059669',
+      '#34D399',
+      '#6EE7B7',
+      '#38BDF8',
+      '#F59E0B',
+      '#F43F5E',
+      '#A78BFA',
     ],
   },
 ];

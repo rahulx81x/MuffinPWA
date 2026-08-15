@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { completeTour, unlinkSheet, AuthRequiredError } from './api/client';
+import { completeTour, createTransaction, unlinkSheet, AuthRequiredError } from './api/client';
 import type { MutationResult } from './api/client';
+import { TAB_BY_TYPE } from '@shared';
 import { SoftButton } from './components/ui/SoftButton';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import { FloatingNav } from './components/ui/FloatingNav';
@@ -12,15 +13,15 @@ import { SkeletonKpiGrid } from './components/atoms/SkeletonKpiGrid';
 import { SignInScreen } from './features/auth/SignInScreen';
 import { SheetOnboarding } from './features/auth/SheetOnboarding';
 import { HomeView } from './features/home/HomeView';
+import { InsightsView } from './features/insights/InsightsView';
 import { LedgerView } from './features/ledger/LedgerView';
 import { ManageTransactionModal } from './features/ledger/ManageTransactionModal';
-import { MonthlyView } from './features/monthly/MonthlyView';
-import { PlannerView } from './features/planner/PlannerView';
 import { AboutModal } from './features/settings/AboutModal';
 import { HeaderMenu } from './features/settings/HeaderMenu';
 import { PrivacyModal } from './features/settings/PrivacyModal';
 import { PwaInstallModal } from './features/settings/PwaInstallModal';
 import { RecipeModal } from './features/settings/RecipeModal';
+import { SettingsView } from './features/settings/SettingsView';
 import { TermsModal } from './features/settings/TermsModal';
 import { TourModal } from './features/settings/TourModal';
 import { UserGuideModal } from './features/settings/UserGuideModal';
@@ -32,7 +33,7 @@ import { useSheetTransactions } from './hooks/useSheetTransactions';
 import { useTheme } from './hooks/useTheme';
 import { buildFinancialMetrics, EMPTY_METRICS } from './domain/metrics';
 import { pageTransition, pageVariants, springSoft } from './lib/motion';
-import type { AppTab, FinancialMetrics, Transaction } from './domain/types';
+import type { AppTab, FinancialMetrics, NewTransactionInput, SheetRowData, Transaction } from './domain/types';
 
 export default function App() {
   const { themeId } = useTheme();
@@ -146,6 +147,35 @@ export default function App() {
     }
   }
 
+  async function handleQuickAdd(input: NewTransactionInput) {
+    setMutating(true);
+    setStatusMessage(null);
+    try {
+      const tabName = TAB_BY_TYPE[input.type];
+      const rowData: SheetRowData = {
+        Date: input.date,
+        Category: input.category,
+        Amount: input.amount,
+        Comment: input.comment || '',
+        ...(input.type === 'investment' && input.investmentType
+          ? { 'Investment Type': input.investmentType }
+          : {}),
+      };
+      const result = await createTransaction(tabName, rowData);
+      await handleManageSuccess(result);
+    } catch (err) {
+      if (err instanceof AuthRequiredError) {
+        setStatusMessage('Signed out — please sign in again.');
+        return;
+      }
+      setStatusMessage(
+        err instanceof Error ? err.message : 'Could not add transaction.'
+      );
+    } finally {
+      setMutating(false);
+    }
+  }
+
   function handleDelete(tx: Transaction) {
     if (tx.tabName == null || tx.rowIndex == null) return;
     const label = tx.category || 'this transaction';
@@ -215,9 +245,6 @@ export default function App() {
     void executeUnlinkSheet();
   }
 
-  const headerBtnClass =
-    'inline-flex min-h-10 min-w-10 h-10 w-10 items-center justify-center rounded-xl border border-border/80 bg-surface-strong/90 text-text-secondary shadow-warm-sm backdrop-blur-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40';
-
   if (authBooting) {
     return <LoadingScreen />;
   }
@@ -265,17 +292,17 @@ export default function App() {
       <motion.div
         key={themeId}
         aria-hidden="true"
-        initial={{ opacity: 0.3, scale: 0.95 }}
-        animate={{ opacity: 0.8, scale: 1 }}
+        initial={{ opacity: 0.4, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       >
-        <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -right-20 top-1/3 h-80 w-80 rounded-full bg-primary-muted/15 blur-3xl" />
-        <div className="absolute bottom-10 left-1/4 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -left-10 -top-10 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -right-16 top-1/4 h-96 w-96 rounded-full bg-primary-muted/25 blur-3xl" />
+        <div className="absolute bottom-12 left-1/3 h-80 w-80 rounded-full bg-primary/18 blur-3xl" />
       </motion.div>
 
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-surface/80 backdrop-blur-xl safe-pt transition-theme">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-surface/75 backdrop-blur-2xl safe-pt transition-theme">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2 sm:max-w-3xl lg:max-w-5xl">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
@@ -302,17 +329,10 @@ export default function App() {
             </p>
           </div>
           <HeaderMenu
-            buttonClassName={headerBtnClass}
             userName={auth.user.name}
             userEmail={auth.user.email}
             userPicture={auth.user.picture}
-            onAbout={() => openModal({ kind: 'about' })}
-            onRecipe={() => openModal({ kind: 'recipe' })}
-            onGuide={() => openModal({ kind: 'guide' })}
-            onPrivacy={() => openModal({ kind: 'privacy' })}
-            onTerms={() => openModal({ kind: 'terms' })}
             onLogout={() => void handleLogout()}
-            onInstallGuide={() => openModal({ kind: 'install' })}
           />
         </div>
       </header>
@@ -365,14 +385,6 @@ export default function App() {
                   }}
                   onAddTransaction={openAddModal}
                 />
-              ) : activeTab === 'planner' ? (
-                <PlannerView
-                  sheetTransactions={sheetTransactions}
-                  plannerTransactions={plannerTransactions}
-                  onAdd={handleAddPlanner}
-                  onRemove={handleRemovePlanner}
-                  onClear={handleClearPlanner}
-                />
               ) : activeTab === 'ledger' ? (
                 <LedgerView
                   transactions={ledgerTransactions}
@@ -384,15 +396,36 @@ export default function App() {
                     await refreshTransactions();
                   }}
                   onAddTransaction={openAddModal}
+                  onQuickAdd={handleQuickAdd}
                 />
-              ) : (
-                <MonthlyView
+              ) : activeTab === 'insights' ? (
+                <InsightsView
                   transactions={ledgerTransactions}
+                  plannerTransactions={plannerTransactions}
                   onSelectMonth={(mKey) => {
                     setLedgerMonthFilter(mKey);
                     setActiveTab('ledger');
                   }}
+                  onAddPlanner={handleAddPlanner}
+                  onRemovePlanner={handleRemovePlanner}
+                  onClearPlanner={handleClearPlanner}
                   onAddTransaction={openAddModal}
+                />
+              ) : (
+                <SettingsView
+                  userName={auth.user.name}
+                  userEmail={auth.user.email}
+                  userPicture={auth.user.picture}
+                  spreadsheetTitle={auth.spreadsheetTitle || undefined}
+                  onAbout={() => openModal({ kind: 'about' })}
+                  onRecipe={() => openModal({ kind: 'recipe' })}
+                  onGuide={() => openModal({ kind: 'guide' })}
+                  onTour={() => openModal({ kind: 'tour' })}
+                  onPrivacy={() => openModal({ kind: 'privacy' })}
+                  onTerms={() => openModal({ kind: 'terms' })}
+                  onChangeSheet={handleChangeSheet}
+                  onLogout={() => void handleLogout()}
+                  onInstallGuide={() => openModal({ kind: 'install' })}
                 />
               )}
             </motion.div>

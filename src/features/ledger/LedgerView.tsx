@@ -9,6 +9,7 @@ import {
   Home as HomeIcon,
   MoreVertical,
   Pencil,
+  Plus,
   Search,
   ShoppingBag,
   SlidersHorizontal,
@@ -27,7 +28,7 @@ import {
   springSoft,
 } from '../../lib/motion';
 import { monthKey, monthLabel } from '../../domain/metrics';
-import type { Transaction, TransactionType } from '../../domain/types';
+import type { NewTransactionInput, Transaction, TransactionType } from '../../domain/types';
 import { FocusTrap } from '../../components/atoms/FocusTrap';
 import { EmptyState } from '../../components/molecules/EmptyState';
 import { SoftButton } from '../../components/ui/SoftButton';
@@ -40,6 +41,7 @@ interface LedgerViewProps {
   initialMonthFilter?: string;
   onRefresh?: () => Promise<void>;
   onAddTransaction?: () => void;
+  onQuickAdd?: (input: NewTransactionInput) => Promise<void> | void;
 }
 
 type TypeFilter = 'all' | TransactionType;
@@ -313,6 +315,179 @@ function SwipeableTransactionRow({
   );
 }
 
+function QuickAddStrip({
+  onQuickAdd,
+  onOpenFullModal,
+  existingTransactions,
+  disabled,
+}: {
+  onQuickAdd: (input: NewTransactionInput) => Promise<void> | void;
+  onOpenFullModal?: () => void;
+  existingTransactions: Transaction[];
+  disabled?: boolean;
+}) {
+  const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [category, setCategory] = useState('');
+  const [amount, setAmount] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Derive frequent categories based on type
+  const frequentCategories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const tx of existingTransactions) {
+      if (tx.type !== type) continue;
+      const cat = tx.category?.trim();
+      if (cat) counts[cat] = (counts[cat] || 0) + 1;
+    }
+    const top = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([c]) => c)
+      .slice(0, 5);
+    if (top.length > 0) return top;
+    return type === 'expense'
+      ? ['Food', 'Groceries', 'Transport', 'Shopping', 'Bills']
+      : ['Salary', 'Freelance', 'Dividends', 'Cashback'];
+  }, [existingTransactions, type]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const num = parseFloat(amount);
+    if (isNaN(num) || num <= 0 || !category.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const now = new Date();
+      const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      await onQuickAdd({
+        type,
+        category: category.trim(),
+        amount: num,
+        date: todayIso,
+        comment: '',
+      });
+      setAmount('');
+      setCategory('');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const isValid = parseFloat(amount) > 0 && category.trim().length > 0;
+
+  return (
+    <div className="cozy-card border border-border/80 bg-surface-strong/95 p-3 sm:p-4 shadow-warm-sm backdrop-blur-md">
+      <form onSubmit={handleSubmit} className="space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
+          {/* Type Switcher */}
+          <div className="flex items-center gap-1 rounded-xl bg-surface/80 p-0.5 border border-border/60">
+            <button
+              type="button"
+              onClick={() => setType('expense')}
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                type === 'expense'
+                  ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold shadow-sm'
+                  : 'text-text-muted hover:text-text'
+              }`}
+            >
+              Expense
+            </button>
+            <button
+              type="button"
+              onClick={() => setType('income')}
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                type === 'income'
+                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm'
+                  : 'text-text-muted hover:text-text'
+              }`}
+            >
+              Income
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+              Quick Log (Today)
+            </span>
+            {onOpenFullModal && (
+              <button
+                type="button"
+                onClick={onOpenFullModal}
+                className="text-[11px] font-semibold text-primary hover:underline"
+                title="Open detailed transaction modal"
+              >
+                Detailed &rarr;
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Input strip */}
+        <div className="flex items-center gap-2">
+          {/* Category Input */}
+          <div className="relative flex-1 min-w-0">
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Category (e.g. Food)"
+              className="w-full min-h-10 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-medium text-text placeholder-text-muted outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+            />
+          </div>
+
+          {/* Amount Input */}
+          <div className="relative w-24 sm:w-32 shrink-0">
+            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted">
+              ₹
+            </span>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="any"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              className="w-full min-h-10 rounded-xl border border-border bg-surface pl-6 pr-2.5 py-2 text-xs font-bold text-text tabular-nums placeholder-text-muted outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <SoftButton
+            type="submit"
+            disabled={!isValid || disabled || submitting}
+            loading={submitting}
+            className="inline-flex min-h-10 min-w-10 h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold shadow-warm-sm disabled:opacity-40 active:scale-95"
+            aria-label="Add transaction"
+            glow={false}
+          >
+            <Plus className="h-4 w-4" strokeWidth={3} />
+          </SoftButton>
+        </div>
+
+        {/* Category quick-select chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted shrink-0">
+            Recent:
+          </span>
+          {frequentCategories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setCategory(cat)}
+              className={`shrink-0 min-h-[28px] rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all active:scale-95 ${
+                category === cat
+                  ? 'border-primary bg-primary/15 text-primary font-bold shadow-xs'
+                  : 'border-border/60 bg-surface/60 text-text-muted hover:border-border hover:text-text'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function LedgerView({
   transactions,
   onEdit,
@@ -321,6 +496,7 @@ export function LedgerView({
   initialMonthFilter = '',
   onRefresh,
   onAddTransaction,
+  onQuickAdd,
 }: LedgerViewProps) {
   const { masked, formatCurrency } = useMask();
   const [query, setQuery] = useState('');
@@ -727,6 +903,16 @@ export function LedgerView({
           </div>
         </div>
       </div>
+
+      {/* Quick Add Strip */}
+      {onQuickAdd && (
+        <QuickAddStrip
+          onQuickAdd={onQuickAdd}
+          onOpenFullModal={onAddTransaction}
+          existingTransactions={transactions}
+          disabled={mutating}
+        />
+      )}
 
       {/* Transactions List Grouped by Date */}
       <div>

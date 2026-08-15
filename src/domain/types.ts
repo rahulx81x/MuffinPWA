@@ -8,7 +8,7 @@ export type {
   TransactionType,
 } from '@shared';
 
-export type AppTab = 'home' | 'planner' | 'ledger' | 'monthly';
+export type AppTab = 'home' | 'ledger' | 'insights' | 'settings';
 
 export type MetricKey =
   | 'currentMonthIncome'
@@ -51,6 +51,7 @@ export interface FinancialMetrics {
   growthSinceStart: number;
   growthSinceStartPct: number;
   avgMonthlySavings: number;
+  avgMonthlySavingsPct: number;
   monthsTracked: number;
   investmentBreakup: Record<string, number>;
 }

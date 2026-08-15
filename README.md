@@ -132,9 +132,9 @@ Currency display defaults to **â‚¹** with Indian digit grouping (e.g. â‚�
 | Tab | What it does |
 | --- | --- |
 | **Home** | KPI cards; tap for charts or transaction lists. Investment Breakup shows top 3 chips; PF lives under More Details |
-| **Planner** | Add temporary income/expense/investment lines (browser-only) and see this month's plan vs sheet data |
-| **Ledger** | Searchable chronological list; add / edit / delete sheet-backed rows via the manage modal |
-| **Monthly** | Month-by-month KPI breakdown |
+| **Insights** | Unified analytics hub with three sub-views: Trends (month-by-month charts with drill-down to Ledger), Categories (SVG donut + expense breakdown list), and Planner (what-if scenario planning) |
+| **Ledger** | Searchable chronological list with persistent **QuickAdd strip** (inline Expense/Income logger with recent-category chips); full add / edit / delete sheet-backed rows via the manage modal |
+| **Settings** | Dedicated settings tab: Account (avatar, name, email, linked sheet, logout), Appearance (8 theme cards + 7 font styles), Data & Privacy (mask toggle + Starting Balances), Help & About, and PWA Install |
 
 Also included:
 
@@ -142,17 +142,19 @@ Also included:
 - **Legal Compliance & Privacy** — Public [Privacy Policy](public/privacy.html) (`/privacy`) and [Terms of Service](public/terms.html) (`/terms`) adhering to official [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy) Limited Use requirements. Contact support: `rahulgouri072@gmail.com`.
 - **Interactive Touch Charts** — Tappable Donut/Pie slices with stroke expansion & glow, crosshair guidelines on trend graphs, pulsing active aura rings, and Month-over-Month (MoM) delta calculation cards.
 - **Date-Grouped Fintech Timeline Ledger** — Grouped timeline headers ("Today", "Yesterday", "Mon, 10 Aug 2026") with daily totals, category-colored icon badges (`ArrowUpRight`, `Utensils`, `Coffee`, `ShoppingBag`, `Zap`), unclipped `createPortal` Action Sheet menu, and View Transaction Details modal.
+- **Ledger QuickAdd Strip** — Single-line persistent quick logger pinned above the timeline: Expense/Income type switcher, dynamic recent-category chips, amount input, and instant one-tap submission without opening a modal.
 - **1-Tap Dynamic Category Chips & Calculator Math** — Auto-extracted top 8 frequent category chips, decimal input mode for phone keypads, micro-haptics (`navigator.vibrate(8)`), and safe math expression evaluator supporting BODMAS arithmetic and `%` percentage calculations (e.g. `1000 * 18%` → `180` for tax/GST).
-- **6 Premium Visual Upgrades** — Ambient FinTech radial aura glows on KPI cards, pastel category chip pills, ambient motion mesh gradient background blobs, 135° card background gradients (`cozy-card`) unified across all tabs (Home, Ledger, Monthly, Planner), and tactile card press physics.
+- **Premium Glassmorphism UI** — Frosted nav pill (`backdrop-filter: blur(28px) saturate(200%)`), ambient accent-glow orbs on the canvas, specular rim highlights on all cards, and a high-contrast active tab capsule gradient.
 - **Boot splash** — Themed `LoadingScreen` (floating muffin mark + ambient glow) while the session resolves; no skeleton placeholders.
-- **Signed-in welcome** — Home greets you by first name (`Good morning, …`); the settings menu shows your Google avatar, name, and email above Log out.
+- **Signed-in welcome** — Home greets you by first name (`Good morning, …`); tap the **profile avatar** in the top-right header for a popover with your Google name, email, and Log out.
 - **Themed favicon** — Tab favicon SVG recolors with the active theme via `src/lib/muffinIcon.ts`. Install / home-screen icons stay on static PNGs in the web manifest (required for a real Android WebAPK).
-- **Six muffin themes** — 3 light (Classic, Blueberry, Pistachio Matcha) and 3 dark (Double Chocolate, Red Velvet, Salted Caramel), with CSS design tokens + themed chart palettes. `theme-color` / status bar track the canvas background.
-- **Seven switchable display fonts** — Muffin (Outfit + Plus Jakarta Sans, default), Josefin — Elegant, Fredoka — Playful, Exo 2 — Futuristic, Atkinson — Clear, Syne — Bold, Bricolage — Quirky. Selected from the settings menu → **Font** sub-panel; choice persists in `localStorage`.
+- **Eight muffin themes** — 4 light (Classic, Blueberry, Pistachio Matcha, **Lavender Berry**) and 4 dark (Double Chocolate, Red Velvet, Salted Caramel, **Midnight Emerald**), with CSS design tokens + themed chart palettes. `theme-color` / status bar track the canvas background.
+- **Seven switchable display fonts** — Muffin (Outfit + Plus Jakarta Sans, default), Josefin — Elegant, Fredoka — Playful, Exo 2 — Futuristic, Atkinson — Clear, Syne — Bold, Bricolage — Quirky. Selected from the **Settings** tab → Typography Style; choice persists in `localStorage`.
 - **Google Sign-In (multi-user)** — Each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token.
-- **Header settings (⚙️)** — One menu, in order: **Mask amounts**, **Theme** (sub-panel), **Font** (sub-panel), **About**, **Recipe**, **Guides** (sub-panel → User Guide + Technical Guide), **Privacy Policy**, **Terms of Service**, **Download App** (PWA install), signed-in account chip, and **Log out**.
-- **Recipe** — View/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in your Google Sheet's `Recipe` tab; local cache for snappy UI).
-- **First-run tour** — Short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again. Replay anytime from settings → Guides → User Guide → Replay First-Run Tour.
+- **Profile Header Menu** — Tap the user avatar (top-right header) for a popover showing your Google photo, name, email, and Log out. All main settings live in the dedicated **Settings** tab.
+- **Recipe / Starting Balances** — View/copy linked spreadsheet ID; set initial opening balance and multiple initial investments by type (synced in your Google Sheet's `Recipe` tab; local cache for snappy UI). Accessible from Settings → Data & Privacy.
+- **First-run tour** — Short guided intro (how the app works, main features, Recipe) shown once for new users after they link a sheet; Skip / Got it persists so returning users never see it again. Replay anytime from Settings → Help & About → Replay First-Run Tour.
+
 
 ### 1.6 Everyday data flow
 
@@ -392,19 +394,27 @@ You do **not** need a redeploy to set starting balances. In the live app (while 
 4. Add one or more **Initial investments** (type + amount), e.g. Fixed Deposits, Mutual Funds.
 5. Save — values are written to the **Recipe** tab in your Google Sheet (and cached locally as `muffinRecipe` for the UI). They feed net worth / investment breakup on every device you sign into.
 
+1. Open the **Settings** tab → **Data & Privacy** → **Starting Balances**.
+2. View / copy the linked spreadsheet ID.
+3. Set **Initial opening balance** (liquid cash before sheet history).
+4. Add one or more **Initial investments** (type + amount), e.g. Fixed Deposits, Mutual Funds.
+5. Save — values are written to the **Recipe** tab in your Google Sheet (and cached locally as `muffinRecipe` for the UI). They feed net worth / investment breakup on every device you sign into.
+
 If you had Recipe values in Netlify Blobs from an earlier version, the first successful sign-in migrates them to your Google Sheet `Recipe` tab automatically and purges financial numbers from Blobs.
 
 Optional code defaults (used when no Recipe exists yet) and currency live in `src/config.ts` (`INITIAL_*`, `CURRENCY`). Changing currency still requires a rebuild/redeploy.
 
 ### 2.10 Everyday usage
 
-1. Add, edit, or delete rows using the in-app **+** / Ledger edit flows — these write straight to your Google Sheet through the Netlify Function. You can also edit the sheet directly in Google Sheets.
+1. Add, edit, or delete rows using the in-app **+** button (QuickAdd strip on Ledger) or the full manage modal — these write straight to your Google Sheet through the Netlify Function. You can also edit the sheet directly in Google Sheets.
 2. Open your Netlify site (or pull to refresh) to see the latest numbers; the app re-fetches after every in-app add/edit/delete automatically.
-3. On Home, you’ll see a time-based welcome with your first name; tap KPI cards to open charts or filtered lists; open **More Details** for Provident Fund and extra KPIs.
-4. Use **Planner** for temporary what-if entries (device-only).
-5. Open the header **⚙️ settings** for Mask, Theme, Font, About, Recipe, Guides, Privacy, Terms, Download App, your signed-in account, and Log out.
-6. After your first sheet link, walk through the **tour** (or skip it) — it will not appear again once completed.
-7. On your phone browser, use **Download App** from the gear menu and choose **Install app** (preferred on Android) so Muffin installs as a full PWA, not a browser shortcut.
+3. On **Home**, you'll see a time-based welcome with your first name; tap KPI cards to open charts or filtered lists; scroll down for Provident Fund and lifetime KPIs.
+4. Tap **Insights** to explore monthly trend charts, category spending breakdowns (SVG donut), and the Scenario Planner — all in one tab with a segmented sub-navigation.
+5. Use the **Ledger** QuickAdd strip for fast single-line expense/income logging; tap any row for full details or edit/delete.
+6. Open the **Settings** tab for Themes (8 options), Fonts (7 styles), Mask Amounts, Starting Balances, Guides, Privacy, Terms, and Download App.
+7. Tap your **profile avatar** (top-right header) for a quick popover with your Google account info and Log out.
+8. After your first sheet link, walk through the **tour** (or skip it) — it will not appear again once completed.
+9. On your phone browser, tap **Download App** (Settings → Help & About) and choose **Install app** (preferred on Android) so Muffin installs as a full PWA, not a browser shortcut.
 
 ### 2.11 Troubleshooting
 
@@ -578,15 +588,23 @@ Growth compares current net worth to `initialInvestments + openingBalance` (from
 ### 3.6 Frontend application structure
 
 - **`App.tsx`** is a thin shell: wires hooks, hosts tabs/modals, recomputes metrics when sheet rows or Recipe change.
+- **Navigation IA** — `AppTab` union is `'home' | 'insights' | 'ledger' | 'settings'`. `FloatingNav` renders two left tabs (Home, Insights), a center `+` FAB, and two right tabs (Ledger, Settings).
 - **Lifecycle hooks:** `useAuthSession` (boot, logout, visibility health probe), `useSheetTransactions` (load/mutate/refresh), `usePlannerStore` (`plannerTransactions` localStorage), `useAppModals` (single discriminated modal union).
-- **Feature folders:** `features/auth`, `home`, `ledger`, `planner`, `monthly`, `settings` — views and feature-owned modals live with their domain.
+- **Feature folders:**
+  - `features/insights/InsightsView.tsx` — unified Insights hub with Trends (month bar charts with Ledger drill-down), Categories (SVG donut + breakdown list), and Planner sub-tabs in a segmented control.
+  - `features/settings/SettingsView.tsx` — dedicated Settings tab with Account card (avatar, name, email, sheet link, logout), live theme picker (8 variants in 2×4 or 2×2 grid), font picker (7 styles), mask toggle, Starting Balances, guides, PWA install, About.
+  - `features/settings/HeaderMenu.tsx` — simplified to a profile avatar trigger; opens a lightweight `createPortal` popover with user photo/name/email and Log out only (no sub-panels).
+  - `features/ledger/LedgerView.tsx` — persistent `QuickAddStrip` pinned above timeline: Expense/Income switcher, recent-category chips, amount field, instant submit.
+  - `features/home/HomeView.tsx`, `features/auth/`, `features/monthly/`, `features/planner/`.
 - **Shared UI:** `components/ui` (`SoftButton`, `FloatingNav`, `ConfirmModal`, `LoadingScreen`, `MuffinIcon`).
 - **`KpiCard` tones:** semantic colors for income/expense/investment; Net Worth uses the theme **hero** primary gradient.
-- **Themes:** `src/lib/themes.ts` catalogs six variants; `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color` to the canvas background (status bar match). Charts pull per-theme `chartColors`.
+- **Themes:** `src/lib/themes.ts` catalogs **eight** variants (`classic`, `blueberry`, `pistachio`, `lavender` / `chocolate`, `velvet`, `caramel`, `emerald`); `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color` to the canvas background (status bar match). Charts pull per-theme `chartColors`.
 - **Fonts:** `src/lib/fonts.ts` catalogs seven font families; `useFont` applies `data-font` + `--font-body` / `--font-display` CSS properties, persists `muffinFont`. Default "Muffin" uses Outfit (display) + Plus Jakarta Sans (body); alternatives include Josefin Sans, Fredoka, Exo 2, Atkinson Hyperlegible, Syne, and Bricolage Grotesque.
+- **Glassmorphism system:** `.nav-glass` uses `backdrop-filter: blur(28px) saturate(200%)` at 88% `surface-strong` opacity with a specular rim (`inset 0 1px 0 rgba(255,255,255,0.2)`); `.cozy-card` and `.glass-panel` have tuned per-theme backdrop filters; ambient orbs on the canvas (`primary/20`, `primary-muted/25`) enhance glass refraction behind translucent surfaces.
 - **Motion:** shared springs/variants in `src/lib/motion.ts` (Framer Motion).
 - **Hooks:** also `useTheme`, `useFont`, `useMask`, `useRecipeConfig` (local cache + `persistConfig` → Blobs), `usePwaInstall` (`beforeinstallprompt`).
-- Layout is mobile-first (`max-w-lg`), branded sticky header with a single gear control, floating bottom nav width-matched to cards, themed modals/forms portaled above the nav. Home opens with a signed-in greeting; session boot uses `LoadingScreen`.
+- Layout is mobile-first (`max-w-lg`), branded sticky header (`bg-surface/75 backdrop-blur-2xl`) with a profile avatar control, floating bottom pill nav with active gradient capsule, themed modals/forms portaled above the nav. Home opens with a signed-in greeting; session boot uses `LoadingScreen`.
+
 
 ### 3.7 PWA behavior
 
@@ -752,8 +770,8 @@ node scripts/capture-showcase.mjs http://localhost:8888
 
 ## 5. Credits
 
-- **Vibe Coded by Rahul Gouri, 2026** (also shown in-app via gear → **About**).
-- Built as a cozy personal finance PWA using React, Vite, Tailwind (six muffin theme tokens), Framer Motion, Lucide, Syne/DM Sans, react-select, and Netlify Functions.
+- **Vibe Coded by Rahul Gouri, 2026** (also shown in-app via Settings → About).
+- Built as a cozy personal finance PWA using React, Vite, Tailwind (eight muffin theme tokens: Classic, Blueberry, Pistachio, Lavender, Chocolate, Velvet, Caramel, Emerald), Framer Motion, Lucide, Outfit/Plus Jakarta Sans, react-select, and Netlify Functions.
 - Live site: [https://muffin-ledger.netlify.app/](https://muffin-ledger.netlify.app/).
 - Product showcase deck: `docs/showcase/Muffin_Showcase.pptx` (regenerate with `npm run showcase`).
 - Google Sheets used as a lightweight, human-editable data backend, accessed via the Google Sheets API over OAuth 2.0.
