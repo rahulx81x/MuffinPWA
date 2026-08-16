@@ -100,6 +100,7 @@ export default function App() {
     logSingleRule: handleLogSingleRecurringRule,
     logAllDue: handleLogAllDueRecurring,
   } = useRecurringAutomation({
+    transactions: sheetTransactions,
     onTransactionsCreated: (txs) => {
       applyTransactions(txs);
     },

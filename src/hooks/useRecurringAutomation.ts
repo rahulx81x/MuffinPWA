@@ -7,13 +7,44 @@ import { useRecipeConfig } from './useRecipeConfig';
 import type { RecurringRule } from '@shared';
 
 interface UseRecurringAutomationOptions {
+  transactions?: Transaction[];
   onTransactionsCreated?: (transactions: Transaction[]) => void;
   onRefreshTransactions?: () => Promise<unknown>;
   onStatusMessage?: (message: string) => void;
   onError?: (message: string) => void;
 }
 
+function matchesExistingTransaction(
+  rule: RecurringRule,
+  logDate: string,
+  transactions: Transaction[]
+): boolean {
+  const monthKey = logDate.slice(0, 7); // 'YYYY-MM'
+  const ruleCat = rule.category.toLowerCase().trim();
+  const ruleName = rule.name.toLowerCase().trim();
+
+  return transactions.some((tx) => {
+    if (tx.type !== rule.type) return false;
+    if (Math.abs(tx.amount - rule.amount) > 0.01) return false;
+    if (tx.date.slice(0, 7) !== monthKey) return false;
+
+    const txCat = (tx.category || '').toLowerCase().trim();
+    const txComment = (tx.comment || '').toLowerCase().trim();
+    const txInvType = (tx.investmentType || '').toLowerCase().trim();
+    const ruleInvType = (rule.investmentType || '').toLowerCase().trim();
+
+    const catMatch = txCat === ruleCat;
+    const commentMatch = Boolean(ruleName && txComment.includes(ruleName));
+    const invMatch =
+      rule.type === 'investment' &&
+      Boolean(ruleInvType && (txInvType === ruleInvType || txCat === ruleInvType));
+
+    return catMatch || commentMatch || invMatch;
+  });
+}
+
 export function useRecurringAutomation({
+  transactions = [],
   onTransactionsCreated,
   onRefreshTransactions,
   onStatusMessage,
@@ -45,13 +76,20 @@ export function useRecurringAutomation({
         const tabName = TAB_BY_TYPE[rule.type];
         const logDate = getRecurringRuleLogDate(rule);
 
+        // Pre-check for duplicate transaction in this billing cycle
+        if (matchesExistingTransaction(rule, logDate, transactions)) {
+          await markRulesLogged([rule.id], dueSummary.monthKey);
+          onStatusMessage?.(`"${rule.name}" already logged for this month.`);
+          return true;
+        }
+
         const rowData: SheetRowData =
           rule.type === 'investment'
             ? {
                 Date: logDate,
                 Category: rule.category,
                 Amount: rule.amount,
-                'Investment Type': rule.investmentType || '',
+                'Investment Type': rule.investmentType || rule.category,
                 Comment: rule.comment || rule.name,
               }
             : {
@@ -82,7 +120,7 @@ export function useRecurringAutomation({
         setLogging(false);
       }
     },
-    [dueSummary.monthKey, markRulesLogged, onTransactionsCreated, onRefreshTransactions, onStatusMessage, onError]
+    [transactions, dueSummary.monthKey, markRulesLogged, onTransactionsCreated, onRefreshTransactions, onStatusMessage, onError]
   );
 
   const logAllDue = useCallback(async (): Promise<boolean> => {
@@ -90,13 +128,19 @@ export function useRecurringAutomation({
     if (due.length === 0) return true;
 
     setLogging(true);
-    try {
-      let latestTransactions: Transaction[] = [];
-      const loggedIds: string[] = [];
+    const successfullyLoggedIds: string[] = [];
+    let latestTransactions: Transaction[] = [];
 
+    try {
       for (const rule of due) {
         const tabName = TAB_BY_TYPE[rule.type];
         const logDate = getRecurringRuleLogDate(rule);
+
+        // Check if an identical transaction is already present
+        if (matchesExistingTransaction(rule, logDate, transactions)) {
+          successfullyLoggedIds.push(rule.id);
+          continue;
+        }
 
         const rowData: SheetRowData =
           rule.type === 'investment'
@@ -104,7 +148,7 @@ export function useRecurringAutomation({
                 Date: logDate,
                 Category: rule.category,
                 Amount: rule.amount,
-                'Investment Type': rule.investmentType || '',
+                'Investment Type': rule.investmentType || rule.category,
                 Comment: rule.comment || rule.name,
               }
             : {
@@ -115,13 +159,16 @@ export function useRecurringAutomation({
               };
 
         const res = await createTransaction(tabName, rowData);
-        loggedIds.push(rule.id);
+        successfullyLoggedIds.push(rule.id);
+
         if (res.transactions?.length) {
           latestTransactions = res.transactions;
         }
       }
 
-      await markRulesLogged(loggedIds, dueSummary.monthKey);
+      if (successfullyLoggedIds.length > 0) {
+        await markRulesLogged(successfullyLoggedIds, dueSummary.monthKey);
+      }
 
       if (latestTransactions.length && onTransactionsCreated) {
         onTransactionsCreated(latestTransactions);
@@ -133,6 +180,14 @@ export function useRecurringAutomation({
       return true;
     } catch (err) {
       console.error('Failed to batch log recurring transactions:', err);
+      // Even if subsequent items failed, persist the ones that succeeded
+      if (successfullyLoggedIds.length > 0) {
+        try {
+          await markRulesLogged(successfullyLoggedIds, dueSummary.monthKey);
+        } catch {
+          // ignore background update error
+        }
+      }
       onError?.(
         err instanceof Error ? err.message : 'Failed to log some recurring items.'
       );
@@ -140,7 +195,7 @@ export function useRecurringAutomation({
     } finally {
       setLogging(false);
     }
-  }, [dueSummary.dueItems, dueSummary.monthKey, markRulesLogged, onTransactionsCreated, onRefreshTransactions, onStatusMessage, onError]);
+  }, [dueSummary.dueItems, dueSummary.monthKey, transactions, markRulesLogged, onTransactionsCreated, onRefreshTransactions, onStatusMessage, onError]);
 
   return {
     dueSummary,

@@ -656,10 +656,10 @@
           <span class="badge">Key invariants</span>
           <h4>Contract the UI depends on</h4>
           <ul>
-            <li>Four fixed sheet tabs: <code>Income</code>, <code>Expense</code>, <code>Investment</code>, <code>Recipe</code></li>
+            <li>Five fixed sheet tabs: <code>Income</code>, <code>Expense</code>, <code>Investment</code>, <code>Recipe</code>, <code>Rules</code></li>
             <li>Transaction type = tab membership (not a column)</li>
             <li>PF rows are display-only carve-outs from net worth</li>
-            <li>Recipe balances (in <code>Recipe</code> tab) seed opening liquid + initial investments</li>
+            <li>Recipe balances (in <code>Recipe</code> tab) seed opening liquid + initial investments; <code>Rules</code> tab isolates recurring rules</li>
           </ul>
         </div>
       </div>
@@ -852,8 +852,8 @@ netlify/
         </div>
         <div class="accordion-content">
           <ul style="margin:0 0 10px; padding-left:1.1rem;">
-            <li><code>POST sheet-link</code> — body <code>{ spreadsheetId }</code> (raw ID or Sheets URL). Validates access, persists to Blobs.</li>
-            <li><code>POST sheet-create</code> — body optional <code>{ title }</code> (default <code>Muffin Finances</code>); creates a workbook with the four required tabs / headers (Income, Expense, Investment, Recipe), then links it. Idempotent if a sheet is already linked.</li>
+            <li><code>POST sheet-link</code> — body <code>{ spreadsheetId }</code> (raw ID or Sheets URL). Validates access, persists to Blobs. Auto-provisions <code>Rules</code> and <code>Recipe</code> tabs if missing.</li>
+            <li><code>POST sheet-create</code> — body optional <code>{ title }</code> (default <code>Muffin Finances</code>); creates a workbook with the five required tabs / headers (Income, Expense, Investment, Recipe, Rules), then links it. Idempotent if a sheet is already linked.</li>
             <li><code>POST sheet-unlink</code> — clears <code>spreadsheetId</code> on the user record (does not delete the Google Sheet).</li>
           </ul>
           <p>Missing sheet yields client <code>NeedsSheetError</code> (<code>code: 'needsSheet'</code>) so the SPA can show onboarding.</p>
@@ -915,7 +915,7 @@ netlify/
         </div>
         <div class="accordion-content">
           <ul style="margin:0; padding-left:1.1rem;">
-            <li><code>GET /recipe</code> · <code>PUT /recipe</code> with <code>{ recipe: { openingBalance, investments[] } }</code> — persisted in your Google Sheet <code>Recipe</code> tab (with automatic Blobs-to-Sheet migration for existing users); SPA also caches <code>muffinRecipe</code> in localStorage. Primary hydrate path is <code>auth-me.recipe</code> via <code>hydrateRecipeConfig</code>; the client saves with <code>saveRecipe</code> (PUT).</li>
+            <li><code>GET /recipe</code> · <code>PUT /recipe</code> with <code>{ recipe: { openingBalance, investments[], recurringRules[] } }</code> — starting balances are persisted in your Google Sheet <code>Recipe</code> tab, while recurring rules &amp; SIPs are stored in the dedicated <code>Rules</code> tab. SPA caches <code>muffinRecipe</code> in localStorage. Primary hydrate path is <code>auth-me.recipe</code> via <code>hydrateRecipeConfig</code>; the client saves with <code>saveRecipe</code> (PUT).</li>
             <li><code>POST /tour-complete</code> — sets <code>tourCompletedAt</code> so returning users skip the first-run tour.</li>
           </ul>
         </div>
@@ -1290,13 +1290,15 @@ closingLiquid_m = closingLiquid_(m-1) + liquidSavings_m</pre>
           <span class="chev">▼</span>
         </div>
         <div class="accordion-content">
-          <p>Enables zero-database scheduling of recurring expenses, incomes, and investment SIPs stored directly in the Google Sheet <code>Recipe</code> tab.</p>
+          <p>Enables zero-database scheduling of recurring expenses, incomes, and investment SIPs stored directly in the Google Sheet <code>Rules</code> tab.</p>
           <ul style="margin:0; padding-left:1.1rem; margin-top:8px;">
-            <li><strong>Storage Protocol</strong>: Serialized in <code>Recipe</code> sheet tab as rows with <code>Type: "RecurringRule"</code> and <code>Notes: JSON.stringify(rule)</code>.</li>
+            <li><strong>Storage Protocol</strong>: Stored as tabular rows in the dedicated <code>Rules</code> sheet tab with first-class columns (<code>Id</code>, <code>Name</code>, <code>Type</code>, <code>Category</code>, <code>Amount</code>, <code>DayOfMonth</code>, <code>InvestmentType</code>, <code>Comment</code>, <code>Active</code>, <code>AutoPrompt</code>, <code>LastLoggedMonth</code>, <code>EndDate</code>, <code>CreatedAt</code>).</li>
+            <li><strong>Isolated Starting Balances</strong>: Separate from the <code>Recipe</code> tab so editing initial cash/investments never touches recurring schedules.</li>
+            <li><strong>Duplicate Prevention Guard</strong>: Pre-checks transaction ledger for matching category, amount, and billing cycle (<code>YYYY-MM</code>) before writing rows to sheet.</li>
             <li><strong>Clamping Algorithm</strong>: <code>getDaysInMonth(year, month)</code> dynamically clamps scheduled days (e.g. 31st resolves to Feb 28/29, Apr 30).</li>
-            <li><strong>Cycle Key Tracking</strong>: Tracks <code>lastLoggedMonth</code> in format <code>YYYY-MM</code> to prevent duplicate logs in the same monthly cycle.</li>
-            <li><strong>Due State Engine</strong>: <code>calculateRecurringDueSummary(rules, transactions, today)</code> categorizes rules into <em>Due</em>, <em>Logged This Month</em>, <em>Upcoming</em>, and <em>Expired</em>.</li>
-            <li><strong>1-Tap Batch Logging</strong>: Banner on Home/Ledger allows 1-click batch writing of all due rules to the respective Google Sheet tabs in chronological sequence.</li>
+            <li><strong>Cycle Key Tracking</strong>: Tracks <code>LastLoggedMonth</code> in format <code>YYYY-MM</code> to prevent duplicate logs across devices and sessions.</li>
+            <li><strong>Due State Engine</strong>: <code>calculateRecurringDueSummary(rules, today)</code> categorizes rules into <em>Due</em>, <em>Logged This Month</em>, <em>Upcoming</em>, and <em>Expired</em>.</li>
+            <li><strong>1-Tap Batch Logging</strong>: Banner on Home/Ledger allows 1-click batch writing of all due rules to the respective Google Sheet tabs with atomic per-rule completion tracking.</li>
           </ul>
         </div>
       </div>

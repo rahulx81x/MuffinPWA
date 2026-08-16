@@ -77,9 +77,9 @@ Every money movement is a **transaction** with:
 | **Comment** | Optional note (shown in lists) |
 | **Investment Type** | Investment tab only: label such as Mutual Fund, Fixed Deposit, or Provident Fund (breakup uses non-PF types; PF labels detect the dedicated card) |
 
-Transaction *type* (`Income` / `Expense` / `Investment`) is not a column you fill in â€” it's determined by **which tab the row lives on**. The app reads a single Google Sheets workbook with three fixed tabs: `Income`, `Expense`, and `Investment`.
+Transaction *type* (`Income` / `Expense` / `Investment`) is not a column you fill in — it's determined by **which tab the row lives on**. The app manages a single Google Sheets workbook across dedicated tabs: `Income`, `Expense`, `Investment`, `Recipe` (Starting Balances), and `Rules` (Recurring Rules & SIPs).
 
-Sample layouts for each tab live in:
+Sample layouts for transaction tabs live in:
 
 - `templates/income_sheet_template.csv`
 - `templates/expense_sheet_template.csv`
@@ -426,7 +426,7 @@ Optional code defaults (used when no Recipe exists yet) and currency live in `sr
 | Numbers stuck at starting balances only | Env vars missing, deploy not triggered after adding them, or sheet not linked yet — also check Recipe opening balance / investments (gear → Recipe) |
 | Recipe missing on another device | Sign in with the same Google account; Recipe syncs from your Google Sheet `Recipe` tab after Save |
 | First-run tour keeps appearing | Complete or skip the tour (writes `tourCompletedAt` on your Blobs user record); returning accounts with an older linked sheet are auto-skipped |
-| "Sheet tab X was not found" error | Confirm tabs are named exactly `Income`, `Expense`, `Investment`, and `Recipe` (case-sensitive, no extra spaces) |
+| "Sheet tab X was not found" error | Confirm tabs are named exactly `Income`, `Expense`, and `Investment` (case-sensitive, no extra spaces; `Recipe` and `Rules` tabs are auto-created if missing) |
 | Some months missing | Dates invalid or Amount cells not plain numbers |
 | Investments missing from breakup | Fill in **Investment Type** on the Investment tab (falls back to Category if blank) |
 | PF showing in net worth / liquid | Tag PF with Investment Type `Provident Fund`, `PF`, `EPF`, or `PPF` so it is excluded from those totals |
