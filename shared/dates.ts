@@ -8,9 +8,10 @@ export function parseSheetDate(raw: unknown): Date {
     (typeof raw === 'string' && /^\d{5}(\.\d+)?$/.test(raw.trim()))
   ) {
     const num = Number(raw);
-    const sheetsEpoch = new Date(Date.UTC(1899, 11, 30));
-    const millis = sheetsEpoch.getTime() + num * 86400000;
-    return new Date(millis);
+    const days = Math.floor(num);
+    const date = new Date(1899, 11, 30);
+    date.setDate(date.getDate() + days);
+    return date;
   }
 
   const str = String(raw).trim();
@@ -22,12 +23,6 @@ export function parseSheetDate(raw: unknown): Date {
       parseInt(m[2], 10) - 1,
       parseInt(m[3], 10)
     );
-  }
-
-  const parsedTs = Date.parse(str);
-  if (!Number.isNaN(parsedTs)) {
-    const d = new Date(parsedTs);
-    if (!Number.isNaN(d.getTime())) return d;
   }
 
   m = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
@@ -43,6 +38,12 @@ export function parseSheetDate(raw: unknown): Date {
       return new Date(year, first - 1, second);
     }
     return new Date(year, second - 1, first);
+  }
+
+  const parsedTs = Date.parse(str);
+  if (!Number.isNaN(parsedTs)) {
+    const d = new Date(parsedTs);
+    if (!Number.isNaN(d.getTime())) return d;
   }
 
   return new Date(str);

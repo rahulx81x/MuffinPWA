@@ -15,9 +15,18 @@ function pct(part: number, whole: number): number {
 }
 
 export function monthKey(dateStr: string | Date): string {
-  const date =
-    typeof dateStr === 'string' ? new Date(dateStr + 'T00:00:00') : dateStr;
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  if (typeof dateStr === 'string') {
+    const trimmed = dateStr.trim();
+    if (/^\d{4}-\d{2}/.test(trimmed)) {
+      return trimmed.slice(0, 7);
+    }
+    const date = new Date(trimmed.includes('T') ? trimmed : `${trimmed}T00:00:00`);
+    if (!Number.isNaN(date.getTime())) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
+    return trimmed.slice(0, 7);
+  }
+  return `${dateStr.getFullYear()}-${String(dateStr.getMonth() + 1).padStart(2, '0')}`;
 }
 
 export function monthLabel(key: string): string {

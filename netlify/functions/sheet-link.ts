@@ -5,6 +5,7 @@ import { getOrMigrateUserRecipe } from '../lib/recipeStore';
 import {
   assertRequiredTabs,
   ensureRecipeTab,
+  ensureRulesTab,
   openSpreadsheet,
   parseSpreadsheetId,
 } from '../lib/sheetBootstrap';
@@ -27,7 +28,7 @@ export const handler = withSession(
     const auth = oauthClientFromRefreshToken(session.refreshToken);
     const doc = await openSpreadsheet(auth, spreadsheetId);
     assertRequiredTabs(doc);
-    await ensureRecipeTab(doc);
+    await Promise.all([ensureRecipeTab(doc), ensureRulesTab(doc)]);
 
     const existingRecord = await getUserRecord(session.sub);
     const record = await setUserSheet(session.sub, {

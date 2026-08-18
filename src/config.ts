@@ -95,6 +95,8 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatSignedCurrency(amount: number): string {
-  const sign = amount >= 0 ? '+' : '';
-  return `${sign}${formatCurrency(amount)}`;
+  if (amount < 0) {
+    return `-${formatCurrency(Math.abs(amount))}`;
+  }
+  return `+${formatCurrency(amount)}`;
 }

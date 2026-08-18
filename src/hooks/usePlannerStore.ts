@@ -12,7 +12,10 @@ export function toPlannerTransaction(input: NewTransactionInput): Transaction {
     type: input.type,
     amount: input.amount,
     comment: input.comment,
-    investmentType: input.type === 'investment' ? input.category : undefined,
+    investmentType:
+      input.type === 'investment'
+        ? input.investmentType || input.category
+        : undefined,
   };
 }
 
