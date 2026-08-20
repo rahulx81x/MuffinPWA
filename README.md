@@ -148,7 +148,7 @@ Also included:
 - **Boot splash** — Themed `LoadingScreen` (floating muffin mark + ambient glow) while the session resolves; no skeleton placeholders.
 - **Signed-in welcome** — Home greets you by first name (`Good morning, …`); tap the **profile avatar** in the top-right header for a popover with your Google name, email, and Log out.
 - **Themed favicon** — Tab favicon SVG recolors with the active theme via `src/lib/muffinIcon.ts`. Install / home-screen icons stay on static PNGs in the web manifest (required for a real Android WebAPK).
-- **Eight muffin themes** — 4 light (Classic, Blueberry, Pistachio Matcha, **Lavender Berry**) and 4 dark (Double Chocolate, Red Velvet, Salted Caramel, **Midnight Emerald**), with CSS design tokens + themed chart palettes. `theme-color` / status bar track the canvas background.
+- **Eight muffin themes** — 4 light (Classic, Blueberry, Pistachio Matcha, **Lavender Berry**) and 4 dark (Double Chocolate, Red Velvet, **Midnight Blueberry**, **Midnight Emerald**), with CSS design tokens + themed chart palettes. `theme-color` / status bar track the canvas background.
 - **Seven switchable display fonts** — Muffin (Outfit + Plus Jakarta Sans, default), Josefin — Elegant, Fredoka — Playful, Exo 2 — Futuristic, Atkinson — Clear, Syne — Bold, Bricolage — Quirky. Selected from the **Settings** tab → Typography Style; choice persists in `localStorage`.
 - **Google Sign-In (multi-user)** — Each Google account gets its own session, linked spreadsheet, and Recipe; no shared Playground refresh token.
 - **Profile Header Menu** — Tap the user avatar (top-right header) for a popover showing your Google photo, name, email, and Log out. All main settings live in the dedicated **Settings** tab.
@@ -599,7 +599,7 @@ Growth compares current net worth to `initialInvestments + openingBalance` (from
   - `features/home/HomeView.tsx`, `features/auth/`, `features/monthly/`, `features/planner/`.
 - **Shared UI:** `components/ui` (`SoftButton`, `FloatingNav`, `ConfirmModal`, `LoadingScreen`, `MuffinIcon`).
 - **`KpiCard` tones:** semantic colors for income/expense/investment; Net Worth uses the theme **hero** primary gradient.
-- **Themes:** `src/lib/themes.ts` catalogs **eight** variants (`classic`, `blueberry`, `pistachio`, `lavender` / `chocolate`, `velvet`, `caramel`, `emerald`); `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color` to the canvas background (status bar match). Charts pull per-theme `chartColors`.
+- **Themes:** `src/lib/themes.ts` catalogs **eight** variants (`classic`, `blueberry`, `pistachio`, `lavender` / `chocolate`, `velvet`, `midnight`, `emerald`); `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color` to the canvas background (status bar match). Charts pull per-theme `chartColors`.
 - **Fonts:** `src/lib/fonts.ts` catalogs seven font families; `useFont` applies `data-font` + `--font-body` / `--font-display` CSS properties, persists `muffinFont`. Default "Muffin" uses Outfit (display) + Plus Jakarta Sans (body); alternatives include Josefin Sans, Fredoka, Exo 2, Atkinson Hyperlegible, Syne, and Bricolage Grotesque.
 - **Glassmorphism system:** `.nav-glass` uses `backdrop-filter: blur(28px) saturate(200%)` at 88% `surface-strong` opacity with a specular rim (`inset 0 1px 0 rgba(255,255,255,0.2)`); `.cozy-card` and `.glass-panel` have tuned per-theme backdrop filters; ambient orbs on the canvas (`primary/20`, `primary-muted/25`) enhance glass refraction behind translucent surfaces.
 - **Motion:** shared springs/variants in `src/lib/motion.ts` (Framer Motion).
@@ -772,7 +772,7 @@ node scripts/capture-showcase.mjs http://localhost:8888
 ## 5. Credits
 
 - **Vibe Coded by Rahul Gouri, 2026** (also shown in-app via Settings → About).
-- Built as a cozy personal finance PWA using React, Vite, Tailwind (eight muffin theme tokens: Classic, Blueberry, Pistachio, Lavender, Chocolate, Velvet, Caramel, Emerald), Framer Motion, Lucide, Outfit/Plus Jakarta Sans, react-select, and Netlify Functions.
+- Built as a cozy personal finance PWA using React, Vite, Tailwind (eight muffin theme tokens: Classic, Blueberry, Pistachio, Lavender, Chocolate, Velvet, Midnight Blueberry, Emerald), Framer Motion, Lucide, Outfit/Plus Jakarta Sans, react-select, and Netlify Functions.
 - Live site: [https://muffin-ledger.netlify.app/](https://muffin-ledger.netlify.app/).
 - Product showcase deck: `docs/showcase/Muffin_Showcase.pptx` (regenerate with `npm run showcase`).
 - Google Sheets used as a lightweight, human-editable data backend, accessed via the Google Sheets API over OAuth 2.0.

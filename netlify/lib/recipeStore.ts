@@ -61,21 +61,32 @@ export async function saveRecipeToSheet(
   ]);
 
   // 1. Update Recipe tab (starting balances)
+  const existingRecipeRows = await recipeSheet.getRows();
   await recipeSheet.clearRows();
   const recipeRows = serializeRecipeToRows(recipe);
   if (recipeRows.length > 0) {
-    await recipeSheet.addRows(
-      recipeRows as unknown as Record<string, string | number>[]
-    );
+    try {
+      await recipeSheet.addRows(
+        recipeRows as unknown as Record<string, string | number>[]
+      );
+    } catch (err) {
+      console.error('[muffin] Failed to write recipe rows after clearing — data may be lost', err);
+      throw err;
+    }
   }
 
   // 2. Update Rules tab (recurring rules)
   await rulesSheet.clearRows();
   const ruleRows = serializeRulesToRows(recipe.recurringRules || []);
   if (ruleRows.length > 0) {
-    await rulesSheet.addRows(
-      ruleRows as unknown as Record<string, string | number>[]
-    );
+    try {
+      await rulesSheet.addRows(
+        ruleRows as unknown as Record<string, string | number>[]
+      );
+    } catch (err) {
+      console.error('[muffin] Failed to write rules rows after clearing — data may be lost', err);
+      throw err;
+    }
   }
 
   return recipe;

@@ -12,9 +12,11 @@
     classic: true,
     blueberry: true,
     pistachio: true,
+    lavender: true,
     chocolate: true,
     velvet: true,
-    caramel: true,
+    midnight: true,
+    emerald: true,
   };
 
   var THEMES = {
@@ -36,6 +38,12 @@
       chip: '#fbfcfa',
       dark: false,
     },
+    lavender: {
+      background: '#F8F6FC',
+      accent: '#7C3AED',
+      chip: '#f5f0fb',
+      dark: false,
+    },
     chocolate: {
       background: '#1C130D',
       accent: '#F59E0B',
@@ -48,10 +56,16 @@
       chip: '#351a1e',
       dark: true,
     },
-    caramel: {
-      background: '#17120A',
-      accent: '#F97316',
-      chip: '#322617',
+    midnight: {
+      background: '#0B1120',
+      accent: '#3B82F6',
+      chip: '#1e293b',
+      dark: true,
+    },
+    emerald: {
+      background: '#0B1612',
+      accent: '#10B981',
+      chip: '#173024',
       dark: true,
     },
   };
@@ -59,7 +73,9 @@
   var id = DEFAULT_LIGHT;
   try {
     var stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && VALID[stored]) {
+    if (stored === 'caramel') {
+      id = 'midnight';
+    } else if (stored && VALID[stored]) {
       id = stored;
     } else {
       var legacy = localStorage.getItem(LEGACY_KEY);

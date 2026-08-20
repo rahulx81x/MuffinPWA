@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { getOpeningBalance } from '../../config';
 import { useRecipeConfig } from '../../hooks/useRecipeConfig';
 import { useMask } from '../../hooks/useMask';
 import { buildMonthlyKPIs, currentMonthKey, monthKey } from '../../domain/metrics';
@@ -54,11 +53,11 @@ export function PlannerView({
   const savingsPct = pct(investment + liquid, income);
 
   const previousClose = useMemo(() => {
-    const monthly = buildMonthlyKPIs(sheetTransactions);
+    const monthly = buildMonthlyKPIs(sheetTransactions, recipeConfig.openingBalance);
     const prior = monthly.filter((m) => m.key < thisMonth);
     return prior.length > 0
       ? prior[prior.length - 1].closingLiquid
-      : getOpeningBalance();
+      : recipeConfig.openingBalance;
   }, [sheetTransactions, thisMonth, recipeConfig]);
   const closingBalance = previousClose + liquid;
 

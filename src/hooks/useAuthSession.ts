@@ -16,6 +16,7 @@ import {
 
 const SESSION_PROBE_MIN_INTERVAL_MS = 30_000;
 const STATUS_TOAST_MS = 5_000;
+const UNDO_TOAST_MS = 8_000;
 
 export type StatusMessage =
   | string
@@ -111,9 +112,11 @@ export function useAuthSession() {
 
   useEffect(() => {
     if (!statusMessage) return;
+    const hasUndo = typeof statusMessage === 'object' && statusMessage?.undoFn;
+    const duration = hasUndo ? UNDO_TOAST_MS : STATUS_TOAST_MS;
     const timer = window.setTimeout(() => {
       setStatusMessage(null);
-    }, STATUS_TOAST_MS);
+    }, duration);
     return () => window.clearTimeout(timer);
   }, [statusMessage]);
 

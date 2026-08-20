@@ -3,8 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import {
   formatCurrency as formatCurrencyRaw,
-  getInitialInvestmentTotal,
-  getOpeningBalance,
 } from '../../config';
 import { useMask, MASKED_VALUE } from '../../hooks/useMask';
 import { useRecipeConfig } from '../../hooks/useRecipeConfig';
@@ -615,7 +613,9 @@ function LineChart({
 function buildClosingSeries(
   transactions: Transaction[],
   metricKey: MetricKey,
-  masked: boolean
+  masked: boolean,
+  openingBalance: number,
+  initialInvestmentTotal: number
 ): {
   points: number[];
   labels: string[];
@@ -623,13 +623,13 @@ function buildClosingSeries(
   asPercent: boolean;
   multiSeries?: MultiSeriesItem[];
 } {
-  const monthly = buildMonthlyKPIs(transactions);
+  const monthly = buildMonthlyKPIs(transactions, openingBalance);
   if (!monthly.length) {
     return { points: [], labels: [], footer: '', asPercent: false };
   }
 
-  let liquid = getOpeningBalance();
-  let investment = getInitialInvestmentTotal();
+  let liquid = openingBalance;
+  let investment = initialInvestmentTotal;
   const points: number[] = [];
   const labels: string[] = [];
   let asPercent = metricKey === 'currentMonthSavingsPct';
@@ -802,7 +802,7 @@ export function ChartModal({
     if (!activeKey || kind !== 'line') {
       return { points: [], labels: [], footer: '', asPercent: false };
     }
-    return buildClosingSeries(transactions, activeKey, masked);
+    return buildClosingSeries(transactions, activeKey, masked, recipeConfig.openingBalance, recipeConfig.investments.reduce((s, r) => s + r.amount, 0));
   }, [activeKey, kind, transactions, masked, recipeConfig]);
 
   useEffect(() => {

@@ -34,7 +34,7 @@ export function useSheetTransactions({
 
   const ledgerTransactions = useMemo(
     () =>
-      [...sheetTransactions].sort((a, b) => a.date.localeCompare(b.date)),
+      [...sheetTransactions].sort((a, b) => b.date.localeCompare(a.date)),
     [sheetTransactions]
   );
 

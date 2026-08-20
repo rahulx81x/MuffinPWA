@@ -1,9 +1,4 @@
-import {
-  getInitialInvestmentTotal,
-  getInitialInvestments,
-  getOpeningBalance,
-} from '../config';
-import type { FinancialMetrics, MonthlyKPI, Transaction } from './types';
+import type { FinancialMetrics, MonthlyKPI, RecipeInvestment, Transaction } from './types';
 import {
   isCountedInvestment,
   sumProvidentFund,
@@ -52,7 +47,10 @@ export function currentMonthKey(): string {
   return monthKey(new Date());
 }
 
-export function buildMonthlyKPIs(transactions: Transaction[]): MonthlyKPI[] {
+export function buildMonthlyKPIs(
+  transactions: Transaction[],
+  openingBalance: number
+): MonthlyKPI[] {
   const byMonth: Record<
     string,
     {
@@ -92,7 +90,7 @@ export function buildMonthlyKPIs(transactions: Transaction[]): MonthlyKPI[] {
       const previousClose =
         rows.length > 0
           ? rows[rows.length - 1].closingLiquid
-          : getOpeningBalance();
+          : openingBalance;
       const closingLiquid = previousClose + liquidSavings;
 
       rows.push({
@@ -114,11 +112,12 @@ export function buildMonthlyKPIs(transactions: Transaction[]): MonthlyKPI[] {
 }
 
 export function buildInvestmentBreakup(
-  transactions: Transaction[]
+  transactions: Transaction[],
+  initialInvestments: RecipeInvestment[]
 ): Record<string, number> {
   const breakdown: Record<string, number> = {};
 
-  for (const row of getInitialInvestments()) {
+  for (const row of initialInvestments) {
     const key = row.type.trim() || 'Initial Investment';
     if (!row.amount) continue;
     breakdown[key] = (breakdown[key] || 0) + row.amount;
@@ -136,7 +135,8 @@ export function buildInvestmentBreakup(
 }
 
 export function buildFinancialMetrics(
-  transactions: Transaction[]
+  transactions: Transaction[],
+  config: { openingBalance: number; investments: RecipeInvestment[] }
 ): FinancialMetrics {
   const totalIncome = transactions
     .filter((t) => t.type === 'income')
@@ -149,8 +149,8 @@ export function buildFinancialMetrics(
     .reduce((sum, t) => sum + t.amount, 0);
   const providentFundBalance = sumProvidentFund(transactions);
 
-  const initInv = getInitialInvestmentTotal();
-  const initLiq = getOpeningBalance();
+  const initInv = config.investments.reduce((s, r) => s + r.amount, 0);
+  const initLiq = config.openingBalance;
 
   const investmentBalance = initInv + trackedInvestment;
   const trackedLiquid = totalIncome - totalSpends - trackedInvestment;
@@ -166,7 +166,7 @@ export function buildFinancialMetrics(
     Math.abs(startingNetWorth) || 1
   );
 
-  const monthly = buildMonthlyKPIs(transactions);
+  const monthly = buildMonthlyKPIs(transactions, config.openingBalance);
   const monthsTracked = monthly.length;
   const avgMonthlySavings = monthsTracked
     ? (trackedInvestment + trackedLiquid) / monthsTracked
@@ -210,7 +210,7 @@ export function buildFinancialMetrics(
     avgMonthlySavings,
     avgMonthlySavingsPct,
     monthsTracked,
-    investmentBreakup: buildInvestmentBreakup(transactions),
+    investmentBreakup: buildInvestmentBreakup(transactions, config.investments),
   };
 }
 

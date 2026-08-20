@@ -26,8 +26,8 @@ interface RecipeConfigContextValue {
   setConfig: (next: RecipeConfig) => void;
   /** Persist to Google Sheet Recipe tab via API, then update local cache. */
   persistConfig: (next: RecipeConfig) => Promise<RecipeConfig>;
-  updateOpeningBalance: (amount: number) => void;
-  updateInvestments: (investments: RecipeInvestment[]) => void;
+  updateOpeningBalance: (amount: number) => Promise<void>;
+  updateInvestments: (investments: RecipeInvestment[]) => Promise<void>;
   updateRecurringRules: (rules: RecurringRule[]) => void;
   addRecurringRule: (rule: RecurringRule) => Promise<RecipeConfig>;
   editRecurringRule: (rule: RecurringRule) => Promise<RecipeConfig>;
@@ -61,19 +61,20 @@ export function RecipeConfigProvider({ children }: { children: ReactNode }) {
       const saved = await saveRecipe(next);
       return hydrateRecipeConfig(saved);
     } catch {
+      console.warn('[muffin] Recipe API save failed — local-only until next sync');
       return next;
     }
   }, []);
 
-  const updateOpeningBalance = useCallback((amount: number) => {
+  const updateOpeningBalance = useCallback(async (amount: number) => {
     const current = getRecipeConfig();
-    saveRecipeConfig({ ...current, openingBalance: amount });
-  }, []);
+    await persistConfig({ ...current, openingBalance: amount });
+  }, [persistConfig]);
 
-  const updateInvestments = useCallback((investments: RecipeInvestment[]) => {
+  const updateInvestments = useCallback(async (investments: RecipeInvestment[]) => {
     const current = getRecipeConfig();
-    saveRecipeConfig({ ...current, investments });
-  }, []);
+    await persistConfig({ ...current, investments });
+  }, [persistConfig]);
 
   const updateRecurringRules = useCallback((rules: RecurringRule[]) => {
     const current = getRecipeConfig();

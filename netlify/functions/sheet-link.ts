@@ -37,7 +37,7 @@ export const handler = withSession(
     });
 
     // Automatically trigger recipe migration if legacy Blobs recipe exists
-    await getOrMigrateUserRecipe(session, record || existingRecord);
+    await getOrMigrateUserRecipe(session, record);
 
     return json(event, 200, {
       ok: true,

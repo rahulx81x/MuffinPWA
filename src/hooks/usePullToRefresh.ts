@@ -16,6 +16,7 @@ export function usePullToRefresh<T extends HTMLElement = HTMLDivElement>({
   const [refreshing, setRefreshing] = useState(false);
   const startYRef = useRef(0);
   const isPullingRef = useRef(false);
+  const prevDistanceRef = useRef(0);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -45,9 +46,10 @@ export function usePullToRefresh<T extends HTMLElement = HTMLDivElement>({
         // Apply friction dampening
         const dampened = Math.min(dy * 0.45, threshold * 1.5);
         setPullDistance(dampened);
-        if (dampened >= threshold && pullDistance < threshold) {
+        if (dampened >= threshold && prevDistanceRef.current < threshold) {
           navigator.vibrate?.(8);
         }
+        prevDistanceRef.current = dampened;
       } else {
         isPullingRef.current = false;
         setPullDistance(0);
@@ -69,6 +71,7 @@ export function usePullToRefresh<T extends HTMLElement = HTMLDivElement>({
           setPullDistance(0);
         }
       } else {
+        prevDistanceRef.current = 0;
         setPullDistance(0);
       }
     }
@@ -82,7 +85,7 @@ export function usePullToRefresh<T extends HTMLElement = HTMLDivElement>({
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
     };
-  }, [onRefresh, threshold, disabled, refreshing, pullDistance]);
+  }, [onRefresh, threshold, disabled, refreshing]);
 
   return {
     containerRef: containerRef as RefObject<T | null>,

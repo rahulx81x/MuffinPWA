@@ -24,8 +24,8 @@ export function isRuleExpired(rule: RecurringRule, refDate = new Date()): boolea
   }
 
   // "YYYY-MM-DD" or full date string
-  const scheduledDate = getRecurringRuleLogDate(rule, refDate);
-  return scheduledDate > rawEnd;
+  const refIso = `${refDate.getFullYear()}-${String(refDate.getMonth() + 1).padStart(2, '0')}-${String(refDate.getDate()).padStart(2, '0')}`;
+  return refIso > rawEnd;
 }
 
 /** Get a readable label for the configured end date. */

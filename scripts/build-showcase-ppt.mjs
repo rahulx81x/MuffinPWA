@@ -32,7 +32,7 @@ const THEMES = [
   { name: 'Pistachio', bg: 'F6F8F3', accent: '65A30D' },
   { name: 'Chocolate', bg: '1C130D', accent: 'F59E0B' },
   { name: 'Velvet', bg: '1A0C0E', accent: 'E11D48' },
-  { name: 'Caramel', bg: '17120A', accent: 'F97316' },
+  { name: 'Midnight', bg: '0B1120', accent: '3B82F6' },
 ];
 
 function screen(name) {

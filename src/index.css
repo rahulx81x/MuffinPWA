@@ -209,32 +209,32 @@ html.dark:not([data-theme]) {
   --shadow-elevate: 0 12px 32px rgba(0, 0, 0, 0.52);
 }
 
-/* Salted Caramel Muffin — deep golden dark */
-[data-theme='caramel'] {
+/* Midnight Blueberry Muffin — deep midnight navy dark */
+[data-theme='midnight'] {
   color-scheme: dark;
-  --color-canvas: #17120a;
-  --color-canvas-alt: #261c10;
-  --color-surface: #261c10;
-  --color-surface-strong: #322617;
-  --color-surface-muted: #422e19;
-  --color-text: #fef3c7;
-  --color-text-secondary: #fcd34d;
-  --color-text-muted: #d97706;
-  --color-primary: #f97316;
-  --color-primary-muted: #ea580c;
-  --color-on-primary: #17120a;
-  --accent-rgb: 249, 115, 22;
+  --color-canvas: #0b1120;
+  --color-canvas-alt: #111a2e;
+  --color-surface: #131c31;
+  --color-surface-strong: #1a2540;
+  --color-surface-muted: #223254;
+  --color-text: #eff6ff;
+  --color-text-secondary: #bfdbfe;
+  --color-text-muted: #60a5fa;
+  --color-primary: #3b82f6;
+  --color-primary-muted: #2563eb;
+  --color-on-primary: #0b1120;
+  --accent-rgb: 59, 130, 246;
   --color-success: #34d399;
   --color-success-muted: #6ee7b7;
   --color-destructive: #f87171;
   --color-destructive-muted: #fca5a5;
   --color-warning: #fbbf24;
   --color-warning-muted: #fcd34d;
-  --color-border: #422e19;
-  --color-divider: #322617;
+  --color-border: #223254;
+  --color-divider: #18243e;
   --shadow-warm: 0 8px 28px rgba(0, 0, 0, 0.45);
   --shadow-warm-sm: 0 2px 10px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 4px 22px rgba(var(--accent-rgb), 0.3);
+  --shadow-glow: 0 4px 22px rgba(var(--accent-rgb), 0.35);
   --shadow-elevate: 0 12px 32px rgba(0, 0, 0, 0.52);
 }
 

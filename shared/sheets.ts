@@ -94,7 +94,7 @@ export function serializeRecipeToRows(config: {
     {
       Type: 'Opening Balance',
       Amount: Number.isFinite(config.openingBalance)
-        ? Math.max(0, config.openingBalance)
+        ? config.openingBalance
         : 0,
       Id: 'opening_balance',
       Notes: 'Starting liquid cash balance',
@@ -153,7 +153,7 @@ export function parseRecipeFromRows(
 
     if (isOpeningBalance) {
       if (Number.isFinite(amount)) {
-        openingBalance = Math.max(0, amount);
+        openingBalance = amount;
       }
     } else if (!isRecurringRow && (type || (Number.isFinite(amount) && amount > 0))) {
       investments.push({
