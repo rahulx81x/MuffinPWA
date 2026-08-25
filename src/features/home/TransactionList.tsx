@@ -11,8 +11,8 @@ function amountClass(type: Transaction['type']): string {
   return 'text-amber-700 dark:text-amber-400';
 }
 
-function amountPrefix(type: Transaction['type'], masked: boolean): string {
-  if (masked) return '';
+function amountPrefix(type: Transaction['type'], masked: boolean, amount?: number): string {
+  if (masked || amount === 0) return '';
   if (type === 'income') return '+';
   if (type === 'expense') return '−';
   return '';
@@ -50,7 +50,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
             <p
               className={`shrink-0 pt-0.5 text-right text-[15px] font-bold tabular-nums leading-snug ${amountClass(t.type)}`}
             >
-              {amountPrefix(t.type, masked)}
+              {amountPrefix(t.type, masked, t.amount)}
               {formatCurrency(t.amount)}
             </p>
           </div>

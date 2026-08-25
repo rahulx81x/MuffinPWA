@@ -150,8 +150,8 @@ export function evaluateAmountExpression(raw: string): EvaluateAmountResult {
   if (!Number.isFinite(rounded)) {
     return { ok: false, error: 'Invalid amount expression.' };
   }
-  if (rounded <= 0) {
-    return { ok: false, error: 'Amount must be greater than zero.' };
+  if (rounded < 0) {
+    return { ok: false, error: 'Amount cannot be negative.' };
   }
   return { ok: true, value: rounded };
 }

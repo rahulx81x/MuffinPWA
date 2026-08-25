@@ -76,8 +76,8 @@ function amountClass(type: Transaction['type']): string {
   return 'text-violet-600 dark:text-violet-400';
 }
 
-function amountPrefix(type: Transaction['type'], masked: boolean): string {
-  if (masked) return '';
+function amountPrefix(type: Transaction['type'], masked: boolean, amount?: number): string {
+  if (masked || amount === 0) return '';
   if (type === 'income') return '+';
   if (type === 'expense') return '−';
   return '';
@@ -294,7 +294,7 @@ function SwipeableTransactionRow({
           <p
             className={`font-display text-base font-bold tabular-nums ${amountClass(tx.type)}`}
           >
-            {amountPrefix(tx.type, masked)}
+            {amountPrefix(tx.type, masked, tx.amount)}
             {formatCurrency(tx.amount)}
           </p>
 
@@ -350,7 +350,7 @@ function QuickAddStrip({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const num = parseFloat(amount);
-    if (isNaN(num) || num <= 0 || !category.trim()) return;
+    if (isNaN(num) || num < 0 || !category.trim()) return;
 
     setSubmitting(true);
     try {
@@ -370,7 +370,8 @@ function QuickAddStrip({
     }
   }
 
-  const isValid = parseFloat(amount) > 0 && category.trim().length > 0;
+  const parsedAmt = parseFloat(amount);
+  const isValid = !isNaN(parsedAmt) && parsedAmt >= 0 && category.trim().length > 0;
 
   return (
     <div className="cozy-card border border-border/80 bg-surface-strong/95 p-3 sm:p-4 shadow-warm-sm backdrop-blur-md">
@@ -1158,7 +1159,7 @@ export function LedgerView({
                       <p
                         className={`mt-1 font-display text-2xl font-bold tabular-nums ${amountClass(viewingTx.type)}`}
                       >
-                        {amountPrefix(viewingTx.type, masked)}
+                        {amountPrefix(viewingTx.type, masked, viewingTx.amount)}
                         {formatCurrency(viewingTx.amount)}
                       </p>
                     </div>
