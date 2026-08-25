@@ -23,6 +23,8 @@ export {
 export {
   RECIPE_TAB_HEADERS,
   RECIPE_TAB_NAME,
+  RULES_TAB_HEADERS,
+  RULES_TAB_NAME,
   TAB_BY_TYPE,
   TAB_HEADERS,
   TAB_NAMES,
@@ -30,9 +32,12 @@ export {
   isSheetTabName,
   newRowId,
   parseRecipeFromRows,
+  parseRulesFromRows,
   parseSpreadsheetId,
   serializeRecipeToRows,
+  serializeRulesToRows,
   type RecipeSheetRow,
+  type RuleSheetRow,
 } from './sheets';
 
 export { parseSheetDate, toIsoDate } from './dates';

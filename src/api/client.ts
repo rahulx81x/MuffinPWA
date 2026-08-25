@@ -63,9 +63,13 @@ export interface MutationResult {
 
 async function readErrorPayload(
   response: Response
-): Promise<{ error?: string; code?: string }> {
+): Promise<{ error?: string; code?: string; reason?: string }> {
   try {
-    return (await response.json()) as { error?: string; code?: string };
+    return (await response.json()) as {
+      error?: string;
+      code?: string;
+      reason?: string;
+    };
   } catch {
     return {};
   }
@@ -86,8 +90,22 @@ async function assertOk(response: Response): Promise<void> {
   if (response.ok) return;
 
   const data = await readErrorPayload(response);
-  if (response.status === 401 || data.code === 'unauthenticated') {
-    throw new AuthRequiredError(data.error || 'Not signed in');
+  const errMsg = String(data.error || '');
+  const isInvalidGrant =
+    data.reason === 'invalid_grant' ||
+    errMsg.toLowerCase().includes('invalid_grant') ||
+    errMsg.toLowerCase().includes('token has been expired or revoked');
+
+  if (
+    response.status === 401 ||
+    data.code === 'unauthenticated' ||
+    isInvalidGrant
+  ) {
+    throw new AuthRequiredError(
+      isInvalidGrant
+        ? 'Your Google session has expired. Please sign in again.'
+        : data.error || 'Not signed in'
+    );
   }
   if (data.code === 'needsSheet') {
     throw new NeedsSheetError(data.error || 'No spreadsheet linked yet');

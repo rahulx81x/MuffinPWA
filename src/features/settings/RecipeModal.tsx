@@ -124,6 +124,7 @@ export function RecipeModal({
           ...row,
           type: row.type || 'Investment',
         })),
+        recurringRules: config.recurringRules || [],
       });
       onClose();
     } catch (err) {

@@ -41,19 +41,24 @@
           classic: '#FAF5EF',
           blueberry: '#F5F6FA',
           pistachio: '#F6F8F3',
+          lavender: '#F8F6FC',
           chocolate: '#1C130D',
           velvet: '#1A0C0E',
-          caramel: '#17120A',
+          midnight: '#0B1120',
+          emerald: '#0B1612',
         };
         var darkThemes = {
           classic: false,
           blueberry: false,
           pistachio: false,
+          lavender: false,
           chocolate: true,
           velvet: true,
-          caramel: true,
+          midnight: true,
+          emerald: true,
         };
         var id = localStorage.getItem('muffinTheme');
+        if (id === 'caramel') id = 'midnight';
         if (!themes.hasOwnProperty(id)) {
           var legacy = localStorage.getItem('themeMode');
           if (legacy === 'dark') id = 'chocolate';

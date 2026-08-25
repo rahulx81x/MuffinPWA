@@ -147,6 +147,11 @@ export function HomeView({
     };
   }, [metrics.liquidBalance, metrics.investmentBalance]);
 
+  const currentMonthSavings = useMemo(
+    () => metrics.currentMonthLiquid + metrics.currentMonthInvestment,
+    [metrics.currentMonthLiquid, metrics.currentMonthInvestment]
+  );
+
   const monthCards: CardDef[] = useMemo(
     () => [
       {
@@ -173,7 +178,7 @@ export function HomeView({
       {
         key: 'currentMonthSavingsPct',
         label: 'Month Savings & Allocation',
-        value: `${metrics.currentMonthSavingsPct.toFixed(1)}%`,
+        value: `${currentMonthSavings < 0 ? '−' : ''}${formatCurrency(Math.abs(currentMonthSavings))} (${metrics.currentMonthSavingsPct.toFixed(1)}%)`,
         tone: metrics.currentMonthSavingsPct >= 0 ? 'teal' : 'destructive',
         className: 'col-span-2 sm:col-span-2 md:col-span-2',
         iconHint: 'chart',
@@ -191,6 +196,7 @@ export function HomeView({
     ],
     [
       metrics,
+      currentMonthSavings,
       formatCurrency,
       currentMonthExpensePct,
       currentMonthLiquidPct,

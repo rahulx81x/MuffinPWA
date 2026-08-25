@@ -51,7 +51,8 @@ export async function exchangeCode(code: string) {
     idToken: tokens.id_token!,
     audience: requireEnv('GOOGLE_CLIENT_ID'),
   });
-  const payload = ticket.getPayload() || {};
+  const payload =
+    ticket.getPayload() || ({} as Record<string, string | undefined>);
   if (!payload.sub) {
     throw Object.assign(new Error('Google identity was incomplete.'), {
       statusCode: 400,
@@ -83,3 +84,55 @@ export function oauthConfigured() {
       envValue('SESSION_SECRET')
   );
 }
+
+export function isGoogleAuthError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const err = error as {
+    message?: string;
+    code?: string | number;
+    status?: number;
+    statusCode?: number;
+    response?: {
+      status?: number;
+      data?: {
+        error?: string;
+        error_description?: string;
+      };
+    };
+  };
+
+  const msg = String(err.message || '').toLowerCase();
+  const resError = String(err.response?.data?.error || '').toLowerCase();
+  const resDesc = String(
+    err.response?.data?.error_description || ''
+  ).toLowerCase();
+
+  return (
+    msg.includes('invalid_grant') ||
+    msg.includes('token has been expired or revoked') ||
+    msg.includes('invalid credentials') ||
+    msg.includes('invalid_token') ||
+    resError === 'invalid_grant' ||
+    resDesc.includes('token has been expired or revoked') ||
+    err.status === 401 ||
+    err.statusCode === 401
+  );
+}
+
+export async function verifyRefreshToken(
+  refreshToken: string
+): Promise<boolean> {
+  try {
+    const client = oauthClientFromRefreshToken(refreshToken);
+    const tokenRes = await client.getAccessToken();
+    return Boolean(tokenRes && tokenRes.token);
+  } catch (error) {
+    if (isGoogleAuthError(error)) {
+      return false;
+    }
+    // If it was a temporary network error or non-auth issue, rethrow or return true to avoid false-positive logouts
+    console.warn('[muffin] Error while verifying Google token:', error);
+    throw error;
+  }
+}
+

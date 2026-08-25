@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, ChevronRight } from 'lucide-react';
 import { useMask } from '../../hooks/useMask';
+import { useRecipeConfig } from '../../hooks/useRecipeConfig';
 import { buildMonthlyKPIs } from '../../domain/metrics';
 import type { Transaction } from '../../domain/types';
 import { EmptyState } from '../../components/molecules/EmptyState';
@@ -19,9 +20,10 @@ export function MonthlyView({
   onAddTransaction,
 }: MonthlyViewProps) {
   const { formatCurrency } = useMask();
+  const { config: recipeConfig } = useRecipeConfig();
   const monthly = useMemo(
-    () => buildMonthlyKPIs(transactions).slice().reverse(),
-    [transactions]
+    () => buildMonthlyKPIs(transactions, recipeConfig.openingBalance).slice().reverse(),
+    [transactions, recipeConfig.openingBalance]
   );
 
   return (

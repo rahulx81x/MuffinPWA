@@ -100,6 +100,7 @@ export default function App() {
     logSingleRule: handleLogSingleRecurringRule,
     logAllDue: handleLogAllDueRecurring,
   } = useRecurringAutomation({
+    transactions: sheetTransactions,
     onTransactionsCreated: (txs) => {
       applyTransactions(txs);
     },
@@ -151,7 +152,10 @@ export default function App() {
   }, [ready, auth?.showTour, openModal]);
 
   useEffect(() => {
-    setMetrics(buildFinancialMetrics(sheetTransactions));
+    setMetrics(buildFinancialMetrics(sheetTransactions, {
+      openingBalance: recipeConfig.openingBalance,
+      investments: recipeConfig.investments,
+    }));
   }, [sheetTransactions, recipeConfig]);
 
   function openAddModal() {
@@ -269,7 +273,7 @@ export default function App() {
         try {
           const ok = await executeDelete(pendingConfirm.tx);
           if (ok) closeModal();
-          else closeModal();
+          // On failure, executeDelete already sets the error state — keep modal open
         } finally {
           setConfirmBusy(false);
           setMutating(false);

@@ -89,7 +89,7 @@ export function sanitizeRecipe(raw: unknown): RecipeConfig {
 
   return {
     openingBalance: Number.isFinite(openingBalance)
-      ? Math.max(0, openingBalance)
+      ? openingBalance
       : fallback.openingBalance,
     investments,
     recurringRules,

@@ -1,7 +1,7 @@
-import { oauthConfigured } from '../lib/googleAuth';
+import { isGoogleAuthError, oauthConfigured } from '../lib/googleAuth';
 import { json, noContent } from '../lib/http';
 import { getOrMigrateUserRecipe } from '../lib/recipeStore';
-import { readSession } from '../lib/session';
+import { readSession, sessionCookieHeader } from '../lib/session';
 import {
   bindBlobsEvent,
   getUserRecord,
@@ -68,6 +68,21 @@ export async function handler(event: NetlifyEvent) {
       showTour,
     });
   } catch (error) {
+    if (isGoogleAuthError(error)) {
+      const clearCookie = sessionCookieHeader('', { clear: true });
+      return json(
+        event,
+        401,
+        {
+          error:
+            'Google authorization expired or revoked. Please sign in again.',
+          code: 'unauthenticated',
+          reason: 'invalid_grant',
+        },
+        { 'Set-Cookie': clearCookie }
+      );
+    }
+
     const err = error as { statusCode?: number; message?: string };
     console.error('auth-me error', error);
     return json(event, err?.statusCode || 500, {
@@ -75,3 +90,4 @@ export async function handler(event: NetlifyEvent) {
     });
   }
 }
+

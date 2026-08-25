@@ -5,7 +5,7 @@ export type ThemeId =
   | 'lavender'
   | 'chocolate'
   | 'velvet'
-  | 'caramel'
+  | 'midnight'
   | 'emerald';
 
 export type ThemeMode = 'light' | 'dark';
@@ -151,23 +151,23 @@ export const THEMES: ThemeDefinition[] = [
     ],
   },
   {
-    id: 'caramel',
-    name: 'Salted Caramel',
+    id: 'midnight',
+    name: 'Midnight Blueberry',
     mode: 'dark',
-    background: '#17120A',
-    card: '#261C10',
-    accent: '#F97316',
-    text: '#FEF3C7',
-    border: '#422E19',
+    background: '#0B1120',
+    card: '#131C31',
+    accent: '#3B82F6',
+    text: '#EFF6FF',
+    border: '#223254',
     chartColors: [
-      '#F97316',
-      '#EA580C',
-      '#FB923C',
-      '#FDBA74',
+      '#3B82F6',
+      '#2563EB',
+      '#60A5FA',
+      '#93C5FD',
       '#34D399',
       '#F87171',
-      '#FCD34D',
-      '#C2410C',
+      '#FBBF24',
+      '#A78BFA',
     ],
   },
   {
@@ -212,6 +212,7 @@ export function resolveInitialThemeId(): ThemeId {
   if (typeof window === 'undefined') return DEFAULT_LIGHT_THEME;
 
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  if (stored === 'caramel') return 'midnight';
   if (isThemeId(stored)) return stored;
 
   const legacy = localStorage.getItem(LEGACY_THEME_KEY);

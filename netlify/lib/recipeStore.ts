@@ -3,15 +3,19 @@ import { GoogleSpreadsheet } from 'google-spreadsheet';
 import {
   RECIPE_TAB_HEADERS,
   RECIPE_TAB_NAME,
+  RULES_TAB_HEADERS,
+  RULES_TAB_NAME,
   getDefaultRecipeConfig,
   hasMeaningfulRecipe,
   parseRecipeFromRows,
+  parseRulesFromRows,
   sanitizeRecipe,
   serializeRecipeToRows,
+  serializeRulesToRows,
   type RecipeConfig,
 } from '../../shared/index';
 import { oauthClientFromRefreshToken } from './googleAuth';
-import { ensureRecipeTab, openSpreadsheet } from './sheetBootstrap';
+import { ensureRecipeTab, ensureRulesTab, openSpreadsheet } from './sheetBootstrap';
 import {
   getUserRecipe,
   purgeLegacyBlobRecipe,
@@ -24,10 +28,24 @@ export async function fetchRecipeFromSheet(
   spreadsheetId: string
 ): Promise<RecipeConfig> {
   const doc = await openSpreadsheet(auth, spreadsheetId);
-  const sheet = await ensureRecipeTab(doc);
-  const rows = await sheet.getRows();
-  const parsed = parseRecipeFromRows(rows);
-  return sanitizeRecipe(parsed);
+  const [recipeSheet, rulesSheet] = await Promise.all([
+    ensureRecipeTab(doc),
+    ensureRulesTab(doc),
+  ]);
+
+  const [recipeRows, rulesRows] = await Promise.all([
+    recipeSheet.getRows(),
+    rulesSheet.getRows(),
+  ]);
+
+  const { openingBalance, investments } = parseRecipeFromRows(recipeRows);
+  const recurringRules = parseRulesFromRows(rulesRows);
+
+  return sanitizeRecipe({
+    openingBalance,
+    investments,
+    recurringRules,
+  });
 }
 
 export async function saveRecipeToSheet(
@@ -37,14 +55,38 @@ export async function saveRecipeToSheet(
 ): Promise<RecipeConfig> {
   const recipe = sanitizeRecipe(rawRecipe);
   const doc = await openSpreadsheet(auth, spreadsheetId);
-  const sheet = await ensureRecipeTab(doc);
+  const [recipeSheet, rulesSheet] = await Promise.all([
+    ensureRecipeTab(doc),
+    ensureRulesTab(doc),
+  ]);
 
-  // Clear existing rows preserving header row
-  await sheet.clearRows();
+  // 1. Update Recipe tab (starting balances)
+  const existingRecipeRows = await recipeSheet.getRows();
+  await recipeSheet.clearRows();
+  const recipeRows = serializeRecipeToRows(recipe);
+  if (recipeRows.length > 0) {
+    try {
+      await recipeSheet.addRows(
+        recipeRows as unknown as Record<string, string | number>[]
+      );
+    } catch (err) {
+      console.error('[muffin] Failed to write recipe rows after clearing — data may be lost', err);
+      throw err;
+    }
+  }
 
-  const rows = serializeRecipeToRows(recipe);
-  if (rows.length > 0) {
-    await sheet.addRows(rows as unknown as Record<string, string | number>[]);
+  // 2. Update Rules tab (recurring rules)
+  await rulesSheet.clearRows();
+  const ruleRows = serializeRulesToRows(recipe.recurringRules || []);
+  if (ruleRows.length > 0) {
+    try {
+      await rulesSheet.addRows(
+        ruleRows as unknown as Record<string, string | number>[]
+      );
+    } catch (err) {
+      console.error('[muffin] Failed to write rules rows after clearing — data may be lost', err);
+      throw err;
+    }
   }
 
   return recipe;

@@ -3,10 +3,13 @@ import type { OAuth2Client } from 'google-auth-library';
 import {
   RECIPE_TAB_HEADERS,
   RECIPE_TAB_NAME,
+  RULES_TAB_HEADERS,
+  RULES_TAB_NAME,
   TAB_HEADERS,
   TAB_NAMES,
   parseSpreadsheetId,
   serializeRecipeToRows,
+  serializeRulesToRows,
   type SheetTabName,
 } from '../../shared/index';
 
@@ -43,6 +46,16 @@ export async function ensureRecipeTab(doc: GoogleSpreadsheet) {
   return doc.sheetsByTitle[RECIPE_TAB_NAME] || sheet;
 }
 
+export async function ensureRulesTab(doc: GoogleSpreadsheet) {
+  let sheet = doc.sheetsByTitle[RULES_TAB_NAME];
+  if (!sheet) {
+    sheet = await doc.addSheet({ title: RULES_TAB_NAME });
+    await sheet.setHeaderRow([...RULES_TAB_HEADERS]);
+    await doc.loadInfo();
+  }
+  return doc.sheetsByTitle[RULES_TAB_NAME] || sheet;
+}
+
 export async function createMuffinWorkbook(
   auth: OAuth2Client,
   title = 'Muffin Finances',
@@ -64,6 +77,9 @@ export async function createMuffinWorkbook(
 
   const recipeSheet = await doc.addSheet({ title: RECIPE_TAB_NAME });
   await recipeSheet.setHeaderRow([...RECIPE_TAB_HEADERS]);
+
+  const rulesSheet = await doc.addSheet({ title: RULES_TAB_NAME });
+  await rulesSheet.setHeaderRow([...RULES_TAB_HEADERS]);
 
   const defaultRows = serializeRecipeToRows(
     initialRecipe || { openingBalance: 0, investments: [] }

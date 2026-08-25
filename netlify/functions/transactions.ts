@@ -184,7 +184,10 @@ async function handlePost(doc: GoogleSpreadsheet, body: Record<string, unknown>)
     delete payload.Id;
   }
 
-  await sheet.addRow(payload as Record<string, unknown>, { insert: true });
+  await sheet.addRow(
+    payload as unknown as Record<string, string | number>,
+    { insert: true }
+  );
   const transactions = await handleGet(doc);
   return { ok: true, transactions };
 }

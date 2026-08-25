@@ -8,7 +8,6 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
-import { getOpeningBalance } from '../../config';
 import { useRecipeConfig } from '../../hooks/useRecipeConfig';
 import { useMask } from '../../hooks/useMask';
 import { useTheme } from '../../hooks/useTheme';
@@ -62,8 +61,8 @@ export function InsightsView({
 
   // Monthly KPIs for Trends
   const monthlyList = useMemo(
-    () => buildMonthlyKPIs(transactions).slice().reverse(),
-    [transactions]
+    () => buildMonthlyKPIs(transactions, recipeConfig.openingBalance).slice().reverse(),
+    [transactions, recipeConfig.openingBalance]
   );
 
   // Category Breakdown calculations
@@ -115,11 +114,11 @@ export function InsightsView({
   const plannerSavingsPct = pct(plannerInvestment + plannerLiquid, plannerIncome);
 
   const previousClose = useMemo(() => {
-    const monthly = buildMonthlyKPIs(transactions);
+    const monthly = buildMonthlyKPIs(transactions, recipeConfig.openingBalance);
     const prior = monthly.filter((m) => m.key < thisMonth);
     return prior.length > 0
       ? prior[prior.length - 1].closingLiquid
-      : getOpeningBalance();
+      : recipeConfig.openingBalance;
   }, [transactions, thisMonth, recipeConfig]);
   const plannerClosingBalance = previousClose + plannerLiquid;
 

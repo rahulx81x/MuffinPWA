@@ -22,8 +22,24 @@ export const TAB_HEADERS: Record<SheetTabName, string[]> = {
 };
 
 export const RECIPE_TAB_NAME = 'Recipe';
-
 export const RECIPE_TAB_HEADERS = ['Type', 'Amount', 'Id', 'Notes'] as const;
+
+export const RULES_TAB_NAME = 'Rules';
+export const RULES_TAB_HEADERS = [
+  'Id',
+  'Name',
+  'Type',
+  'Category',
+  'Amount',
+  'DayOfMonth',
+  'InvestmentType',
+  'Comment',
+  'Active',
+  'AutoPrompt',
+  'LastLoggedMonth',
+  'EndDate',
+  'CreatedAt',
+] as const;
 
 export function isSheetTabName(value: unknown): value is SheetTabName {
   return (
@@ -54,16 +70,31 @@ export interface RecipeSheetRow {
   Notes?: string;
 }
 
+export interface RuleSheetRow {
+  Id: string;
+  Name: string;
+  Type: string;
+  Category: string;
+  Amount: number | string;
+  DayOfMonth: number | string;
+  InvestmentType?: string;
+  Comment?: string;
+  Active: string;
+  AutoPrompt: string;
+  LastLoggedMonth?: string;
+  EndDate?: string;
+  CreatedAt?: string;
+}
+
 export function serializeRecipeToRows(config: {
   openingBalance: number;
   investments: Array<{ id?: string; type: string; amount: number }>;
-  recurringRules?: RecurringRule[];
 }): RecipeSheetRow[] {
   const rows: RecipeSheetRow[] = [
     {
       Type: 'Opening Balance',
       Amount: Number.isFinite(config.openingBalance)
-        ? Math.max(0, config.openingBalance)
+        ? config.openingBalance
         : 0,
       Id: 'opening_balance',
       Notes: 'Starting liquid cash balance',
@@ -77,19 +108,11 @@ export function serializeRecipeToRows(config: {
     rows.push({
       Type: type || 'Investment',
       Amount: Number.isFinite(amount) ? Math.max(0, amount) : 0,
-      Id: typeof inv.id === 'string' && inv.id ? inv.id : `inv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      Id:
+        typeof inv.id === 'string' && inv.id
+          ? inv.id
+          : `inv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
       Notes: '',
-    });
-  }
-
-  for (const rule of config.recurringRules || []) {
-    const sanitized = sanitizeRecurringRule(rule);
-    if (!sanitized) continue;
-    rows.push({
-      Type: 'RecurringRule',
-      Amount: sanitized.amount,
-      Id: sanitized.id,
-      Notes: JSON.stringify(sanitized),
     });
   }
 
@@ -101,11 +124,9 @@ export function parseRecipeFromRows(
 ): {
   openingBalance: number;
   investments: Array<{ id: string; type: string; amount: number }>;
-  recurringRules: RecurringRule[];
 } {
   let openingBalance = 0;
   const investments: Array<{ id: string; type: string; amount: number }> = [];
-  const recurringRules: RecurringRule[] = [];
 
   for (const row of rows) {
     const getValue = (key: string): unknown => {
@@ -119,50 +140,111 @@ export function parseRecipeFromRows(
     const rawId = String(getValue('Id') ?? '').trim();
     const rawAmt = String(getValue('Amount') ?? '').replace(/,/g, '').trim();
     const amount = Number(rawAmt);
-    const notes = String(getValue('Notes') ?? '').trim();
 
     const isOpeningBalance =
       rawId === 'opening_balance' ||
       type.toLowerCase() === 'opening balance' ||
       type.toLowerCase() === 'openingbalance';
 
-    const isRecurringRule =
+    const isRecurringRow =
       rawId.startsWith('rec_') ||
       type.toLowerCase() === 'recurringrule' ||
       type.toLowerCase() === 'recurring rule';
 
     if (isOpeningBalance) {
       if (Number.isFinite(amount)) {
-        openingBalance = Math.max(0, amount);
+        openingBalance = amount;
       }
-    } else if (isRecurringRule) {
-      let parsedRule: RecurringRule | null = null;
-      if (notes.startsWith('{') && notes.endsWith('}')) {
-        try {
-          parsedRule = sanitizeRecurringRule(JSON.parse(notes));
-        } catch {
-          // ignore json parse error
-        }
-      }
-      if (!parsedRule) {
-        parsedRule = sanitizeRecurringRule({
-          id: rawId,
-          name: type !== 'RecurringRule' ? type : 'Recurring Item',
-          amount,
-        });
-      }
-      if (parsedRule) {
-        recurringRules.push(parsedRule);
-      }
-    } else if (type || (Number.isFinite(amount) && amount > 0)) {
+    } else if (!isRecurringRow && (type || (Number.isFinite(amount) && amount > 0))) {
       investments.push({
-        id: rawId || `inv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+        id:
+          rawId ||
+          `inv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
         type: type || 'Investment',
         amount: Number.isFinite(amount) ? Math.max(0, amount) : 0,
       });
     }
   }
 
-  return { openingBalance, investments, recurringRules };
+  return { openingBalance, investments };
+}
+
+export function serializeRulesToRows(rules: RecurringRule[]): RuleSheetRow[] {
+  const rows: RuleSheetRow[] = [];
+  for (const r of rules || []) {
+    const s = sanitizeRecurringRule(r);
+    if (!s) continue;
+    rows.push({
+      Id: s.id,
+      Name: s.name,
+      Type: s.type,
+      Category: s.category,
+      Amount: s.amount,
+      DayOfMonth: s.dayOfMonth,
+      InvestmentType: s.investmentType || '',
+      Comment: s.comment || '',
+      Active: s.active ? 'TRUE' : 'FALSE',
+      AutoPrompt: s.autoPrompt ? 'TRUE' : 'FALSE',
+      LastLoggedMonth: s.lastLoggedMonth || '',
+      EndDate: s.endDate || '',
+      CreatedAt: s.createdAt || new Date().toISOString(),
+    });
+  }
+  return rows;
+}
+
+export function parseRulesFromRows(
+  rows: Array<Record<string, unknown> | { get(key: string): unknown }>
+): RecurringRule[] {
+  const rules: RecurringRule[] = [];
+  for (const row of rows || []) {
+    const getValue = (key: string): unknown => {
+      if (row && typeof (row as { get?: unknown }).get === 'function') {
+        return (row as { get(k: string): unknown }).get(key);
+      }
+      return (row as Record<string, unknown>)?.[key];
+    };
+
+    const id = String(getValue('Id') ?? '').trim();
+    const name = String(getValue('Name') ?? '').trim();
+    const rawType = String(getValue('Type') ?? '').trim();
+    const category = String(getValue('Category') ?? '').trim();
+    const rawAmt = String(getValue('Amount') ?? '').replace(/,/g, '').trim();
+    const amount = Number(rawAmt);
+    const rawDay = Number(getValue('DayOfMonth'));
+    const dayOfMonth = Math.min(31, Math.max(1, Math.round(rawDay || 1)));
+    const investmentType = String(getValue('InvestmentType') ?? '').trim();
+    const comment = String(getValue('Comment') ?? '').trim();
+    const rawActive = String(getValue('Active') ?? '').toLowerCase().trim();
+    const active = rawActive !== 'false';
+    const rawAutoPrompt = String(getValue('AutoPrompt') ?? '').toLowerCase().trim();
+    const autoPrompt = rawAutoPrompt !== 'false';
+    const lastLoggedMonth = String(getValue('LastLoggedMonth') ?? '').trim();
+    const endDate = String(getValue('EndDate') ?? '').trim();
+    const createdAt = String(getValue('CreatedAt') ?? '').trim();
+
+    if (!name && !category && !(amount > 0) && !id) continue;
+
+    const rule = sanitizeRecurringRule({
+      id: id || undefined,
+      name,
+      type: rawType,
+      category,
+      amount,
+      dayOfMonth,
+      investmentType: investmentType || undefined,
+      comment: comment || undefined,
+      active,
+      autoPrompt,
+      lastLoggedMonth: lastLoggedMonth || undefined,
+      endDate: endDate || undefined,
+      createdAt: createdAt || undefined,
+    });
+
+    if (rule) {
+      rules.push(rule);
+    }
+  }
+  return rules;
 }
 
