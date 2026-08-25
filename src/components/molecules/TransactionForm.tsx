@@ -231,8 +231,8 @@ export function TransactionForm({
 
     const amountValue = resolveAmountField();
     if (amountValue == null) return;
-    if (amountValue <= 0) {
-      setError('Amount must be greater than zero.');
+    if (amountValue < 0) {
+      setError('Amount cannot be negative.');
       return;
     }
     if (!date.trim()) {
