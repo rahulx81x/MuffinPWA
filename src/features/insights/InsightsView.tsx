@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Calendar,
+  ChevronDown,
   ChevronRight,
   Layers,
   PieChart as PieChartIcon,
@@ -15,6 +16,7 @@ import {
   buildMonthlyKPIs,
   currentMonthKey,
   monthKey,
+  monthLabel,
 } from '../../domain/metrics';
 import { isCountedInvestment } from '../../domain/providentFund';
 import type { NewTransactionInput, Transaction } from '../../domain/types';
@@ -52,12 +54,40 @@ export function InsightsView({
   onAddTransaction,
 }: InsightsViewProps) {
   const [subTab, setSubTab] = useState<InsightsSubTab>('trends');
-  const [categoryTimeRange, setCategoryTimeRange] = useState<'month' | 'all'>('month');
+  const [categoryScope, setCategoryScope] = useState<'month' | 'year' | 'all'>('month');
   const { formatCurrency } = useMask();
   const { theme } = useTheme();
   const { config: recipeConfig } = useRecipeConfig();
 
   const thisMonth = currentMonthKey();
+  const currentYear = String(new Date().getFullYear());
+
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of transactions) {
+      if (t.type === 'expense') {
+        const k = monthKey(t.date);
+        if (k) set.add(k);
+      }
+    }
+    set.add(thisMonth);
+    return Array.from(set).sort().reverse();
+  }, [transactions, thisMonth]);
+
+  const availableYears = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of transactions) {
+      if (t.type === 'expense') {
+        const y = t.date ? t.date.slice(0, 4) : '';
+        if (/^\d{4}$/.test(y)) set.add(y);
+      }
+    }
+    set.add(currentYear);
+    return Array.from(set).sort().reverse();
+  }, [transactions, currentYear]);
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(thisMonth);
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear);
 
   // Monthly KPIs for Trends
   const monthlyList = useMemo(
@@ -67,10 +97,19 @@ export function InsightsView({
 
   // Category Breakdown calculations
   const categoryData = useMemo(() => {
-    const targetTxs =
-      categoryTimeRange === 'month'
-        ? transactions.filter((t) => monthKey(t.date) === thisMonth && t.type === 'expense')
-        : transactions.filter((t) => t.type === 'expense');
+    let targetTxs: Transaction[] = [];
+
+    if (categoryScope === 'month') {
+      targetTxs = transactions.filter(
+        (t) => t.type === 'expense' && monthKey(t.date) === selectedMonth
+      );
+    } else if (categoryScope === 'year') {
+      targetTxs = transactions.filter(
+        (t) => t.type === 'expense' && (t.date ? t.date.slice(0, 4) === selectedYear : false)
+      );
+    } else {
+      targetTxs = transactions.filter((t) => t.type === 'expense');
+    }
 
     const counts: Record<string, { total: number; count: number }> = {};
     let totalExpense = 0;
@@ -93,7 +132,13 @@ export function InsightsView({
       .sort((a, b) => b.total - a.total);
 
     return { entries: sorted, totalExpense };
-  }, [transactions, categoryTimeRange, thisMonth]);
+  }, [transactions, categoryScope, selectedMonth, selectedYear]);
+
+  const scopeLabel = useMemo(() => {
+    if (categoryScope === 'month') return monthLabel(selectedMonth);
+    if (categoryScope === 'year') return `Year ${selectedYear}`;
+    return 'All Time';
+  }, [categoryScope, selectedMonth, selectedYear]);
 
   // Planner calculations
   const plannerMonthTx = useMemo(() => {
@@ -320,34 +365,92 @@ export function InsightsView({
           transition={springSoft}
           className="space-y-4"
         >
-          {/* Time Range Filter */}
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
-              Expense Distribution
-            </span>
-            <div className="flex items-center rounded-xl border border-border/80 bg-surface/90 p-1 shadow-warm-xs">
-              <button
-                type="button"
-                onClick={() => setCategoryTimeRange('month')}
-                className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                  categoryTimeRange === 'month'
-                    ? 'bg-primary text-primary-foreground shadow-warm-xs'
-                    : 'text-text-muted hover:text-text'
-                }`}
-              >
-                This Month
-              </button>
-              <button
-                type="button"
-                onClick={() => setCategoryTimeRange('all')}
-                className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                  categoryTimeRange === 'all'
-                    ? 'bg-primary text-primary-foreground shadow-warm-xs'
-                    : 'text-text-muted hover:text-text'
-                }`}
-              >
-                All Time
-              </button>
+          {/* Time Range Filter Header */}
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between px-1">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                Expense Distribution
+              </span>
+              <p className="text-xs font-bold text-text">
+                {scopeLabel}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Segmented Scope Switcher */}
+              <div className="flex items-center rounded-xl border border-border/80 bg-surface/90 p-1 shadow-warm-xs">
+                <button
+                  type="button"
+                  onClick={() => setCategoryScope('month')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                    categoryScope === 'month'
+                      ? 'bg-primary text-primary-foreground shadow-warm-xs'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  Month
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCategoryScope('year')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                    categoryScope === 'year'
+                      ? 'bg-primary text-primary-foreground shadow-warm-xs'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  Year
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCategoryScope('all')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                    categoryScope === 'all'
+                      ? 'bg-primary text-primary-foreground shadow-warm-xs'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  All Time
+                </button>
+              </div>
+
+              {/* Month Picker */}
+              {categoryScope === 'month' && availableMonths.length > 0 && (
+                <div className="relative">
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    aria-label="Select month"
+                    className="h-8 rounded-xl border border-border/80 bg-surface/90 pl-2.5 pr-7 text-xs font-semibold text-text shadow-warm-xs transition hover:border-primary/40 focus:border-primary focus:outline-none cursor-pointer appearance-none"
+                  >
+                    {availableMonths.map((m) => (
+                      <option key={m} value={m}>
+                        {monthLabel(m)}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                </div>
+              )}
+
+              {/* Year Picker */}
+              {categoryScope === 'year' && availableYears.length > 0 && (
+                <div className="relative">
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    aria-label="Select year"
+                    className="h-8 rounded-xl border border-border/80 bg-surface/90 pl-2.5 pr-7 text-xs font-semibold text-text shadow-warm-xs transition hover:border-primary/40 focus:border-primary focus:outline-none cursor-pointer appearance-none"
+                  >
+                    {availableYears.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                </div>
+              )}
             </div>
           </div>
 
@@ -356,7 +459,11 @@ export function InsightsView({
               icon={<Layers className="h-6 w-6" />}
               title="No expense data"
               description={`No expenses found for ${
-                categoryTimeRange === 'month' ? 'this month' : 'the entire dataset'
+                categoryScope === 'month'
+                  ? monthLabel(selectedMonth)
+                  : categoryScope === 'year'
+                  ? `the year ${selectedYear}`
+                  : 'the entire dataset'
               }.`}
               action={
                 onAddTransaction
@@ -369,7 +476,7 @@ export function InsightsView({
               {/* Category Donut & Total Summary */}
               <div className="cozy-card flex flex-col items-center justify-center p-5 text-center lg:col-span-1">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
-                  Total Expenses ({categoryTimeRange === 'month' ? 'Month' : 'All-time'})
+                  Total Expenses ({scopeLabel})
                 </p>
                 <p className="mt-1 font-display text-2xl font-bold text-text tabular-nums">
                   {formatCurrency(categoryData.totalExpense)}
