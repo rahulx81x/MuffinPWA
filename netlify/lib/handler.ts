@@ -1,6 +1,6 @@
 import { json, noContent } from './http';
-import { oauthConfigured } from './googleAuth';
-import { requireSession, type SessionUser } from './session';
+import { isGoogleAuthError, oauthConfigured } from './googleAuth';
+import { requireSession, sessionCookieHeader, type SessionUser } from './session';
 import { bindBlobsEvent } from './userStore';
 import type { NetlifyEvent, NetlifyHandler, NetlifyResponse } from './types';
 
@@ -51,6 +51,22 @@ export function withSession(
     } catch (error) {
       const err = error as { statusCode?: number; message?: string; code?: string };
       console.error('[muffin] handler error', error);
+
+      if (isGoogleAuthError(error)) {
+        const clearCookie = sessionCookieHeader('', { clear: true });
+        return json(
+          event,
+          401,
+          {
+            error:
+              'Google authorization expired or revoked. Please sign in again.',
+            code: 'unauthenticated',
+            reason: 'invalid_grant',
+          },
+          { 'Set-Cookie': clearCookie }
+        );
+      }
+
       return json(event, err?.statusCode || 500, {
         error: err?.message || 'Request failed.',
         code: err?.code,
@@ -58,3 +74,4 @@ export function withSession(
     }
   };
 }
+

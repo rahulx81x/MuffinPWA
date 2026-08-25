@@ -42,6 +42,9 @@ export function useSheetTransactions({
     (err: unknown) => {
       if (err instanceof AuthRequiredError) {
         setAuth(null);
+        setStatusMessage(
+          err.message || 'Your Google session has expired. Please sign in again.'
+        );
         return true;
       }
       if (err instanceof NeedsSheetError) {
@@ -62,7 +65,7 @@ export function useSheetTransactions({
       }
       return false;
     },
-    [setAuth]
+    [setAuth, setStatusMessage]
   );
 
   const refreshTransactions = useCallback(async () => {

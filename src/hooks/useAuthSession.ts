@@ -31,6 +31,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   invalid_state: 'Invalid OAuth state. Try signing in again.',
   invalid_method: 'Invalid sign-in method.',
   failed: 'Google sign-in failed. Try again.',
+  session_expired:
+    'Your Google session has expired. Please sign in again to reconnect.',
 };
 
 const OAUTH_QUERY_KEYS = [
@@ -178,6 +180,10 @@ export function useAuthSession() {
       } catch (err) {
         if (err instanceof AuthRequiredError) {
           setAuth(null);
+          setAuthError(
+            err.message ||
+              'Your Google session has expired. Please sign in again.'
+          );
           setStatusMessage('Signed out — please sign in again.');
           return;
         }
