@@ -343,7 +343,7 @@ function QuickAddStrip({
     const top = Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .map(([c]) => c)
-      .slice(0, 5);
+      .slice(0, 4);
     return top;
   }, [existingTransactions, type]);
 
@@ -378,28 +378,42 @@ function QuickAddStrip({
       <form onSubmit={handleSubmit} className="space-y-2.5">
         <div className="flex items-center justify-between gap-2">
           {/* Type Switcher */}
-          <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-surface/90 p-1 shadow-warm-xs">
+          <div className="relative flex items-center gap-1 rounded-2xl border border-border/80 bg-surface/90 p-1 shadow-warm-xs">
             <button
               type="button"
               onClick={() => setType('expense')}
-              className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+              className={`relative rounded-[12px] px-3 py-1 text-xs font-bold transition-colors duration-200 active:scale-95 ${
                 type === 'expense'
-                  ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 shadow-warm-xs'
+                  ? 'text-rose-600 dark:text-rose-400'
                   : 'text-text-muted hover:text-text'
               }`}
             >
-              Expense
+              {type === 'expense' && (
+                <motion.span
+                  layoutId="quickLogTypePill"
+                  className="absolute inset-0 rounded-[12px] bg-rose-500/20 shadow-warm-xs"
+                  transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                />
+              )}
+              <span className="relative z-10">Expense</span>
             </button>
             <button
               type="button"
               onClick={() => setType('income')}
-              className={`rounded-lg px-3 py-1 text-xs font-bold transition-all ${
+              className={`relative rounded-[12px] px-3 py-1 text-xs font-bold transition-colors duration-200 active:scale-95 ${
                 type === 'income'
-                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-warm-xs'
+                  ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-text-muted hover:text-text'
               }`}
             >
-              Income
+              {type === 'income' && (
+                <motion.span
+                  layoutId="quickLogTypePill"
+                  className="absolute inset-0 rounded-[12px] bg-emerald-500/20 shadow-warm-xs"
+                  transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                />
+              )}
+              <span className="relative z-10">Income</span>
             </button>
           </div>
 
@@ -1197,7 +1211,7 @@ export function LedgerView({
                           <span className="font-semibold text-primary">
                             Investment Type
                           </span>
-                          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 font-bold text-primary">
+                          <span className="rounded-full border border-primary/30 bg-primary/15 px-2.5 py-0.5 font-bold text-primary">
                             {viewingTx.investmentType}
                           </span>
                         </div>

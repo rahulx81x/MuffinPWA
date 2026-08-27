@@ -76,7 +76,15 @@ export function MonthlyView({
                       </span>
                     )}
                   </div>
-                  <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
+                  <span
+                    className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${
+                      m.totalSavingsPct >= 30
+                        ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                        : m.totalSavingsPct > 0
+                        ? 'border-primary/30 bg-primary/20 text-primary'
+                        : 'border-rose-500/30 bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                    }`}
+                  >
                     Save {m.totalSavingsPct.toFixed(1)}%
                   </span>
                 </div>

@@ -15,6 +15,7 @@ export type KpiTone =
 interface KpiCardProps {
   label: string;
   value?: string;
+  subtext?: ReactNode;
   tone?: KpiTone;
   iconHint?: KpiIconHint;
   interactive?: boolean;
@@ -68,6 +69,7 @@ function HintIcon({
 export function KpiCard({
   label,
   value,
+  subtext,
   tone = 'default',
   iconHint,
   interactive = false,
@@ -102,6 +104,15 @@ export function KpiCard({
         >
           {value}
         </p>
+      )}
+      {subtext !== undefined && (
+        <div
+          className={`mt-0.5 text-xs font-semibold tabular-nums ${
+            isHero ? 'text-primary-foreground/80' : 'text-text-muted'
+          }`}
+        >
+          {subtext}
+        </div>
       )}
       {children}
     </>

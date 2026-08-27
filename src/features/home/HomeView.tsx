@@ -21,6 +21,7 @@ interface CardDef {
   key: MetricKey;
   label: string;
   value: string;
+  subtext?: React.ReactNode;
   tone?: KpiTone;
   className?: string;
   iconHint?: KpiIconHint;
@@ -178,7 +179,19 @@ export function HomeView({
       {
         key: 'currentMonthSavingsPct',
         label: 'Month Savings & Allocation',
-        value: `${currentMonthSavings < 0 ? '−' : ''}${formatCurrency(Math.abs(currentMonthSavings))} (${metrics.currentMonthSavingsPct.toFixed(1)}%)`,
+        value: `${currentMonthSavings < 0 ? '−' : ''}${formatCurrency(Math.abs(currentMonthSavings))}`,
+        subtext: (
+          <span
+            className={
+              metrics.currentMonthSavingsPct < 0
+                ? 'text-rose-600 dark:text-rose-400'
+                : 'text-text-muted'
+            }
+          >
+            {metrics.currentMonthSavingsPct < 0 ? '−' : ''}
+            {Math.abs(metrics.currentMonthSavingsPct).toFixed(1)}% of income
+          </span>
+        ),
         tone: metrics.currentMonthSavingsPct >= 0 ? 'teal' : 'destructive',
         className: 'col-span-2 sm:col-span-2 md:col-span-2',
         iconHint: 'chart',
@@ -321,6 +334,7 @@ export function HomeView({
       key={card.key}
       label={card.label}
       value={card.breakup ? undefined : card.value}
+      subtext={card.subtext}
       tone={card.tone}
       className={card.className}
       iconHint={card.iconHint}
