@@ -183,9 +183,9 @@ export function TransactionForm({
       return Object.entries(counts)
         .sort((a, b) => b[1] - a[1])
         .map(([cat]) => cat)
-        .slice(0, 8);
+        .slice(0, 4);
     }
-    return categoryChips;
+    return categoryChips.slice(0, 4);
   }, [transactions, categoryChips, type]);
 
   const selectStyles = useMemo(() => buildSelectStyles(), []);
@@ -266,7 +266,7 @@ export function TransactionForm({
     <form onSubmit={handleSubmit} className={`space-y-3.5 ${className}`}>
       <div>
         <span className={labelClass}>Transaction Type</span>
-        <div className="relative flex rounded-xl border border-border/80 bg-canvas/80 p-1">
+        <div className="relative flex rounded-2xl border border-border/80 bg-canvas/80 p-1">
           {(
             [
               { id: 'expense', label: 'Expense' },
@@ -281,14 +281,14 @@ export function TransactionForm({
                 type="button"
                 onClick={() => setType(item.id)}
                 disabled={busy}
-                className={`relative flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors duration-200 ${
-                  active ? 'text-primary-foreground' : 'text-text-muted hover:text-text'
+                className={`relative flex-1 rounded-[12px] py-1.5 text-xs font-semibold transition-colors duration-200 ${
+                  active ? 'text-primary-foreground font-bold' : 'text-text-muted hover:text-text'
                 }`}
               >
                 {active && (
                   <motion.span
                     layoutId="txTypeActive"
-                    className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary-muted to-primary shadow-warm-sm"
+                    className="absolute inset-0 rounded-[12px] bg-gradient-to-r from-primary-muted to-primary shadow-warm-sm"
                     transition={{ type: 'spring', stiffness: 450, damping: 35 }}
                   />
                 )}
@@ -397,7 +397,7 @@ export function TransactionForm({
               setInvestmentType(label);
               setInvestmentTypeInput('');
             }}
-            placeholder="e.g. Mutual Fund, Fixed Deposit, Stocks, PF"
+            placeholder="e.g. SIP, FD, Stocks"
             formatCreateLabel={(inputValue) => `Use "${inputValue}"`}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && investmentTypeInput.trim()) {

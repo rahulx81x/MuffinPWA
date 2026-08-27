@@ -142,12 +142,13 @@ export function RecipeModal({
     new Set(
       [
         ...investmentTypeSuggestions,
-        'Regular Deposits',
-        'Fixed Deposits',
+        'SIP',
+        'FD',
+        'Stocks',
         'Mutual Funds',
       ].map((s) => s.trim()).filter(Boolean)
     )
-  );
+  ).slice(0, 4);
 
   return createPortal(
     <AnimatePresence>

@@ -199,44 +199,38 @@ export function InsightsView({
 
         {/* Sub-tab Pills (Full width on mobile, inline on desktop) */}
         <div className="grid grid-cols-3 w-full sm:w-auto items-center gap-1 rounded-2xl border border-border/80 bg-surface/80 p-1 backdrop-blur-md shadow-warm-sm">
-          <button
-            type="button"
-            onClick={() => setSubTab('trends')}
-            className={`flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-2 py-2 sm:px-3 sm:py-1.5 text-xs font-bold transition-all outline-none active:scale-95 ${
-              subTab === 'trends'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-text-muted hover:text-text'
-            }`}
-          >
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span>Trends</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSubTab('categories')}
-            className={`flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-2 py-2 sm:px-3 sm:py-1.5 text-xs font-bold transition-all outline-none active:scale-95 ${
-              subTab === 'categories'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-text-muted hover:text-text'
-            }`}
-          >
-            <PieChartIcon className="h-3.5 w-3.5" />
-            <span>Categories</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSubTab('planner')}
-            className={`flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-2 py-2 sm:px-3 sm:py-1.5 text-xs font-bold transition-all outline-none active:scale-95 ${
-              subTab === 'planner'
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-text-muted hover:text-text'
-            }`}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Planner</span>
-          </button>
+          {(
+            [
+              { id: 'trends', label: 'Trends', icon: TrendingUp },
+              { id: 'categories', label: 'Categories', icon: PieChartIcon },
+              { id: 'planner', label: 'Planner', icon: Sparkles },
+            ] as const
+          ).map((tab) => {
+            const active = subTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSubTab(tab.id)}
+                className={`relative flex min-h-10 items-center justify-center gap-1.5 rounded-[12px] px-2 py-2 sm:px-3 sm:py-1.5 text-xs font-bold transition-colors duration-200 outline-none active:scale-95 ${
+                  active ? 'text-primary-foreground' : 'text-text-muted hover:text-text'
+                }`}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="insightsSubTabPill"
+                    className="absolute inset-0 rounded-[12px] bg-primary shadow-sm"
+                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5">
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{tab.label}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -301,12 +295,12 @@ export function InsightsView({
                           )}
                         </div>
                         <span
-                          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${
                             m.totalSavingsPct >= 30
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                              ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                               : m.totalSavingsPct > 0
-                              ? 'bg-primary/10 text-primary'
-                              : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                              ? 'border-primary/30 bg-primary/20 text-primary'
+                              : 'border-rose-500/30 bg-rose-500/15 text-rose-600 dark:text-rose-400'
                           }`}
                         >
                           Save {m.totalSavingsPct.toFixed(1)}%
@@ -378,40 +372,37 @@ export function InsightsView({
 
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* Segmented Scope Switcher */}
-              <div className="flex items-center rounded-xl border border-border/80 bg-surface/90 p-1 shadow-warm-xs">
-                <button
-                  type="button"
-                  onClick={() => setCategoryScope('month')}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                    categoryScope === 'month'
-                      ? 'bg-primary text-primary-foreground shadow-warm-xs'
-                      : 'text-text-muted hover:text-text'
-                  }`}
-                >
-                  Month
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCategoryScope('year')}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                    categoryScope === 'year'
-                      ? 'bg-primary text-primary-foreground shadow-warm-xs'
-                      : 'text-text-muted hover:text-text'
-                  }`}
-                >
-                  Year
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCategoryScope('all')}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                    categoryScope === 'all'
-                      ? 'bg-primary text-primary-foreground shadow-warm-xs'
-                      : 'text-text-muted hover:text-text'
-                  }`}
-                >
-                  All Time
-                </button>
+              <div className="flex items-center gap-1 rounded-2xl border border-border/80 bg-surface/90 p-1 shadow-warm-xs">
+                {(
+                  [
+                    { id: 'month', label: 'Month' },
+                    { id: 'year', label: 'Year' },
+                    { id: 'all', label: 'All Time' },
+                  ] as const
+                ).map((scope) => {
+                  const active = categoryScope === scope.id;
+                  return (
+                    <button
+                      key={scope.id}
+                      type="button"
+                      onClick={() => setCategoryScope(scope.id)}
+                      className={`relative rounded-[12px] px-2.5 py-1 text-xs font-semibold transition-colors duration-200 outline-none active:scale-95 ${
+                        active
+                          ? 'text-primary-foreground font-bold'
+                          : 'text-text-muted hover:text-text'
+                      }`}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="categoryScopePill"
+                          className="absolute inset-0 rounded-[12px] bg-primary shadow-warm-xs"
+                          transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                        />
+                      )}
+                      <span className="relative z-10">{scope.label}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Month Picker */}

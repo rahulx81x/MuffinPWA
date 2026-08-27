@@ -44,8 +44,8 @@ const KEYS: { label: string; insert: string; accent?: boolean }[][] = [
     { label: '−', insert: '-' },
   ],
   [
-    { label: '0', insert: '0' },
     { label: '.', insert: '.' },
+    { label: '0', insert: '0' },
     { label: '=', insert: '=', accent: true },
     { label: '+', insert: '+' },
   ],

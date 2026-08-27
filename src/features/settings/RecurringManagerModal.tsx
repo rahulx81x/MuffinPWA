@@ -194,7 +194,7 @@ export function RecurringManagerModal({
     }
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
+      .slice(0, 4)
       .map(([cat]) => cat);
   }, [transactions, type]);
 
@@ -659,7 +659,7 @@ export function RecurringManagerModal({
                   {/* Type Segmented Control */}
                   <div>
                     <label className={labelClass}>Transaction Type</label>
-                    <div className="relative flex rounded-xl border border-border/80 bg-canvas/90 p-1">
+                    <div className="relative flex rounded-2xl border border-border/80 bg-canvas/90 p-1">
                       {(
                         [
                           { id: 'expense', label: 'Expense' },
@@ -675,7 +675,7 @@ export function RecurringManagerModal({
                             onClick={() => {
                               setType(item.id);
                             }}
-                            className={`relative flex-1 rounded-lg py-2 text-xs font-semibold capitalize transition-colors duration-200 ${
+                            className={`relative flex-1 rounded-[12px] py-2 text-xs font-semibold capitalize transition-colors duration-200 ${
                               active
                                 ? 'text-primary-foreground font-bold'
                                 : 'text-text-muted hover:text-text'
@@ -684,7 +684,7 @@ export function RecurringManagerModal({
                             {active && (
                               <motion.span
                                 layoutId="recurringModalTypePill"
-                                className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary-muted to-primary shadow-warm-sm"
+                                className="absolute inset-0 rounded-[12px] bg-gradient-to-r from-primary-muted to-primary shadow-warm-sm"
                                 transition={{ type: 'spring', stiffness: 450, damping: 35 }}
                               />
                             )}
@@ -763,7 +763,7 @@ export function RecurringManagerModal({
                             setInvestmentType(label);
                             setInvestmentTypeInput('');
                           }}
-                          placeholder="Pick existing type or type a new one"
+                          placeholder="e.g. SIP, FD, Stocks"
                           formatCreateLabel={(inputValue) => `Use "${inputValue}"`}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && investmentTypeInput.trim()) {
