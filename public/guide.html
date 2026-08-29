@@ -335,11 +335,11 @@
         </div>
         <div class="feature-card">
           <h4>Insights</h4>
-          <p>Unified analytics hub with 3 sub-views: <strong>Trends</strong> (month-by-month bar charts with drill-down to Ledger), <strong>Categories</strong> (SVG donut ring + ranked expense list), and <strong>Planner</strong> (what-if scenario builder with budget sliders).</p>
+          <p>Unified analytics hub with 3 sub-views: <strong>Trends</strong> (month-by-month bar charts with drill-down to Ledger), <strong>Categories</strong> (SVG donut ring + ranked expense list), and <strong>Planner</strong> (what-if scenario builder with <strong>Current Month</strong> and <strong>Blank</strong> simulation modes).</p>
         </div>
         <div class="feature-card">
           <h4>Ledger</h4>
-          <p>Searchable timeline with date-grouped headers ("Today", "Yesterday"), category icons, and an inline <strong>QuickAdd strip</strong> on top for instant 1-line expense/income logging. Tap a row for full details or to edit/delete.</p>
+          <p>Searchable timeline with date-grouped headers ("Today", "Yesterday"), category icons, and a tap-to-expand row detail view. Tap a row for full details or to edit/delete. Add transactions via the <strong>+</strong> button in the bottom nav.</p>
         </div>
         <div class="feature-card">
           <h4>Settings</h4>
@@ -355,20 +355,10 @@
     <!-- Transactions -->
     <div id="transactions" class="tab-content" role="tabpanel">
       <h3 class="section-title">Adding &amp; managing transactions</h3>
-      <p class="lede">Add entries in-app using the QuickAdd strip or the + modal, or directly in Google Sheets — both stay in sync automatically.</p>
+      <p class="lede">Add entries in-app using the <strong>+</strong> button or directly in Google Sheets &mdash; both stay in sync automatically.</p>
 
       <div class="accordion open">
         <button type="button" class="accordion-header" aria-expanded="true" onclick="toggleAccordion(this)">
-          <span>Using the QuickAdd strip (Ledger tab)</span>
-          <span class="chev" aria-hidden="true">▼</span>
-        </button>
-        <div class="accordion-content">
-          At the top of the <strong>Ledger</strong> tab, a single-line QuickAdd strip allows instant logging: switch between Expense/Income, tap recent category chips, type the amount (or math expressions), and submit in one tap without opening any modal.
-        </div>
-      </div>
-
-      <div class="accordion">
-        <button type="button" class="accordion-header" aria-expanded="false" onclick="toggleAccordion(this)">
           <span>Using the center + button</span>
           <span class="chev" aria-hidden="true">▼</span>
         </button>
@@ -483,7 +473,10 @@
       </div>
 
       <div class="callout">
-        <strong>Recurring Automation:</strong> Manage rules anytime from Settings → Data &amp; Privacy → Recurring Transactions &amp; SIPs. Features smart month-end clamping (e.g. 31st resolves to Feb 28/29) and optional end date limits.
+        <strong>Recurring Automation:</strong> Manage rules anytime from Settings &rarr; Data &amp; Privacy &rarr; Recurring Transactions &amp; SIPs. Features smart month-end clamping (e.g. 31st resolves to Feb 28/29) and optional end date limits.
+      </div>
+      <div class="callout" style="margin-top:10px;">
+        <strong>Planner simulation modes:</strong> In Insights &rarr; Planner, switch between <strong>Current Month</strong> (layers staged what-if entries on top of your real Google Sheet data for this month) and <strong>Blank</strong> (100% in-memory canvas &mdash; no sheet data mixed in). KPIs update live. Nothing writes back to your sheet.
       </div>
     </div>
 

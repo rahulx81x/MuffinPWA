@@ -60,7 +60,7 @@ This project is a **personal finance dashboard** for individuals who already (or
 - Investment breakup (top types on Home; full pie on tap)
 - Provident Fund totals on their own More Details card (not in net worth or investment breakup)
 - Month-by-month trends and category breakdowns
-- A planner for "what if I spend/save this?" scenarios without editing the real sheet
+- A planner for "what if I spend/save this?" scenarios without editing the real sheet — two simulation modes: **Current Month** (real sheet data + staged entries) and **Blank** (100% in-memory canvas)
 - In-app add / edit / delete for sheet transactions, written straight back to your Google Sheet
 
 It is designed for **personal finance** (INR by default): each person signs in with Google and links **their own** spreadsheet. It is not a shared multi-bookkeeper suite or a bank aggregator.
@@ -132,8 +132,8 @@ Currency display defaults to **â‚¹** with Indian digit grouping (e.g. â‚�
 | Tab | What it does |
 | --- | --- |
 | **Home** | KPI cards; tap for charts or transaction lists. Investment Breakup shows top 3 chips; PF lives under More Details |
-| **Insights** | Unified analytics hub with three sub-views: Trends (month-by-month charts with drill-down to Ledger), Categories (SVG donut + expense breakdown list), and Planner (what-if scenario planning) |
-| **Ledger** | Searchable chronological list with persistent **QuickAdd strip** (inline Expense/Income logger with recent-category chips); full add / edit / delete sheet-backed rows via the manage modal |
+| **Insights** | Unified analytics hub with three sub-views: Trends (month-by-month charts with drill-down to Ledger), Categories (SVG donut + expense breakdown list), and Planner (what-if scenario planning with **Current Month** and **Blank** simulation modes) |
+| **Ledger** | Searchable chronological list with date-grouped timeline; tap any row for full details, edit, or delete sheet-backed rows via the manage modal; add new transactions via the `+` FAB |
 | **Settings** | Dedicated settings tab: Account (avatar, name, email, linked sheet, logout), Appearance (8 theme cards + 7 font styles), Data & Privacy (mask toggle + Starting Balances), Help & About, and PWA Install |
 
 Also included:
@@ -142,7 +142,7 @@ Also included:
 - **Legal Compliance & Privacy** — Public [Privacy Policy](public/privacy.html) (`/privacy`) and [Terms of Service](public/terms.html) (`/terms`) adhering to official [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy) Limited Use requirements. Contact support: `rahulgouri072@gmail.com`.
 - **Interactive Touch Charts** — Tappable Donut/Pie slices with stroke expansion & glow, crosshair guidelines on trend graphs, pulsing active aura rings, and Month-over-Month (MoM) delta calculation cards.
 - **Date-Grouped Fintech Timeline Ledger** — Grouped timeline headers ("Today", "Yesterday", "Mon, 10 Aug 2026") with daily totals, category-colored icon badges (`ArrowUpRight`, `Utensils`, `Coffee`, `ShoppingBag`, `Zap`), unclipped `createPortal` Action Sheet menu, and View Transaction Details modal.
-- **Ledger QuickAdd Strip** — Single-line persistent quick logger pinned above the timeline: Expense/Income type switcher, dynamic recent-category chips, amount input, and instant one-tap submission without opening a modal.
+- **Planner — Dual Simulation Modes** — The Insights → Planner sub-tab (and standalone PlannerView) offer two modes via an animated pill switcher: **Current Month** (combines real Google Sheet transactions for the current month with staged what-if entries) and **Blank** (100% in-memory canvas — every transaction is staged; no sheet data is mixed in). KPIs (income, expenses, investment, net liquid, savings %, closing cash) update live in both modes. Entries never write back to your Google Sheet.
 - **1-Tap Dynamic Category Chips & Calculator Math** — Auto-extracted top 8 frequent category chips, decimal input mode for phone keypads, micro-haptics (`navigator.vibrate(8)`), and safe math expression evaluator supporting BODMAS arithmetic and `%` percentage calculations (e.g. `1000 * 18%` → `180` for tax/GST).
 - **Premium Glassmorphism UI** — Frosted nav pill (`backdrop-filter: blur(28px) saturate(200%)`), ambient accent-glow orbs on the canvas, specular rim highlights on all cards, and a high-contrast active tab capsule gradient.
 - **Boot splash** — Themed `LoadingScreen` (floating muffin mark + ambient glow) while the session resolves; no skeleton placeholders.
@@ -389,12 +389,6 @@ npm run dev
 
 You do **not** need a redeploy to set starting balances. In the live app (while signed in):
 
-1. Open the header **gear** menu → **Recipe**.
-2. View / copy the linked spreadsheet ID.
-3. Set **Initial opening balance** (liquid cash before sheet history).
-4. Add one or more **Initial investments** (type + amount), e.g. Fixed Deposits, Mutual Funds.
-5. Save — values are written to the **Recipe** tab in your Google Sheet (and cached locally as `muffinRecipe` for the UI). They feed net worth / investment breakup on every device you sign into.
-
 1. Open the **Settings** tab → **Data & Privacy** → **Starting Balances**.
 2. View / copy the linked spreadsheet ID.
 3. Set **Initial opening balance** (liquid cash before sheet history).
@@ -407,11 +401,11 @@ Optional code defaults (used when no Recipe exists yet) and currency live in `sr
 
 ### 2.10 Everyday usage
 
-1. Add, edit, or delete rows using the in-app **+** button (QuickAdd strip on Ledger) or the full manage modal — these write straight to your Google Sheet through the Netlify Function. You can also edit the sheet directly in Google Sheets.
+1. Add, edit, or delete rows using the in-app **+** button or the full manage modal — these write straight to your Google Sheet through the Netlify Function. You can also edit the sheet directly in Google Sheets.
 2. Open your Netlify site (or pull to refresh) to see the latest numbers; the app re-fetches after every in-app add/edit/delete automatically.
 3. On **Home**, you'll see a time-based welcome with your first name; tap KPI cards to open charts or filtered lists; scroll down for Provident Fund and lifetime KPIs.
-4. Tap **Insights** to explore monthly trend charts, category spending breakdowns (SVG donut), and the Scenario Planner — all in one tab with a segmented sub-navigation.
-5. Use the **Ledger** QuickAdd strip for fast single-line expense/income logging; tap any row for full details or edit/delete.
+4. Tap **Insights** to explore monthly trend charts, category spending breakdowns (SVG donut), and the Scenario Planner — all in one tab with a segmented sub-navigation. In the Planner, choose **Current Month** to layer staged what-if entries on top of your real sheet data, or **Blank** for a clean in-memory sandbox.
+5. In the **Ledger**, tap any row for full details, edit, or delete; add new transactions via the `+` button in the floating nav.
 6. Open the **Settings** tab for Themes (8 options), Fonts (7 styles), Mask Amounts, Starting Balances, Guides, Privacy, Terms, and Download App.
 7. Tap your **profile avatar** (top-right header) for a quick popover with your Google account info and Log out.
 8. After your first sheet link, walk through the **tour** (or skip it) — it will not appear again once completed.
@@ -592,11 +586,12 @@ Growth compares current net worth to `initialInvestments + openingBalance` (from
 - **Navigation IA** — `AppTab` union is `'home' | 'insights' | 'ledger' | 'settings'`. `FloatingNav` renders two left tabs (Home, Insights), a center `+` FAB, and two right tabs (Ledger, Settings).
 - **Lifecycle hooks:** `useAuthSession` (boot, logout, visibility health probe), `useSheetTransactions` (load/mutate/refresh), `usePlannerStore` (`plannerTransactions` localStorage), `useAppModals` (single discriminated modal union).
 - **Feature folders:**
-  - `features/insights/InsightsView.tsx` — unified Insights hub with Trends (month bar charts with Ledger drill-down), Categories (SVG donut + breakdown list), and Planner sub-tabs in a segmented control.
-  - `features/settings/SettingsView.tsx` — dedicated Settings tab with Account card (avatar, name, email, sheet link, logout), live theme picker (8 variants in 2×4 or 2×2 grid), font picker (7 styles), mask toggle, Starting Balances, guides, PWA install, About.
+  - `features/insights/InsightsView.tsx` — unified Insights hub with Trends (month bar charts with Ledger drill-down), Categories (SVG donut + breakdown list), and Planner sub-tabs in a segmented control. Planner supports **Current Month** (real sheet + staged entries) and **Blank** (pure in-memory) simulation modes via an animated pill switcher.
+  - `features/planner/PlannerView.tsx` — standalone planner with identical Current Month / Blank dual-mode, expense category breakdown, and a staged-entries list.
+  - `features/settings/SettingsView.tsx` — dedicated Settings tab with Account card (avatar, name, email, sheet link, logout), live theme picker (8 variants), font picker (7 styles), mask toggle, Starting Balances, guides, PWA install, About.
   - `features/settings/HeaderMenu.tsx` — simplified to a profile avatar trigger; opens a lightweight `createPortal` popover with user photo/name/email and Log out only (no sub-panels).
-  - `features/ledger/LedgerView.tsx` — persistent `QuickAddStrip` pinned above timeline: Expense/Income switcher, recent-category chips, amount field, instant submit.
-  - `features/home/HomeView.tsx`, `features/auth/`, `features/monthly/`, `features/planner/`.
+  - `features/ledger/LedgerView.tsx` — searchable date-grouped transaction timeline; tap any row to open full details, edit, or delete. Add new transactions via the `+` FAB.
+  - `features/home/HomeView.tsx`, `features/auth/`, `features/monthly/`.
 - **Shared UI:** `components/ui` (`SoftButton`, `FloatingNav`, `ConfirmModal`, `LoadingScreen`, `MuffinIcon`).
 - **`KpiCard` tones:** semantic colors for income/expense/investment; Net Worth uses the theme **hero** primary gradient.
 - **Themes:** `src/lib/themes.ts` catalogs **eight** variants (`classic`, `blueberry`, `pistachio`, `lavender` / `chocolate`, `velvet`, `midnight`, `emerald`); `ThemeProvider` / `useTheme` apply `data-theme` + `dark` class, persist `muffinTheme`, and refresh `theme-color` to the canvas background (status bar match). Charts pull per-theme `chartColors`.
