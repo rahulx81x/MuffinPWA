@@ -35,7 +35,7 @@ const STEPS = [
     id: 'features',
     eyebrow: 'Main features',
     title: 'Home, Insights, Ledger & Settings',
-    body: 'Home shows net worth and KPIs. Insights breaks down trends, categories, and what-if planning. Ledger tracks every transaction with quick log. Settings houses themes, typography, amount masking, and rules.',
+    body: 'Home shows net worth and KPIs. Insights breaks down trends, categories, and what-if planning. Ledger tracks every transaction with smart search & filters. Settings houses themes, typography, amount masking, and rules.',
     Icon: LayoutDashboard,
   },
   {

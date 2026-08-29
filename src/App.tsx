@@ -1,9 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { completeTour, createTransaction, unlinkSheet, AuthRequiredError } from './api/client';
+import { completeTour, unlinkSheet, AuthRequiredError } from './api/client';
 import type { MutationResult } from './api/client';
-import { TAB_BY_TYPE } from '@shared';
 import { SoftButton } from './components/ui/SoftButton';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import { FloatingNav } from './components/ui/FloatingNav';
@@ -36,7 +35,7 @@ import { useSheetTransactions } from './hooks/useSheetTransactions';
 import { useTheme } from './hooks/useTheme';
 import { buildFinancialMetrics, EMPTY_METRICS } from './domain/metrics';
 import { pageTransition, pageVariants, springSoft } from './lib/motion';
-import type { AppTab, FinancialMetrics, NewTransactionInput, SheetRowData, Transaction } from './domain/types';
+import type { AppTab, FinancialMetrics, Transaction } from './domain/types';
 
 export default function App() {
   const { themeId } = useTheme();
@@ -183,35 +182,6 @@ export default function App() {
         return;
       }
       setStatusMessage('Saved to sheet, but refresh failed. Pull to reload.');
-    }
-  }
-
-  async function handleQuickAdd(input: NewTransactionInput) {
-    setMutating(true);
-    setStatusMessage(null);
-    try {
-      const tabName = TAB_BY_TYPE[input.type];
-      const rowData: SheetRowData = {
-        Date: input.date,
-        Category: input.category,
-        Amount: input.amount,
-        Comment: input.comment || '',
-        ...(input.type === 'investment' && input.investmentType
-          ? { 'Investment Type': input.investmentType }
-          : {}),
-      };
-      const result = await createTransaction(tabName, rowData);
-      await handleManageSuccess(result);
-    } catch (err) {
-      if (err instanceof AuthRequiredError) {
-        setStatusMessage('Signed out — please sign in again.');
-        return;
-      }
-      setStatusMessage(
-        err instanceof Error ? err.message : 'Could not add transaction.'
-      );
-    } finally {
-      setMutating(false);
     }
   }
 
@@ -436,7 +406,6 @@ export default function App() {
                     await refreshTransactions();
                   }}
                   onAddTransaction={openAddModal}
-                  onQuickAdd={handleQuickAdd}
                   recurringBanner={recurringBanner}
                 />
               ) : activeTab === 'insights' ? (

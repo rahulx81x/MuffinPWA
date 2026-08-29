@@ -140,36 +140,47 @@ export function InsightsView({
     return 'All Time';
   }, [categoryScope, selectedMonth, selectedYear]);
 
+  const [plannerMode, setPlannerMode] = useState<'current-month' | 'blank'>('current-month');
+
   // Planner calculations
-  const plannerMonthTx = useMemo(() => {
+  const plannerRelevantTx = useMemo(() => {
+    if (plannerMode === 'blank') {
+      return plannerTransactions;
+    }
     const combined = [...transactions, ...plannerTransactions];
     return combined.filter((t) => monthKey(t.date) === thisMonth);
-  }, [transactions, plannerTransactions, thisMonth]);
+  }, [transactions, plannerTransactions, thisMonth, plannerMode]);
 
-  const plannerIncome = plannerMonthTx
+  const plannerIncome = plannerRelevantTx
     .filter((t) => t.type === 'income')
     .reduce((s, t) => s + t.amount, 0);
-  const plannerExpenses = plannerMonthTx
+  const plannerExpenses = plannerRelevantTx
     .filter((t) => t.type === 'expense')
     .reduce((s, t) => s + t.amount, 0);
-  const plannerInvestment = plannerMonthTx
+  const plannerInvestment = plannerRelevantTx
     .filter(isCountedInvestment)
     .reduce((s, t) => s + t.amount, 0);
   const plannerLiquid = plannerIncome - plannerExpenses - plannerInvestment;
   const plannerSavingsPct = pct(plannerInvestment + plannerLiquid, plannerIncome);
 
   const previousClose = useMemo(() => {
+    if (plannerMode === 'blank') {
+      return 0;
+    }
     const monthly = buildMonthlyKPIs(transactions, recipeConfig.openingBalance);
     const prior = monthly.filter((m) => m.key < thisMonth);
     return prior.length > 0
       ? prior[prior.length - 1].closingLiquid
       : recipeConfig.openingBalance;
-  }, [transactions, thisMonth, recipeConfig]);
+  }, [transactions, thisMonth, recipeConfig, plannerMode]);
   const plannerClosingBalance = previousClose + plannerLiquid;
 
-  const plannerThisMonth = plannerTransactions.filter(
-    (t) => monthKey(t.date) === thisMonth
-  );
+  const plannerDisplayList = useMemo(() => {
+    if (plannerMode === 'blank') {
+      return plannerTransactions;
+    }
+    return plannerTransactions.filter((t) => monthKey(t.date) === thisMonth);
+  }, [plannerTransactions, thisMonth, plannerMode]);
 
   function handlePlannerFormSubmit(data: TransactionFormData) {
     onAddPlanner({
@@ -583,6 +594,54 @@ export function InsightsView({
           transition={springSoft}
           className="space-y-4"
         >
+          {/* Planner Mode Selector */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-border/80 bg-surface/80 p-3.5 backdrop-blur-md shadow-warm-sm">
+            <div className="min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                Simulation Baseline
+              </span>
+              <p className="text-xs text-text-secondary mt-0.5">
+                {plannerMode === 'current-month'
+                  ? `Includes actual Google Sheet entries for ${monthLabel(thisMonth)} + staged what-if entries.`
+                  : 'Blank canvas — every transaction is 100% in-memory only.'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 w-full sm:w-auto items-center gap-1 rounded-xl border border-border/80 bg-surface-muted/60 p-1 self-start sm:self-auto shrink-0">
+              {(
+                [
+                  { id: 'current-month', label: 'Current Month', icon: Calendar },
+                  { id: 'blank', label: 'Blank', icon: Layers },
+                ] as const
+              ).map((mode) => {
+                const active = plannerMode === mode.id;
+                const Icon = mode.icon;
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => setPlannerMode(mode.id)}
+                    className={`relative flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors duration-200 outline-none active:scale-95 ${
+                      active ? 'text-primary-foreground' : 'text-text-muted hover:text-text'
+                    }`}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="plannerModePill"
+                        className="absolute inset-0 rounded-lg bg-primary shadow-sm"
+                        transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      <Icon className="h-3.5 w-3.5" />
+                      <span>{mode.label}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Planner KPIs */}
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-6">
             <StatCard
@@ -635,7 +694,7 @@ export function InsightsView({
               <h3 className="font-display text-sm font-bold text-text">
                 Simulate New Entry
               </h3>
-              <span className="text-[11px] text-text-muted">In-memory only</span>
+              <span className="text-[11px] font-medium text-text-muted">In-memory only</span>
             </div>
             <TransactionForm
               transactions={transactions}
@@ -649,9 +708,10 @@ export function InsightsView({
           <div>
             <div className="mb-2 flex items-center justify-between px-1">
               <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
-                Staged What-If Entries ({plannerThisMonth.length})
+                {plannerMode === 'blank' ? 'In-Memory Entries' : 'Staged What-If Entries'} (
+                {plannerDisplayList.length})
               </h3>
-              {plannerThisMonth.length > 0 && (
+              {plannerDisplayList.length > 0 && (
                 <button
                   type="button"
                   onClick={onClearPlanner}
@@ -662,15 +722,19 @@ export function InsightsView({
               )}
             </div>
 
-            {plannerThisMonth.length === 0 ? (
+            {plannerDisplayList.length === 0 ? (
               <EmptyState
                 icon={<Sparkles className="h-6 w-6" strokeWidth={2} />}
-                title="No planning entries yet"
-                description="Add what-if income, expenses, or investments above to simulate cash flow without altering your Google Sheet."
+                title={plannerMode === 'blank' ? 'No in-memory entries yet' : 'No planning entries yet'}
+                description={
+                  plannerMode === 'blank'
+                    ? 'In Blank mode, every transaction is in-memory. Add what-if income, expenses, or investments above to build a scenario from scratch.'
+                    : 'Add what-if income, expenses, or investments above to simulate cash flow on top of your current month without altering your Google Sheet.'
+                }
               />
             ) : (
               <ul className="space-y-2">
-                {plannerThisMonth.map((t) => (
+                {plannerDisplayList.map((t) => (
                   <li
                     key={t.id}
                     className="flex items-center justify-between gap-3 rounded-2xl border border-border/80 bg-surface-strong/90 px-4 py-3 shadow-warm-sm"

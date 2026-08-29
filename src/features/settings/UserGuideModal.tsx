@@ -450,6 +450,19 @@ export function UserGuideModal({
 
                 <div className="rounded-2xl border border-border/80 bg-surface p-3.5 space-y-1">
                   <h4 className="text-xs font-bold text-text">
+                    How does the Planner work?
+                  </h4>
+                  <p className="text-xs text-text-muted leading-relaxed">
+                    Open Insights → Planner. Choose <strong className="text-text">Current Month</strong> to layer staged
+                    what-if entries on top of your real Google Sheet data for the current month,
+                    or <strong className="text-text">Blank</strong> for a 100% in-memory sandbox with no sheet data mixed in.
+                    KPIs (income, expenses, investment, net liquid, savings %, closing cash) update
+                    live. Planner entries never write back to your Google Sheet.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-border/80 bg-surface p-3.5 space-y-1">
+                  <h4 className="text-xs font-bold text-text">
                     Does Muffin work fully offline?
                   </h4>
                   <p className="text-xs text-text-muted leading-relaxed">
