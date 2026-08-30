@@ -45,6 +45,9 @@ export interface TransactionFormProps {
   externalError?: string | null;
   className?: string;
   layout?: 'modal' | 'inline';
+  showDate?: boolean;
+  requireDate?: boolean;
+  resetOnSubmit?: boolean;
 }
 
 type InvestmentTypeOption = {
@@ -161,6 +164,9 @@ export function TransactionForm({
   externalError = null,
   className = '',
   layout = 'modal',
+  showDate = true,
+  requireDate = true,
+  resetOnSubmit = false,
 }: TransactionFormProps) {
   const [date, setDate] = useState(initialValues?.date || todayIso());
   const [type, setType] = useState<TransactionType>(initialValues?.type || 'expense');
@@ -235,7 +241,8 @@ export function TransactionForm({
       setError('Amount cannot be negative.');
       return;
     }
-    if (!date.trim()) {
+    const finalDate = date.trim() || todayIso();
+    if (showDate && requireDate && !date.trim()) {
       setError('Date is required.');
       return;
     }
@@ -250,13 +257,23 @@ export function TransactionForm({
 
     try {
       await onSubmit({
-        date: date.trim(),
+        date: finalDate,
         type,
         category: category.trim(),
         amount: amountValue,
         comment: comment.trim(),
         investmentType: type === 'investment' ? investmentType.trim() : '',
       });
+
+      if (resetOnSubmit) {
+        setCategory('');
+        setAmountText('');
+        setComment('');
+        setInvestmentType('');
+        setInvestmentTypeInput('');
+        setDate(initialValues?.date || todayIso());
+        setError(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred.');
     }
@@ -299,17 +316,19 @@ export function TransactionForm({
         </div>
       </div>
 
-      <label className="block">
-        <span className={labelClass}>Date</span>
-        <input
-          type="date"
-          required
-          value={date}
-          disabled={busy}
-          onChange={(e) => setDate(e.target.value)}
-          className={fieldClass}
-        />
-      </label>
+      {showDate && (
+        <label className="block">
+          <span className={labelClass}>Date</span>
+          <input
+            type="date"
+            required={requireDate}
+            value={date}
+            disabled={busy}
+            onChange={(e) => setDate(e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+      )}
 
       <div>
         <label className="block">

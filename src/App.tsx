@@ -73,7 +73,8 @@ export default function App() {
   });
 
   const {
-    plannerTransactions,
+    currentMonthPlannerTransactions,
+    blankPlannerTransactions,
     handleAddPlanner,
     handleRemovePlanner,
     handleClearPlanner,
@@ -411,7 +412,8 @@ export default function App() {
               ) : activeTab === 'insights' ? (
                 <InsightsView
                   transactions={ledgerTransactions}
-                  plannerTransactions={plannerTransactions}
+                  currentMonthPlannerTransactions={currentMonthPlannerTransactions}
+                  blankPlannerTransactions={blankPlannerTransactions}
                   onSelectMonth={(mKey) => {
                     setLedgerMonthFilter(mKey);
                     setActiveTab('ledger');

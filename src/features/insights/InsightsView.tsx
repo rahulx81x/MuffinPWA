@@ -20,6 +20,7 @@ import {
 } from '../../domain/metrics';
 import { isCountedInvestment } from '../../domain/providentFund';
 import type { NewTransactionInput, Transaction } from '../../domain/types';
+import type { PlannerMode } from '../../hooks/usePlannerStore';
 import {
   TransactionForm,
   type TransactionFormData,
@@ -31,11 +32,13 @@ type InsightsSubTab = 'trends' | 'categories' | 'planner';
 
 interface InsightsViewProps {
   transactions: Transaction[];
-  plannerTransactions: Transaction[];
+  currentMonthPlannerTransactions?: Transaction[];
+  blankPlannerTransactions?: Transaction[];
+  plannerTransactions?: Transaction[];
   onSelectMonth?: (monthKey: string) => void;
-  onAddPlanner: (input: NewTransactionInput) => void;
-  onRemovePlanner: (id: string) => void;
-  onClearPlanner: () => void;
+  onAddPlanner: (input: NewTransactionInput, mode?: PlannerMode) => void;
+  onRemovePlanner: (id: string, mode?: PlannerMode) => void;
+  onClearPlanner: (mode?: PlannerMode) => void;
   onAddTransaction?: () => void;
 }
 
@@ -46,7 +49,9 @@ function pct(part: number, whole: number): number {
 
 export function InsightsView({
   transactions,
-  plannerTransactions,
+  currentMonthPlannerTransactions,
+  blankPlannerTransactions,
+  plannerTransactions = [],
   onSelectMonth,
   onAddPlanner,
   onRemovePlanner,
@@ -140,16 +145,25 @@ export function InsightsView({
     return 'All Time';
   }, [categoryScope, selectedMonth, selectedYear]);
 
-  const [plannerMode, setPlannerMode] = useState<'current-month' | 'blank'>('current-month');
+  const [plannerMode, setPlannerMode] = useState<PlannerMode>('current-month');
+
+  const currentMonthEntries = useMemo(
+    () => currentMonthPlannerTransactions ?? plannerTransactions,
+    [currentMonthPlannerTransactions, plannerTransactions]
+  );
+  const blankEntries = useMemo(
+    () => blankPlannerTransactions ?? [],
+    [blankPlannerTransactions]
+  );
 
   // Planner calculations
   const plannerRelevantTx = useMemo(() => {
     if (plannerMode === 'blank') {
-      return plannerTransactions;
+      return blankEntries;
     }
-    const combined = [...transactions, ...plannerTransactions];
-    return combined.filter((t) => monthKey(t.date) === thisMonth);
-  }, [transactions, plannerTransactions, thisMonth, plannerMode]);
+    const currentMonthSheetTx = transactions.filter((t) => monthKey(t.date) === thisMonth);
+    return [...currentMonthSheetTx, ...currentMonthEntries];
+  }, [transactions, currentMonthEntries, blankEntries, thisMonth, plannerMode]);
 
   const plannerIncome = plannerRelevantTx
     .filter((t) => t.type === 'income')
@@ -176,21 +190,21 @@ export function InsightsView({
   const plannerClosingBalance = previousClose + plannerLiquid;
 
   const plannerDisplayList = useMemo(() => {
-    if (plannerMode === 'blank') {
-      return plannerTransactions;
-    }
-    return plannerTransactions.filter((t) => monthKey(t.date) === thisMonth);
-  }, [plannerTransactions, thisMonth, plannerMode]);
+    return plannerMode === 'blank' ? blankEntries : currentMonthEntries;
+  }, [blankEntries, currentMonthEntries, plannerMode]);
 
   function handlePlannerFormSubmit(data: TransactionFormData) {
-    onAddPlanner({
-      date: data.date,
-      type: data.type,
-      category: data.category,
-      amount: data.amount,
-      comment: data.comment,
-      investmentType: data.investmentType,
-    });
+    onAddPlanner(
+      {
+        date: data.date,
+        type: data.type,
+        category: data.category,
+        amount: data.amount,
+        comment: data.comment,
+        investmentType: data.investmentType,
+      },
+      plannerMode
+    );
   }
 
   const chartColors = theme.chartColors;
@@ -701,6 +715,8 @@ export function InsightsView({
               submitLabel="Add to Plan"
               onSubmit={handlePlannerFormSubmit}
               layout="inline"
+              showDate={false}
+              resetOnSubmit={true}
             />
           </div>
 
@@ -714,7 +730,7 @@ export function InsightsView({
               {plannerDisplayList.length > 0 && (
                 <button
                   type="button"
-                  onClick={onClearPlanner}
+                  onClick={() => onClearPlanner(plannerMode)}
                   className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline active:scale-95"
                 >
                   Clear all
@@ -760,7 +776,7 @@ export function InsightsView({
                     </div>
                     <button
                       type="button"
-                      onClick={() => onRemovePlanner(t.id)}
+                      onClick={() => onRemovePlanner(t.id, plannerMode)}
                       className="shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold text-rose-600 active:scale-95 dark:text-rose-400 hover:bg-rose-500/10"
                     >
                       Remove
