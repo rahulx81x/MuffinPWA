@@ -29,6 +29,8 @@ export type MetricKey =
   | 'growthSinceStart'
   | 'growthSinceStartPct'
   | 'avgMonthlySavings'
+  | 'avgMonthlyInvestment'
+  | 'avgMonthlyLiquid'
   | 'monthsTracked';
 
 export type KpiModalKind = 'list' | 'pie' | 'line';
@@ -54,6 +56,8 @@ export interface FinancialMetrics {
   growthSinceStartPct: number;
   avgMonthlySavings: number;
   avgMonthlySavingsPct: number;
+  avgMonthlyInvestment: number;
+  avgMonthlyLiquid: number;
   monthsTracked: number;
   investmentBreakup: Record<string, number>;
 }

@@ -45,6 +45,8 @@ const MODAL_KIND: Partial<Record<MetricKey, ModalKind>> = {
   totalLiquid: 'line',
   netWorth: 'line',
   avgMonthlySavings: 'line',
+  avgMonthlyInvestment: 'line',
+  avgMonthlyLiquid: 'line',
   currentMonthSavingsPct: 'line',
 };
 
@@ -163,7 +165,7 @@ function PieChart({ data }: { data: Record<string, number> }) {
       </div>
 
       {/* Legend List */}
-      <ul className="w-full space-y-1.5 pt-1">
+      <ul className="w-full max-h-60 overflow-y-auto space-y-1.5 pt-1 pr-1">
         {entries.map(([name, amount], index) => {
           const share = ((amount / total) * 100).toFixed(0);
           const isSelected = index === activeIndex;
@@ -258,10 +260,25 @@ export interface MultiSeriesItem {
   unit?: 'currency' | 'percent';
 }
 
+function formatAxisLabel(label: string, isShort = false): string {
+  const trimmed = label.trim();
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 2) {
+    const [mon, yr] = parts;
+    const shortMon = mon.slice(0, 3);
+    if (isShort) return shortMon;
+    const shortYr = yr.length === 4 ? `'${yr.slice(2)}` : yr;
+    return `${shortMon} ${shortYr}`;
+  }
+  return trimmed;
+}
+
+type TimeRange = '3M' | '6M' | '1Y' | 'ALL';
+
 function LineChart({
-  points,
-  labels,
-  multiSeries,
+  points: rawPoints,
+  labels: rawLabels,
+  multiSeries: rawMultiSeries,
   footer,
   asPercent = false,
   masked = false,
@@ -274,9 +291,46 @@ function LineChart({
   masked?: boolean;
 }) {
   const { formatCurrency } = useMask();
+
+  const rangeOptions = useMemo(() => {
+    const total = rawLabels.length;
+    if (total < 4) return [];
+    const opts: { id: TimeRange; label: string; count: number }[] = [];
+    if (total >= 4) opts.push({ id: '3M', label: '3M', count: 3 });
+    if (total >= 7) opts.push({ id: '6M', label: '6M', count: 6 });
+    if (total >= 13) opts.push({ id: '1Y', label: '1Y', count: 12 });
+    opts.push({ id: 'ALL', label: 'ALL', count: total });
+    return opts;
+  }, [rawLabels.length]);
+
+  const [selectedRange, setSelectedRange] = useState<TimeRange>('ALL');
+
+  const { points, labels, multiSeries } = useMemo(() => {
+    const total = rawLabels.length;
+    const activeOption = rangeOptions.find((r) => r.id === selectedRange);
+    const count = activeOption ? activeOption.count : total;
+    const startIndex = Math.max(0, total - count);
+
+    return {
+      labels: rawLabels.slice(startIndex),
+      points: rawPoints.slice(startIndex),
+      multiSeries: rawMultiSeries
+        ? rawMultiSeries.map((s) => ({
+            ...s,
+            points: s.points.slice(startIndex),
+          }))
+        : undefined,
+    };
+  }, [rawLabels, rawPoints, rawMultiSeries, rangeOptions, selectedRange]);
+
   const [selectedIndex, setSelectedIndex] = useState<number>(
     labels.length > 0 ? labels.length - 1 : 0
   );
+
+  // Keep selectedIndex in bounds if range changes
+  useEffect(() => {
+    setSelectedIndex(labels.length > 0 ? labels.length - 1 : 0);
+  }, [labels.length]);
 
   if (labels.length < 2) {
     return (
@@ -304,8 +358,27 @@ function LineChart({
   const max = Math.max(...allValues);
   const range = max - min || 1;
 
-  const activeIdx = Math.min(selectedIndex, labels.length - 1);
+  const activeIdx = Math.min(Math.max(0, selectedIndex), labels.length - 1);
   const stepWidth = width / labels.length;
+
+  // Calculate intelligent dynamic label decimation to prevent text overlap
+  const totalLabels = labels.length;
+  const maxAxisLabels = 5;
+  const stride = totalLabels <= maxAxisLabels
+    ? 1
+    : Math.ceil((totalLabels - 1) / (maxAxisLabels - 1));
+
+  const shouldRenderLabel = (index: number): boolean => {
+    if (totalLabels <= maxAxisLabels) return true;
+    if (index === 0) return true;
+    if (index === totalLabels - 1) return true;
+    if (index % stride === 0) {
+      // Don't render if too close to the last index to avoid collision
+      const distFromEnd = totalLabels - 1 - index;
+      return distFromEnd >= Math.floor(stride * 0.75);
+    }
+    return false;
+  };
 
   // Single series coords
   const coords = points.map((value, index) => {
@@ -377,20 +450,48 @@ function LineChart({
 
   return (
     <div className="space-y-3">
+      {/* Time Range Selector (when 4+ months exist) */}
+      {rangeOptions.length > 0 && (
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+            Timeframe
+          </span>
+          <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-surface-muted/50 p-0.5">
+            {rangeOptions.map((opt) => {
+              const active = selectedRange === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setSelectedRange(opt.id)}
+                  className={`relative rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all duration-200 ${
+                    active
+                      ? 'bg-primary text-primary-foreground shadow-xs'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Interactive Month Callout Header Card */}
       <div className="rounded-2xl border border-border bg-surface-strong p-3.5 shadow-warm-sm transition-all duration-200">
         <div className="flex items-center justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
               Selected Month
             </span>
-            <p className="font-display text-sm font-bold text-text">
+            <p className="truncate font-display text-sm font-bold text-text">
               {labels[activeIdx]}
             </p>
           </div>
 
           {!hasMulti ? (
-            <div className="text-right">
+            <div className="shrink-0 text-right">
               <p className="font-display text-base font-bold tabular-nums text-text">
                 {formatChartValue(activeCoord.value, asPercent, masked)}
               </p>
@@ -417,8 +518,8 @@ function LineChart({
             }`}
           >
             {multiSeriesData.map((s) => (
-              <div key={s.id} className="rounded-xl bg-surface/60 p-2">
-                <div className="flex items-center justify-center gap-1.5 mb-0.5">
+              <div key={s.id} className="min-w-0 rounded-xl bg-surface/60 p-2">
+                <div className="flex items-center justify-center gap-1.5 mb-0.5 min-w-0">
                   <span
                     className="h-2 w-2 rounded-full shrink-0"
                     style={{ backgroundColor: s.color }}
@@ -428,7 +529,7 @@ function LineChart({
                   </span>
                 </div>
                 <span
-                  className="font-display text-sm font-bold tabular-nums"
+                  className="block font-display text-sm font-bold tabular-nums truncate"
                   style={{ color: s.color }}
                 >
                   {s.unit === 'currency'
@@ -471,7 +572,6 @@ function LineChart({
                     strokeWidth={s.id === 'total' ? 2.8 : 2}
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeDasharray={s.id === 'total' ? undefined : undefined}
                     opacity={s.id === 'total' ? 1 : 0.85}
                   />
                   {s.activeCoord && (
@@ -503,6 +603,7 @@ function LineChart({
           {labels.map((label, index) => {
             const x = padX + (index / (labels.length - 1)) * (width - padX * 2);
             const isSelected = index === activeIdx;
+            const isVisibleLabel = shouldRenderLabel(index);
             const monthY = height - 10;
             const anchor =
               index === 0
@@ -510,6 +611,8 @@ function LineChart({
                 : index === labels.length - 1
                   ? 'end'
                   : 'middle';
+
+            const displayLabel = formatAxisLabel(label, totalLabels > 8);
 
             return (
               <g key={`${label}-${index}`}>
@@ -525,24 +628,27 @@ function LineChart({
                   <circle
                     cx={x}
                     cy={coords[index]?.y ?? 0}
-                    r={isSelected ? 6 : 4}
+                    r={isSelected ? 6 : 3.5}
                     className={`transition-all duration-200 ${
                       isSelected
                         ? 'fill-primary stroke-white dark:stroke-zinc-900'
-                        : 'fill-primary'
+                        : 'fill-primary/80'
                     }`}
                     strokeWidth={isSelected ? 2 : 0}
                   />
                 )}
-                <text
-                  x={x}
-                  y={monthY}
-                  textAnchor={anchor}
-                  className={isSelected ? 'fill-primary font-bold' : 'fill-text-muted'}
-                  style={{ fontSize: isSelected ? '10px' : '9px' }}
-                >
-                  {label}
-                </text>
+
+                {isVisibleLabel && (
+                  <text
+                    x={x}
+                    y={monthY}
+                    textAnchor={anchor}
+                    className={isSelected ? 'fill-primary font-bold' : 'fill-text-muted'}
+                    style={{ fontSize: isSelected ? '10px' : '9px' }}
+                  >
+                    {displayLabel}
+                  </text>
+                )}
 
                 {/* Wide Touch Catchers for 1-Tap & Drag selection */}
                 <rect
@@ -562,11 +668,11 @@ function LineChart({
 
         {/* Legend for Multi-Series */}
         {hasMulti && (
-          <div className="mt-2.5 flex items-center justify-center gap-4 border-t border-border/40 pt-2 text-[11px] font-semibold">
+          <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 border-t border-border/40 pt-2 text-[11px] font-semibold">
             {multiSeriesData.map((s) => (
               <div key={s.id} className="flex items-center gap-1.5">
                 <span
-                  className="h-2 w-2 rounded-full"
+                  className="h-2 w-2 rounded-full shrink-0"
                   style={{ backgroundColor: s.color }}
                 />
                 <span className="text-text-secondary">{s.name}</span>
@@ -643,6 +749,10 @@ function buildClosingSeries(
     else if (metricKey === 'netWorth') value = liquid + investment;
     else if (metricKey === 'avgMonthlySavings') {
       value = month.investment + month.liquidSavings;
+    } else if (metricKey === 'avgMonthlyInvestment') {
+      value = month.investment;
+    } else if (metricKey === 'avgMonthlyLiquid') {
+      value = month.liquidSavings;
     } else if (metricKey === 'currentMonthSavingsPct') {
       value = month.totalSavingsPct;
     }
@@ -675,6 +785,74 @@ function buildClosingSeries(
     const avgPct = totalInc > 0 ? ((totalSav / totalInc) * 100).toFixed(1) : '0.0';
     const latestAmount = points[points.length - 1] ?? 0;
     const latestPct = monthly[monthly.length - 1]?.totalSavingsPct ?? 0;
+
+    return {
+      points,
+      labels,
+      multiSeries,
+      asPercent: false,
+      footer: `Average: ${formatCurrencyRaw(avgAmount)} (${avgPct}%) · latest ${formatCurrencyRaw(latestAmount)} (${latestPct.toFixed(1)}%)`,
+    };
+  }
+
+  if (metricKey === 'avgMonthlyInvestment') {
+    const multiSeries: MultiSeriesItem[] = [
+      {
+        id: 'investAmount',
+        name: 'Invested (₹)',
+        color: '#8b5cf6',
+        points: monthly.map((m) => m.investment),
+        unit: 'currency',
+      },
+      {
+        id: 'investPct',
+        name: 'Invest Rate (%)',
+        color: '#a855f7',
+        points: monthly.map((m) => m.investmentPct),
+        unit: 'percent',
+      },
+    ];
+
+    const avgAmount = points.reduce((sum, p) => sum + p, 0) / points.length;
+    const totalInc = monthly.reduce((sum, m) => sum + m.income, 0);
+    const totalInv = points.reduce((sum, p) => sum + p, 0);
+    const avgPct = totalInc > 0 ? ((totalInv / totalInc) * 100).toFixed(1) : '0.0';
+    const latestAmount = points[points.length - 1] ?? 0;
+    const latestPct = monthly[monthly.length - 1]?.investmentPct ?? 0;
+
+    return {
+      points,
+      labels,
+      multiSeries,
+      asPercent: false,
+      footer: `Average: ${formatCurrencyRaw(avgAmount)} (${avgPct}%) · latest ${formatCurrencyRaw(latestAmount)} (${latestPct.toFixed(1)}%)`,
+    };
+  }
+
+  if (metricKey === 'avgMonthlyLiquid') {
+    const multiSeries: MultiSeriesItem[] = [
+      {
+        id: 'liquidAmount',
+        name: 'Liquid Retained (₹)',
+        color: '#0d9488',
+        points: monthly.map((m) => m.liquidSavings),
+        unit: 'currency',
+      },
+      {
+        id: 'liquidPct',
+        name: 'Liquid Rate (%)',
+        color: '#14b8a6',
+        points: monthly.map((m) => m.liquidSavingsPct),
+        unit: 'percent',
+      },
+    ];
+
+    const avgAmount = points.reduce((sum, p) => sum + p, 0) / points.length;
+    const totalInc = monthly.reduce((sum, m) => sum + m.income, 0);
+    const totalLiq = points.reduce((sum, p) => sum + p, 0);
+    const avgPct = totalInc > 0 ? ((totalLiq / totalInc) * 100).toFixed(1) : '0.0';
+    const latestAmount = points[points.length - 1] ?? 0;
+    const latestPct = monthly[monthly.length - 1]?.liquidSavingsPct ?? 0;
 
     return {
       points,
