@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+
 import {
   createTransaction,
   deleteTransaction,
@@ -9,19 +14,16 @@ import {
   updateTransaction,
   type MutationResult,
 } from '../../api/client';
-import { backdropVariants, popoverVariants, springSoft } from '../../lib/motion';
 import { TAB_BY_TYPE } from '@shared';
 import type {
   SheetRowData,
   Transaction,
   TransactionType,
 } from '../../domain/types';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
 import {
   TransactionForm,
   type TransactionFormData,
 } from '../../components/molecules/TransactionForm';
-import { SoftButton } from '../../components/ui/SoftButton';
 
 interface ManageTransactionModalProps {
   open: boolean;
@@ -34,9 +36,6 @@ interface ManageTransactionModalProps {
   onClose: () => void;
   onSuccess: (result?: MutationResult) => Promise<void> | void;
 }
-
-const closeBtnClass =
-  'inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-canvas/90 text-text-secondary shadow-warm-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50';
 
 function buildRowData(
   type: TransactionType,
@@ -98,18 +97,6 @@ export function ManageTransactionModal({
     setError(null);
     setSaving(false);
   }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !saving) {
-        onClose();
-      }
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, saving, onClose]);
 
   async function handleFormSubmit(formData: TransactionFormData) {
     setSaving(true);
@@ -182,79 +169,51 @@ export function ManageTransactionModal({
     }
   }
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-6 sm:items-center sm:pb-0">
-          <motion.button
-            type="button"
-            variants={backdropVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 bg-black/50"
-            aria-label="Dismiss transaction dialog"
-            onClick={onClose}
-            disabled={saving}
-          />
+  return (
+    <Dialog
+      open={open}
+      onClose={saving ? undefined : onClose}
+      maxWidth="xs"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            p: 1,
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
+            {mode === 'add' ? 'New' : 'Edit'}
+          </Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+            {mode === 'add' ? 'Add transaction' : 'Edit transaction'}
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose} disabled={saving} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-          <FocusTrap active={open}>
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="manage-tx-title"
-              variants={popoverVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={springSoft}
-              className="relative z-10 max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:rounded-2xl"
-            >
-              <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80 sm:hidden" />
-
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                    {mode === 'add' ? 'New' : 'Edit'}
-                  </p>
-                  <h2
-                    id="manage-tx-title"
-                    className="mt-1 font-display text-base font-bold text-text"
-                  >
-                    {mode === 'add' ? 'Add transaction' : 'Edit transaction'}
-                  </h2>
-                </div>
-                <SoftButton
-                  onClick={onClose}
-                  disabled={saving}
-                  className={closeBtnClass}
-                  aria-label="Close"
-                >
-                  <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                </SoftButton>
-              </div>
-
-              <div className="mt-4">
-                <TransactionForm
-                  key={transaction ? transaction.id : 'new-tx'}
-                  initialValues={initialValues}
-                  transactions={transactions}
-                  investmentTypeOptions={investmentTypeOptions}
-                  submitLabel={mode === 'add' ? 'Add transaction' : 'Save changes'}
-                  cancelLabel="Cancel"
-                  onCancel={onClose}
-                  onSubmit={handleFormSubmit}
-                  busy={saving}
-                  externalError={error}
-                  layout="modal"
-                />
-              </div>
-            </motion.div>
-          </FocusTrap>
-        </div>
-      )}
-    </AnimatePresence>,
-    document.body
+      <DialogContent sx={{ py: 1.5 }}>
+        <TransactionForm
+          key={transaction ? transaction.id : 'new-tx'}
+          initialValues={initialValues}
+          transactions={transactions}
+          investmentTypeOptions={investmentTypeOptions}
+          submitLabel={mode === 'add' ? 'Add transaction' : 'Save changes'}
+          cancelLabel="Cancel"
+          onCancel={onClose}
+          onSubmit={handleFormSubmit}
+          busy={saving}
+          externalError={error}
+          layout="modal"
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
+

@@ -1,19 +1,26 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Copy, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useId, useState, type FormEvent } from 'react';
-import { createPortal } from 'react-dom';
-import {
-  createEmptyInvestment,
-  type RecipeInvestment,
-} from '../../config';
+import { useState, useEffect, type FormEvent } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import Paper from '@mui/material/Paper';
+import Alert from '@mui/material/Alert';
+import InputAdornment from '@mui/material/InputAdornment';
+
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+
+import { createEmptyInvestment, type RecipeInvestment } from '../../config';
 import { useRecipeConfig } from '../../hooks/useRecipeConfig';
-import {
-  backdropVariants,
-  popoverVariants,
-  springSoft,
-} from '../../lib/motion';
-import { SoftButton } from '../../components/ui/SoftButton';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
 
 interface RecipeModalProps {
   open: boolean;
@@ -22,11 +29,6 @@ interface RecipeModalProps {
   spreadsheetTitle: string | null;
   investmentTypeSuggestions?: string[];
 }
-
-const labelClass =
-  'mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted';
-const fieldClass =
-  'w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text outline-none transition-theme focus:border-primary/50 focus:ring-2 focus:ring-primary/25 disabled:opacity-60';
 
 function parseAmountInput(value: string): number {
   const cleaned = value.replace(/,/g, '').trim();
@@ -42,7 +44,6 @@ export function RecipeModal({
   spreadsheetTitle,
   investmentTypeSuggestions = [],
 }: RecipeModalProps) {
-  const titleId = useId();
   const { config, persistConfig } = useRecipeConfig();
   const [openingBalance, setOpeningBalance] = useState('0');
   const [investments, setInvestments] = useState<RecipeInvestment[]>([]);
@@ -60,15 +61,7 @@ export function RecipeModal({
     );
     setCopied(false);
     setError(null);
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !saving) {
-        onClose();
-      }
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, config, saving, onClose]);
+  }, [open, config]);
 
   async function handleCopyId() {
     if (!spreadsheetId) return;
@@ -150,217 +143,182 @@ export function RecipeModal({
     )
   ).slice(0, 4);
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-6 sm:items-center sm:pb-0">
-          <motion.button
-            type="button"
-            variants={backdropVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 bg-black/50"
-            aria-label="Dismiss recipe dialog"
-            onClick={onClose}
+  return (
+    <Dialog
+      open={open}
+      onClose={saving ? undefined : onClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            p: 1,
+          },
+        },
+      }}
+    >
+      <form onSubmit={handleSave}>
+        <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: 2.5,
+                bgcolor: 'warning.main',
+                color: 'warning.contrastText',
+              }}
+            >
+              <AccountBalanceWalletIcon />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                Starting Balances
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                Initial cash & investments synced to your Google Sheet
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton onClick={onClose} disabled={saving} size="small" sx={{ color: 'text.secondary' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ py: 1.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          {error && (
+            <Alert severity="error" sx={{ borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Linked Sheet Details */}
+          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, bgcolor: 'action.hover' }}>
+            <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.8, display: 'block' }}>
+              Connected Google Sheet
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.25 }}>
+              {spreadsheetTitle || 'Linked Google Sheet'}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+              <TextField
+                value={spreadsheetId || 'Not linked'}
+                size="small"
+                fullWidth
+                disabled
+                slotProps={{ htmlInput: { style: { fontFamily: 'monospace', fontSize: '0.75rem' } } }}
+              />
+              <IconButton
+                onClick={() => void handleCopyId()}
+                disabled={!spreadsheetId}
+                size="small"
+                color={copied ? 'success' : 'default'}
+              >
+                {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
+              </IconButton>
+            </Box>
+          </Paper>
+
+          {/* Initial Opening Balance */}
+          <TextField
+            label="Initial Liquid Opening Balance"
+            type="number"
+            value={openingBalance}
+            onChange={(e) => setOpeningBalance(e.target.value)}
+            fullWidth
+            size="small"
+            disabled={saving}
+            helperText="Liquid cash on hand before tracked months begin"
+            slotProps={{
+              input: {
+                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+              },
+            }}
           />
 
-          <FocusTrap active={open}>
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby={titleId}
-              variants={popoverVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={springSoft}
-              className="relative z-10 max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:rounded-2xl"
-            >
-            <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80" />
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                  Configuration
-                </p>
-                <h2
-                  id={titleId}
-                  className="mt-1 font-display text-base font-bold text-text"
-                >
-                  Starting Balances
-                </h2>
-                <p className="mt-0.5 text-xs text-text-secondary">
-                  Configure initial cash & investments synced across your devices.
-                </p>
-              </div>
-              <SoftButton
-                onClick={onClose}
-                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
-                aria-label="Close"
+          {/* Initial Investments */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.8 }}>
+                Initial Investments
+              </Typography>
+              <Button
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={() => setInvestments((prev) => [...prev, createEmptyInvestment()])}
+                sx={{ textTransform: 'none', fontWeight: 700 }}
               >
-                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              </SoftButton>
-            </div>
+                Add Investment
+              </Button>
+            </Box>
 
-            <div className="mt-3.5 rounded-2xl border border-primary/25 bg-primary/10 p-3 text-xs text-text">
-              <p className="font-semibold text-primary">🍳 Welcome to Starting Balances Setup!</p>
-              <p className="mt-0.5 text-[11px] text-text-secondary leading-snug">
-                Enter your starting liquid cash balance and initial investments below to seed your Net Worth dashboard.
-              </p>
-            </div>
-
-            <form onSubmit={handleSave} className="mt-4 space-y-4">
-              <div>
-                <span className={labelClass}>Spreadsheet</span>
-                <p className="truncate text-sm font-medium text-text">
-                  {spreadsheetTitle || 'Linked Google Sheet'}
-                </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <code className="min-w-0 flex-1 truncate rounded-xl border border-border bg-canvas px-3 py-2 font-mono text-[11px] text-text-secondary">
-                    {spreadsheetId || 'Not linked'}
-                  </code>
-                  <SoftButton
-                    type="button"
-                    onClick={() => void handleCopyId()}
-                    disabled={!spreadsheetId}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm disabled:opacity-50"
-                    aria-label={copied ? 'Copied' : 'Copy sheet ID'}
-                    title={copied ? 'Copied' : 'Copy sheet ID'}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {investments.map((row) => (
+                <Box key={row.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TextField
+                    placeholder="Type (e.g. Mutual Funds)"
+                    value={row.type}
+                    onChange={(e) => updateInvestment(row.id, { type: e.target.value })}
+                    size="small"
+                    sx={{ flex: 1 }}
+                    slotProps={{ htmlInput: { list: 'recipe-investment-types' } }}
+                  />
+                  <TextField
+                    placeholder="Amount"
+                    type="number"
+                    value={row.amount || ''}
+                    onChange={(e) => updateInvestment(row.id, { amount: parseAmountInput(e.target.value) })}
+                    size="small"
+                    sx={{ width: 130 }}
+                    slotProps={{
+                      input: {
+                        startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                      },
+                    }}
+                  />
+                  <IconButton
+                    onClick={() => removeInvestment(row.id)}
+                    size="small"
+                    color="error"
                   >
-                    {copied ? (
-                      <Check className="h-4 w-4 text-success" strokeWidth={2.5} />
-                    ) : (
-                      <Copy className="h-4 w-4" strokeWidth={2} />
-                    )}
-                  </SoftButton>
-                </div>
-              </div>
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+            </Box>
 
-              <label className="block">
-                <span className={labelClass}>Initial opening balance</span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  value={openingBalance}
-                  onChange={(e) => setOpeningBalance(e.target.value)}
-                  className={fieldClass}
-                  placeholder="0"
-                  disabled={saving}
-                />
-                <span className="mt-1 block text-[11px] text-text-muted">
-                  Liquid cash on hand before tracked months begin.
-                </span>
-              </label>
+            <datalist id="recipe-investment-types">
+              {suggestionList.map((label) => (
+                <option key={label} value={label} />
+              ))}
+            </datalist>
+          </Box>
+        </DialogContent>
 
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className={labelClass + ' mb-0'}>
-                    Initial investments
-                  </span>
-                  <SoftButton
-                    type="button"
-                    onClick={() =>
-                      setInvestments((prev) => [...prev, createEmptyInvestment()])
-                    }
-                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-primary"
-                    glow={false}
-                  >
-                    <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-                    Add
-                  </SoftButton>
-                </div>
-
-                <div className="space-y-2">
-                  {investments.map((row) => (
-                    <div
-                      key={row.id}
-                      className="grid grid-cols-[1fr_6.5rem_auto] gap-2"
-                    >
-                      <input
-                        type="text"
-                        list="recipe-investment-types"
-                        value={row.type}
-                        onChange={(e) =>
-                          updateInvestment(row.id, { type: e.target.value })
-                        }
-                        className={fieldClass}
-                        placeholder="Type"
-                        aria-label="Investment type"
-                      />
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        step="any"
-                        value={row.amount || ''}
-                        onChange={(e) =>
-                          updateInvestment(row.id, {
-                            amount: parseAmountInput(e.target.value),
-                          })
-                        }
-                        className={fieldClass}
-                        placeholder="0"
-                        aria-label="Investment amount"
-                      />
-                      <SoftButton
-                        type="button"
-                        onClick={() => removeInvestment(row.id)}
-                        className="inline-flex h-[42px] w-9 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary"
-                        aria-label="Remove investment"
-                        glow={false}
-                      >
-                        <Trash2 className="h-4 w-4" strokeWidth={2} />
-                      </SoftButton>
-                    </div>
-                  ))}
-                </div>
-                <datalist id="recipe-investment-types">
-                  {suggestionList.map((label) => (
-                    <option key={label} value={label} />
-                  ))}
-                </datalist>
-                <p className="mt-1.5 text-[11px] text-text-muted">
-                  Add one row per investment type (FD, mutual funds, etc.).
-                </p>
-              </div>
-
-              {error && (
-                <p
-                  className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
-                  role="alert"
-                >
-                  {error}
-                </p>
-              )}
-
-              <div className="flex gap-2 pt-1">
-                <SoftButton
-                  type="button"
-                  onClick={onClose}
-                  disabled={saving}
-                  className="flex-1 rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm font-medium text-text-secondary disabled:opacity-60"
-                  glow={false}
-                >
-                  Cancel
-                </SoftButton>
-                <SoftButton
-                  type="submit"
-                  disabled={saving}
-                  loading={saving}
-                  className="flex-1 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow disabled:opacity-60"
-                >
-                  Save starting balances
-                </SoftButton>
-              </div>
-            </form>
-          </motion.div>
-        </FocusTrap>
-      </div>
-    )}
-  </AnimatePresence>,
-    document.body
+        <DialogActions sx={{ px: 3, pb: 2, display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={onClose}
+            disabled={saving}
+            sx={{ flex: 1, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving}
+            sx={{ flex: 1, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+          >
+            {saving ? 'Saving…' : 'Save Balances'}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
   );
 }
+

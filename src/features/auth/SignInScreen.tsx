@@ -1,11 +1,18 @@
-import { motion } from 'framer-motion';
-import {
-  LayoutDashboard,
-  Link2,
-  ShieldCheck,
-  Sheet,
-} from 'lucide-react';
-import { pageTransition, springSoft } from '../../lib/motion';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import Grid from '@mui/material/Grid';
+import Button from '@mui/material/Button';
+import Alert from '@mui/material/Alert';
+import Paper from '@mui/material/Paper';
+import Link from '@mui/material/Link';
+
+import LinkIcon from '@mui/icons-material/Link';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
+
 import { AUTH_START_URL } from '../../api/client';
 import { MuffinIcon } from '../../components/ui/MuffinIcon';
 
@@ -17,23 +24,23 @@ const STEPS = [
   {
     title: 'Connect your sheet',
     body: 'Link an existing Google Sheet or let Muffin create Income, Expense, and Investment tabs for you.',
-    Icon: Link2,
+    icon: <LinkIcon sx={{ fontSize: 22 }} />,
   },
   {
     title: 'Log money your way',
     body: 'Add transactions in the app or edit the sheet directly — both stay in sync automatically.',
-    Icon: Sheet,
+    icon: <TableChartIcon sx={{ fontSize: 22 }} />,
   },
   {
     title: 'See the full picture',
     body: 'Balances, spending, and net worth on an installable PWA dashboard that works offline.',
-    Icon: LayoutDashboard,
+    icon: <DashboardIcon sx={{ fontSize: 22 }} />,
   },
 ] as const;
 
 function GoogleMark({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z"
@@ -56,160 +63,149 @@ function GoogleMark({ className }: { className?: string }) {
 
 export function SignInScreen({ authError }: SignInScreenProps) {
   return (
-    <div className="relative min-h-dvh overflow-x-hidden bg-canvas text-text transition-theme">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 top-0 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(var(--accent-rgb),0.22),transparent_68%)] blur-2xl" />
-        <div className="absolute -right-16 top-40 h-[22rem] w-[22rem] rounded-full bg-[radial-gradient(circle,rgba(var(--accent-rgb),0.12),transparent_70%)] blur-2xl" />
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-canvas-alt/80 to-transparent" />
-        <div
-          className="absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
-            backgroundSize: '22px 22px',
-          }}
-        />
-      </div>
-
-      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-5 py-8 sm:px-8 sm:py-12 lg:px-10 lg:py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={pageTransition}
-          className="grid flex-1 items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-14 xl:gap-20"
-        >
-          {/* Hero + CTA */}
-          <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+    <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', py: { xs: 4, sm: 8 } }}>
+      <Container maxWidth="lg">
+        <Grid container spacing={{ xs: 5, lg: 8 }} sx={{ alignItems: 'center' }}>
+          {/* Hero & CTA */}
+          <Grid size={{ xs: 12, lg: 6 }} sx={{ textAlign: { xs: 'center', lg: 'left' } }}>
+            <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: 'primary.main', display: 'block', mb: 1 }}>
               Personal finance · Google Sheets
-            </p>
-            <h1 className="mt-3 flex items-center justify-center gap-3 font-display text-4xl font-extrabold tracking-[-0.04em] sm:text-5xl lg:justify-start lg:text-[3.35rem]">
-              <MuffinIcon className="muffin-icon h-10 w-10 text-primary sm:h-12 sm:w-12" />
-              <span className="bg-gradient-to-br from-primary-muted via-primary to-primary-muted bg-clip-text text-transparent">
+            </Typography>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', lg: 'flex-start' }, gap: 1.5, my: 1 }}>
+              <MuffinIcon className="muffin-icon h-11 w-11" />
+              <Typography variant="h3" component="h1" sx={{ fontWeight: 900, color: 'primary.main' }}>
                 Muffin
-              </span>
-            </h1>
-            <p className="mt-3 max-w-md font-display text-xl font-semibold leading-snug tracking-[-0.02em] text-text sm:text-2xl">
+              </Typography>
+            </Box>
+
+            <Typography variant="h5" sx={{ fontWeight: 800, mt: 2, mb: 1 }}>
               Your sheet, baked into a live dashboard
-            </p>
-            <p className="mt-3 max-w-md text-sm leading-relaxed text-text-secondary sm:text-[15px]">
-              Track income, expenses, and investments with a Google Sheet you
-              own. Muffin turns that workbook into a cozy installable app —
-              your records stay in Drive, not on our servers.
-            </p>
+            </Typography>
 
-            {authError ? (
-              <p
-                className="mt-5 w-full max-w-md rounded-xl border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-left text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
-                role="alert"
-              >
+            <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 480, mx: { xs: 'auto', lg: 0 }, mb: 3 }}>
+              Track income, expenses, and investments with a Google Sheet you own. Muffin turns that workbook into a cozy installable app — your records stay in Drive, not on our servers.
+            </Typography>
+
+            {authError && (
+              <Alert severity="warning" sx={{ mb: 3, maxWidth: 420, mx: { xs: 'auto', lg: 0 }, textAlign: 'left', borderRadius: 2.5 }}>
                 {authError}
-              </p>
-            ) : null}
+              </Alert>
+            )}
 
-            <motion.a
+            <Button
+              component="a"
               href={AUTH_START_URL}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              transition={springSoft}
-              className="soft-glow mt-7 inline-flex w-full max-w-md items-center justify-center gap-2.5 rounded-2xl bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-glow sm:py-4 sm:text-[15px]"
+              variant="contained"
+              size="large"
+              startIcon={<GoogleMark />}
+              sx={{
+                py: 1.75,
+                px: 4,
+                borderRadius: 3,
+                fontSize: '1rem',
+                fontWeight: 800,
+                textTransform: 'none',
+                maxWidth: 420,
+                width: '100%',
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                boxShadow: 3,
+              }}
             >
-              <GoogleMark className="h-5 w-5 rounded-sm bg-white p-0.5" />
               Sign in with Google
-            </motion.a>
-            <p className="mt-3 max-w-md text-xs text-text-muted">
+            </Button>
+
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1.5 }}>
               Free Google account required · Your sheet stays in your Drive
-            </p>
-          </div>
+            </Typography>
+          </Grid>
 
-          {/* Informative panel */}
-          <div className="w-full space-y-4">
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              {STEPS.map((step, index) => {
-                const Icon = step.Icon;
-                return (
-                  <motion.div
-                    key={step.title}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ ...pageTransition, delay: 0.08 + index * 0.06 }}
-                    className="cozy-card flex gap-3 p-4 text-left sm:flex-col sm:gap-2.5 lg:flex-row lg:gap-3"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
-                      <Icon className="h-5 w-5" strokeWidth={2.1} />
-                    </div>
-                    <div>
-                      <h2 className="font-display text-sm font-bold text-text">
-                        {step.title}
-                      </h2>
-                      <p className="mt-1 text-xs leading-relaxed text-text-secondary sm:text-[13px]">
-                        {step.body}
-                      </p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ ...pageTransition, delay: 0.3 }}
-              className="glass-panel rounded-2xl p-4 text-left sm:p-5"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success/12 text-success">
-                  <ShieldCheck className="h-5 w-5" strokeWidth={2.1} />
-                </div>
-                <div>
-                  <h2 className="font-display text-sm font-bold text-text">
-                    Why Google access is needed
-                  </h2>
-                  <p className="mt-1.5 text-xs leading-relaxed text-text-secondary sm:text-[13px]">
-                    Sign-in authenticates you and grants access only to the
-                    spreadsheet you choose. We use your email for login and
-                    Sheets solely to sync personal finance entries. We don’t
-                    sell your data or keep transaction history on our servers.
-                  </p>
-                  <p className="mt-2 text-xs text-text-secondary">
-                    Independently built by Rahul Gouri ·{' '}
-                    <a
-                      href="/guide.html"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-primary hover:underline"
+          {/* Info Panels */}
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {STEPS.map((step) => (
+                <Card key={step.title} variant="outlined" sx={{ borderRadius: 3, p: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                    <Box
+                      sx={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 2.5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        bgcolor: 'primary.lighter',
+                        color: 'primary.main',
+                        flexShrink: 0,
+                      }}
                     >
-                      User Guide
-                    </a>
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
+                      {step.icon}
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                        {step.title}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem', mt: 0.25 }}>
+                        {step.body}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Card>
+              ))}
 
-        <footer className="relative z-10 mt-10 border-t border-border/70 pt-5 text-center text-[11px] leading-normal text-text-muted lg:mt-12 lg:text-left">
+              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, bgcolor: 'action.hover' }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 2.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'success.lighter',
+                      color: 'success.main',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <ShieldOutlinedIcon sx={{ fontSize: 22 }} />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                      Why Google access is needed
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem', mt: 0.5 }}>
+                      Sign-in authenticates you and grants access only to the spreadsheet you choose. We use your email for login and Sheets solely to sync personal finance entries. We don’t sell your data or keep transaction history on our servers.
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1 }}>
+                      Independently built by Rahul Gouri ·{' '}
+                      <Link href="/guide.html" target="_blank" rel="noopener noreferrer" sx={{ fontWeight: 700 }}>
+                        User Guide
+                      </Link>
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Box>
+          </Grid>
+        </Grid>
+      </Container>
+
+      <Box sx={{ borderTop: 1, borderColor: 'divider', mt: 6, pt: 3, textAlign: 'center' }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           By signing in, you agree to Muffin’s{' '}
-          <a
-            href="/terms.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-primary hover:underline"
-          >
+          <Link href="/terms.html" target="_blank" rel="noopener noreferrer" sx={{ fontWeight: 700 }}>
             Terms of Service
-          </a>{' '}
+          </Link>{' '}
           and{' '}
-          <a
-            href="/privacy.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-primary hover:underline"
-          >
+          <Link href="/privacy.html" target="_blank" rel="noopener noreferrer" sx={{ fontWeight: 700 }}>
             Privacy Policy
-          </a>
+          </Link>
           .
-        </footer>
-      </div>
-    </div>
+        </Typography>
+      </Box>
+    </Box>
   );
 }
+

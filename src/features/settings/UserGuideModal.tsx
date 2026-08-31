@@ -1,24 +1,29 @@
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { createPortal } from 'react-dom';
-import {
-  Calculator,
-  CalendarSync,
-  ChevronRight,
-  Database,
-  HelpCircle,
-  PieChart,
-  RotateCcw,
-  Sparkles,
-  Tag,
-  X,
-  Zap,
-} from 'lucide-react';
+import { useState, type SyntheticEvent } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import Grid from '@mui/material/Grid';
+import Divider from '@mui/material/Divider';
+
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import StorageIcon from '@mui/icons-material/Storage';
+import CalculateIcon from '@mui/icons-material/Calculate';
+import PieChartIcon from '@mui/icons-material/PieChart';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlineOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+
 import { evaluateAmountExpression } from '../../domain/evaluateAmount';
-import { backdropVariants, popoverVariants } from '../../lib/motion';
 import { MuffinIcon } from '../../components/ui/MuffinIcon';
-import { SoftButton } from '../../components/ui/SoftButton';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
 
 interface UserGuideModalProps {
   isOpen: boolean;
@@ -31,468 +36,213 @@ export function UserGuideModal({
   onClose,
   onReplayTour,
 }: UserGuideModalProps) {
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'recurring' | 'sheets' | 'calculator' | 'charts' | 'faq'
-  >('overview');
-
-  // Interactive Calculator Demo State
+  const [tabIndex, setTabIndex] = useState(0);
   const [calcInput, setCalcInput] = useState('1000 * 18%');
   const calcResult = evaluateAmountExpression(calcInput);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isOpen, onClose]);
+  const handleTabChange = (_: SyntheticEvent, newValue: number) => {
+    setTabIndex(newValue);
+  };
 
-  if (!isOpen) return null;
-
-  return createPortal(
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-        {/* Backdrop */}
-        <motion.div
-          variants={backdropVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          onClick={onClose}
-          className="absolute inset-0 bg-black/60 backdrop-blur-md"
-        />
-
-        {/* Modal Container */}
-        <FocusTrap active={isOpen}>
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="user-guide-title"
-            variants={popoverVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="relative flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-border/80 bg-surface-strong shadow-elevate"
+  return (
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            p: 1,
+            maxHeight: '90dvh',
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              borderRadius: 2.5,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+            }}
           >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
-                <MuffinIcon className="muffin-icon h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 id="user-guide-title" className="font-display text-lg font-bold text-text">
-                  Interactive User Guide
-                </h2>
-                <p className="text-xs text-text-muted">
-                  Learn the essentials here — open the full web guide for tabs, Starting Balances,
-                  install, and deeper FAQs.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex min-h-11 min-w-11 h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-surface-muted/50 text-text-muted transition hover:bg-surface-muted hover:text-text"
-              aria-label="Close user guide"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+            <MuffinIcon className="h-6 w-6" />
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Interactive User Guide
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Learn essentials, formulas, recurring rules, and Google Sheets setup
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-          {/* Navigation Bar */}
-          <div className="flex border-b border-border/60 bg-surface/50 px-3 py-2 overflow-x-auto gap-1.5 scrollbar-none">
-            <button
-              type="button"
-              onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
-                activeTab === 'overview'
-                  ? 'bg-primary text-on-primary shadow-warm-sm'
-                  : 'text-text-muted hover:bg-surface-muted hover:text-text'
-              }`}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Overview
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('recurring')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
-                activeTab === 'recurring'
-                  ? 'bg-primary text-on-primary shadow-warm-sm'
-                  : 'text-text-muted hover:bg-surface-muted hover:text-text'
-              }`}
-            >
-              <CalendarSync className="h-3.5 w-3.5" />
-              Recurring &amp; SIPs
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('sheets')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
-                activeTab === 'sheets'
-                  ? 'bg-primary text-on-primary shadow-warm-sm'
-                  : 'text-text-muted hover:bg-surface-muted hover:text-text'
-              }`}
-            >
-              <Database className="h-3.5 w-3.5" />
-              Sheet Setup
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('calculator')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
-                activeTab === 'calculator'
-                  ? 'bg-primary text-on-primary shadow-warm-sm'
-                  : 'text-text-muted hover:bg-surface-muted hover:text-text'
-              }`}
-            >
-              <Calculator className="h-3.5 w-3.5" />
-              Calculator Demo
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('charts')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
-                activeTab === 'charts'
-                  ? 'bg-primary text-on-primary shadow-warm-sm'
-                  : 'text-text-muted hover:bg-surface-muted hover:text-text'
-              }`}
-            >
-              <PieChart className="h-3.5 w-3.5" />
-              Touch Charts
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('faq')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition ${
-                activeTab === 'faq'
-                  ? 'bg-primary text-on-primary shadow-warm-sm'
-                  : 'text-text-muted hover:bg-surface-muted hover:text-text'
-              }`}
-            >
-              <HelpCircle className="h-3.5 w-3.5" />
-              FAQ
-            </button>
-          </div>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
+        <Tabs
+          value={tabIndex}
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          textColor="primary"
+          indicatorColor="primary"
+        >
+          <Tab icon={<AutoAwesomeIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Overview" sx={{ textTransform: 'none', fontWeight: 700 }} />
+          <Tab icon={<EventRepeatIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Recurring" sx={{ textTransform: 'none', fontWeight: 700 }} />
+          <Tab icon={<StorageIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Sheet Setup" sx={{ textTransform: 'none', fontWeight: 700 }} />
+          <Tab icon={<CalculateIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Calculator" sx={{ textTransform: 'none', fontWeight: 700 }} />
+          <Tab icon={<PieChartIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Touch Charts" sx={{ textTransform: 'none', fontWeight: 700 }} />
+          <Tab icon={<HelpOutlineIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="FAQ" sx={{ textTransform: 'none', fontWeight: 700 }} />
+        </Tabs>
+      </Box>
 
-          {/* Content Body */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            {activeTab === 'overview' && (
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-text">
-                    <h3 className="font-display font-bold text-primary mb-1 flex items-center gap-2">
-                      <MuffinIcon className="muffin-icon h-4 w-4 text-primary" /> Welcome to Muffin!
-                    </h3>
-                  <p className="text-xs text-text-secondary leading-relaxed">
-                    Muffin connects your Google Sheet to a mobile dashboard. Log income,
-                    expenses, and investments with category chips, amount math, and live
-                    net-worth tracking. Home greets you by name; Settings shows your signed-in
-                    Google account. Customize with 6 muffin themes and 7 display fonts.
-                    Install as a full PWA (prefer Install app on Android) — balances always
-                    load from your sheet over the network.
-                  </p>
-                </div>
+      <DialogContent sx={{ py: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {tabIndex === 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, borderColor: 'primary.main', bgcolor: 'action.hover' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main', mb: 0.5 }}>
+                Welcome to Muffin!
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.6 }}>
+                Muffin connects your Google Sheet to a mobile dashboard. Log income, expenses, and investments with category chips, amount math, and live net-worth tracking. Home greets you by name; Settings shows your signed-in Google account. Customize with 12 muffin themes and 7 typography styles.
+              </Typography>
+            </Paper>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="cozy-card p-3.5 space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-bold text-primary">
-                      <Tag className="h-4 w-4" /> Quick 1-Tap Category Badges
-                    </div>
-                    <p className="text-xs text-text-muted">
-                      Top frequent categories are auto-extracted as color-coded chips for instant form entry.
-                    </p>
-                  </div>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 0.5 }}>
+                    Real-time Balance Cards
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+                    Track Cash / Bank, Liquid Reserves, Total Invested, and Overall Net Worth calculated live from your sheet.
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 0.5 }}>
+                    Smart Amount Input
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+                    Evaluate math equations on the fly inside the amount field like <code>5000 * 3</code> or <code>1200 + 18%</code>.
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Box>
+        )}
 
-                  <div className="cozy-card p-3.5 space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                      <Calculator className="h-4 w-4" /> BODMAS & Percent Math
-                    </div>
-                    <p className="text-xs text-text-muted">
-                      Type arithmetic expressions like <code className="text-primary font-bold">1000 * 18%</code> directly into amount fields.
-                    </p>
-                  </div>
-                </div>
+        {tabIndex === 1 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                Monthly Due Smart Alert
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.6 }}>
+                Muffin automatically compares your configured recurring rules against actual transactions logged in the current calendar month. When recurring expenses or SIPs are pending, a glowing banner appears with a 1-click <strong>Log All Due</strong> button.
+              </Typography>
+            </Paper>
+          </Box>
+        )}
 
-                {onReplayTour && (
-                  <div className="pt-2">
-                    <SoftButton
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onReplayTour();
-                      }}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-primary"
-                    >
-                      <RotateCcw className="h-4 w-4" /> Replay First-Run Tour
-                    </SoftButton>
-                  </div>
-                )}
-              </div>
-            )}
+        {tabIndex === 2 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                Required Google Sheets Tabs
+              </Typography>
+              <Typography variant="body2" component="div" sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.6 }}>
+                Muffin structures your data across 4 dedicated tabs:
+                <ul>
+                  <li><strong>Income</strong>: Date, Category, Amount, Comment, Id</li>
+                  <li><strong>Expense</strong>: Date, Category, Amount, Comment, Id</li>
+                  <li><strong>Investment</strong>: Date, Type, Amount, Comment, Id</li>
+                  <li><strong>Recipe</strong>: Starting balances and recurring rules configuration</li>
+                </ul>
+              </Typography>
+            </Paper>
+          </Box>
+        )}
 
-            {activeTab === 'recurring' && (
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-text">
-                  <h3 className="font-display font-bold text-primary mb-1 flex items-center gap-2">
-                    <CalendarSync className="h-4 w-4 text-primary" /> Monthly Recurring &amp; SIPs Engine
-                  </h3>
-                  <p className="text-xs text-text-secondary leading-relaxed">
-                    Automate regular financial commitments like Apartment Rent, Electricity Bills, WiFi, Salary, and Mutual Fund SIPs. Muffin detects when transactions are due and prompts you with a frosted Due Banner.
-                  </p>
-                </div>
+        {tabIndex === 3 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                Try Amount Expression Math
+              </Typography>
+              <TextField
+                label="Expression"
+                value={calcInput}
+                onChange={(e) => setCalcInput(e.target.value)}
+                size="small"
+                fullWidth
+                helperText="Supports +, -, *, /, % (e.g. 5000*3, 1000-15%)"
+                sx={{ mb: 2 }}
+              />
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Evaluated Result:
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                  {calcResult !== null && typeof calcResult === 'object' && 'value' in calcResult ? `₹${calcResult.value.toLocaleString('en-IN')}` : 'Invalid syntax'}
+                </Typography>
+              </Box>
+            </Paper>
+          </Box>
+        )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="cozy-card p-3.5 space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-bold text-primary">
-                      <Zap className="h-4 w-4 fill-current text-primary" /> 1-Tap Batch Logging
-                    </div>
-                    <p className="text-xs text-text-muted">
-                      When scheduled dates arrive, a frosted alert banner appears at the top of Home and Ledger. Tap <strong>Log All Due</strong> to write all entries to your Google Sheet in one step.
-                    </p>
-                  </div>
+        {tabIndex === 4 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                Interactive Analytics
+              </Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.6 }}>
+                Tap any KPI card on Home or any month on Insights to open detailed bottom sheet drawers with smooth animated SVGs and breakdown percentages.
+              </Typography>
+            </Paper>
+          </Box>
+        )}
 
-                  <div className="cozy-card p-3.5 space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                      <CalendarSync className="h-4 w-4" /> Smart Month Clamping
-                    </div>
-                    <p className="text-xs text-text-muted">
-                      Rules scheduled on the 31st automatically resolve to the 28th/29th in February and the 30th in 30-day months, ensuring you never miss a payment.
-                    </p>
-                  </div>
-                </div>
+        {tabIndex === 5 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                Frequently Asked Questions
+              </Typography>
+              <Typography variant="body2" component="div" sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.6 }}>
+                <p><strong>Where is my financial data stored?</strong><br />Directly on your private Google Drive sheet. Muffin has no server database.</p>
+                <Divider sx={{ my: 1 }} />
+                <p><strong>Can I use Muffin offline?</strong><br />Yes, Muffin caches your recent transactions and opens instantly as an installable PWA.</p>
+              </Typography>
+            </Paper>
+          </Box>
+        )}
+      </DialogContent>
 
-                <div className="space-y-2">
-                  <div className="rounded-xl border border-border/80 bg-surface p-3 space-y-1">
-                    <h4 className="text-xs font-bold text-text">Zero-Database Sheet Sync</h4>
-                    <p className="text-xs text-text-muted">
-                      Recurring rules are synced directly to your Google Sheet's <code>Recipe</code> tab. They follow your account across mobile and desktop without external databases.
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-border/80 bg-surface p-3 space-y-1">
-                    <h4 className="text-xs font-bold text-text">Optional Duration &amp; End Dates</h4>
-                    <p className="text-xs text-text-muted">
-                      Configure an optional end date (e.g. for EMIs, loans, or temporary subscriptions). Rules automatically stop prompting once their period concludes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'sheets' && (
-              <div className="space-y-4">
-                <h3 className="font-display text-sm font-bold text-text">
-                  Google Sheet Workbook Structure
-                </h3>
-                <p className="text-xs text-text-muted leading-relaxed">
-                  One Google Sheet workbook with three fixed tabs. Prefer{' '}
-                  <code className="text-primary">YYYY-MM-DD</code> dates and keep the header
-                  row. App-created sheets include an optional{' '}
-                  <code className="text-primary">Id</code> column so edits stay stable if rows
-                  shift. Sample CSVs: <code className="text-primary">templates/</code>.
-                </p>
-
-                <div className="space-y-2 text-xs font-mono">
-                  <div className="rounded-xl border border-border/80 bg-surface p-3 space-y-1">
-                    <div className="font-bold text-emerald-600 dark:text-emerald-400">
-                      Income Tab
-                    </div>
-                    <div className="text-text-muted">
-                      Headers: Id (optional) | Date | Category | Amount | Comment
-                    </div>
-                    <div className="text-text font-sans">
-                      Sample: <code>2026-08-01, Salary, 75000, Paycheck</code>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-border/80 bg-surface p-3 space-y-1">
-                    <div className="font-bold text-rose-600 dark:text-rose-400">
-                      Expense Tab
-                    </div>
-                    <div className="text-text-muted">
-                      Headers: Id (optional) | Date | Category | Amount | Comment
-                    </div>
-                    <div className="text-text font-sans">
-                      Sample: <code>2026-08-02, Groceries, 3500, Supermarket</code>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-border/80 bg-surface p-3 space-y-1">
-                    <div className="font-bold text-violet-600 dark:text-violet-400">
-                      Investment Tab
-                    </div>
-                    <div className="text-text-muted">
-                      Headers: Id (optional) | Date | Category | Amount | Investment Type | Comment
-                    </div>
-                    <div className="text-text font-sans">
-                      Sample: <code>2026-08-05, SIP, 10000, Mutual Fund, Index</code>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'calculator' && (
-              <div className="space-y-4">
-                <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
-                  <Calculator className="h-4 w-4 text-primary" /> Live Calculator Interactive Playground
-                </h3>
-                <p className="text-xs text-text-muted leading-relaxed">
-                  Type math in Amount fields or open the calculator button beside them.
-                  Try formulas below (same evaluator as the app):
-                </p>
-
-                <div className="cozy-card p-4 space-y-3">
-                  <label className="block space-y-1">
-                    <span className="text-xs font-bold text-text-secondary">
-                      Expression Input
-                    </span>
-                    <input
-                      type="text"
-                      value={calcInput}
-                      onChange={(e) => setCalcInput(e.target.value)}
-                      placeholder="e.g. 1200 + 350 * 2 or 1000 * 18%"
-                      className="field-cozy text-sm font-mono"
-                    />
-                  </label>
-
-                  <div className="flex items-center justify-between rounded-xl bg-surface p-3 border border-border/60">
-                    <span className="text-xs font-bold text-text-muted">Evaluated Output</span>
-                    <span className="font-display text-lg font-bold text-primary tabular-nums">
-                      {calcResult && calcResult.ok ? calcResult.value : 'Invalid Formula'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setCalcInput('1000 * 18%')}
-                    className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary hover:bg-surface-muted"
-                  >
-                    1000 * 18%
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCalcInput('1500 + 250 * 4')}
-                    className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary hover:bg-surface-muted"
-                  >
-                    1500 + 250 * 4
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCalcInput('50000 - 15%')}
-                    className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary hover:bg-surface-muted"
-                  >
-                    50000 - 15%
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'charts' && (
-              <div className="space-y-4">
-                <h3 className="font-display text-sm font-bold text-text">
-                  Interactive Donut & Trend Graphs
-                </h3>
-                <p className="text-xs text-text-muted leading-relaxed">
-                  On the Home view, tapping KPI tiles opens interactive charts:
-                </p>
-
-                <div className="space-y-2">
-                  <div className="cozy-card p-3.5 space-y-1">
-                    <h4 className="text-xs font-bold text-text flex items-center gap-2">
-                      <PieChart className="h-4 w-4 text-primary" /> Donut Slice Expansion
-                    </h4>
-                    <p className="text-xs text-text-muted">
-                      Tap any slice on the portfolio breakdown pie chart to expand the slice with a glowing outline and show exact category amounts in the center callout.
-                    </p>
-                  </div>
-
-                  <div className="cozy-card p-3.5 space-y-1">
-                    <h4 className="text-xs font-bold text-text flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 text-emerald-500" /> Line Trend Guidelines & MoM Tooltips
-                    </h4>
-                    <p className="text-xs text-text-muted">
-                      Tap data points on monthly trend lines to reveal crosshair guidelines, active aura rings, and Month-over-Month (MoM) growth cards.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'faq' && (
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-border/80 bg-surface p-3.5 space-y-1">
-                  <h4 className="text-xs font-bold text-text">
-                    Is my financial data private?
-                  </h4>
-                  <p className="text-xs text-text-muted leading-relaxed">
-                    Yes. Transactions stay in your personal Google Sheet. Muffin does not
-                    sell data or train AI models on it. See Privacy Policy and Terms under
-                    Settings.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-border/80 bg-surface p-3.5 space-y-1">
-                  <h4 className="text-xs font-bold text-text">
-                    How is Provident Fund (PF) tracked?
-                  </h4>
-                  <p className="text-xs text-text-muted leading-relaxed">
-                    Investment rows tagged Provident Fund / PF / EPF / PPF appear on Home →
-                    More Details. They are excluded from counted investment, the breakup
-                    pie, and net worth. Edit/delete prefers a stable sheet Id when present
-                    so rows stay correct if the sheet is reordered.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-border/80 bg-surface p-3.5 space-y-1">
-                  <h4 className="text-xs font-bold text-text">
-                    How does the Planner work?
-                  </h4>
-                  <p className="text-xs text-text-muted leading-relaxed">
-                    Open Insights → Planner. Choose <strong className="text-text">Current Month</strong> to layer staged
-                    what-if entries on top of your real Google Sheet data for the current month,
-                    or <strong className="text-text">Blank</strong> for a 100% in-memory sandbox with no sheet data mixed in.
-                    KPIs (income, expenses, investment, net liquid, savings %, closing cash) update
-                    live. Planner entries never write back to your Google Sheet.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-border/80 bg-surface p-3.5 space-y-1">
-                  <h4 className="text-xs font-bold text-text">
-                    Does Muffin work fully offline?
-                  </h4>
-                  <p className="text-xs text-text-muted leading-relaxed">
-                    The app shell can install as a PWA. Live KPIs and ledger data need a
-                    network connection to your sheet. Planner what-if rows stay on this
-                    device only.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="border-t border-border/60 bg-surface/50 px-5 py-3.5 flex items-center justify-between text-xs">
-            <a
-              href="/guide.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-primary hover:underline"
-            >
-              Open Full User Guide ↗
-            </a>
-            <SoftButton type="button" onClick={onClose} className="px-4 py-1.5 font-semibold">
-              Got it
-            </SoftButton>
-          </div>
-        </motion.div>
-      </FocusTrap>
-    </div>
-  </AnimatePresence>,
-    document.body
+      <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
+        {onReplayTour ? (
+          <Button onClick={onReplayTour} color="primary" sx={{ textTransform: 'none', fontWeight: 700 }}>
+            Replay Interactive Tour
+          </Button>
+        ) : <Box />}
+        <Button onClick={onClose} variant="contained" sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, px: 3 }}>
+          Got It
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

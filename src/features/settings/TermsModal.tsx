@@ -1,14 +1,11 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { FileText, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
-import {
-  backdropVariants,
-  popoverVariants,
-  springSoft,
-} from '../../lib/motion';
-import { SoftButton } from '../../components/ui/SoftButton';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
-import { useEffect } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 interface TermsModalProps {
   open: boolean;
@@ -16,113 +13,95 @@ interface TermsModalProps {
 }
 
 export function TermsModal({ open, onClose }: TermsModalProps) {
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            p: 1,
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              borderRadius: 2.5,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+            }}
+          >
+            <DescriptionIcon fontSize="small" />
+          </Box>
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
+              Legal & Terms
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Terms of Service
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-6 sm:items-center sm:pb-0">
-          <motion.button
-            type="button"
-            variants={backdropVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 bg-black/50"
-            aria-label="Dismiss terms of service"
-            onClick={onClose}
-          />
+      <DialogContent sx={{ py: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem', lineHeight: 1.6 }}>
+          Welcome to <strong>Muffin</strong>. By authenticating with your Google Account, you agree to these Terms of Service.
+        </Typography>
 
-          <FocusTrap active={open}>
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="terms-title"
-              variants={popoverVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={springSoft}
-              className="relative z-10 max-h-[85dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:max-w-md sm:rounded-2xl"
-            >
-            <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80 sm:hidden" />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+            1. Personal Use Dashboard
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.6 }}>
+            Muffin is an independent developer personal software application created by Rahul Gouri to read and sync data with your user-authorized Google Sheets spreadsheets.
+          </Typography>
+        </Box>
 
-            <div className="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                  <FileText className="h-5 w-5" strokeWidth={2} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                    Legal & Terms
-                  </p>
-                  <h2
-                    id="terms-title"
-                    className="font-display text-base font-bold text-text"
-                  >
-                    Terms of Service
-                  </h2>
-                </div>
-              </div>
-              <SoftButton
-                onClick={onClose}
-                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              </SoftButton>
-            </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+            2. Financial Disclaimer
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.6 }}>
+            Calculations, metrics, and scenario planner estimates provided in Muffin are for personal tracking purposes only and do NOT constitute professional tax, investment, or legal advice.
+          </Typography>
+        </Box>
 
-            <div className="mt-4 space-y-3.5 text-xs text-text-secondary">
-              <p>
-                Welcome to <strong>Muffin</strong>. By authenticating with your Google Account, you agree to these Terms of Service.
-              </p>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+            3. User Data Ownership
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.6 }}>
+            You retain 100% ownership of all spreadsheets, rows, and transaction data inside your Google Account.
+          </Typography>
+        </Box>
 
-              <div>
-                <h4 className="font-bold text-text mb-1">1. Personal Use Dashboard</h4>
-                <p>
-                  Muffin is a personal finance PWA dashboard designed to read and sync data with your user-authorized Google Sheets spreadsheets.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-text mb-1">2. Financial Disclaimer</h4>
-                <p>
-                  Calculations, metrics, and scenario planner estimates provided in Muffin are for personal tracking purposes only and do NOT constitute professional tax, investment, or legal advice.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-text mb-1">3. User Data Ownership</h4>
-                <p>
-                  You retain 100% ownership of all spreadsheets, rows, and transaction data inside your Google Account.
-                </p>
-              </div>
-
-              <div className="pt-2 text-center">
-                <a
-                  href="/terms.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] font-bold text-primary hover:underline"
-                >
-                  View Full External Terms Webpage →
-                </a>
-              </div>
-            </div>
-          </motion.div>
-        </FocusTrap>
-      </div>
-    )}
-  </AnimatePresence>,
-    document.body
+        <Box sx={{ pt: 1, textAlign: 'center' }}>
+          <a
+            href="/terms.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: '0.75rem', fontWeight: 700 }}
+          >
+            View Full External Terms Webpage →
+          </a>
+        </Box>
+      </DialogContent>
+    </Dialog>
   );
 }
+

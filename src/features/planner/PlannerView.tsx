@@ -1,6 +1,24 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Calendar, Layers, Sparkles } from 'lucide-react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import Grid from '@mui/material/Grid';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
+
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import LayersIcon from '@mui/icons-material/Layers';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SparklesIcon from '@mui/icons-material/AutoAwesome';
+
 import { useRecipeConfig } from '../../hooks/useRecipeConfig';
 import { useMask } from '../../hooks/useMask';
 import { buildMonthlyKPIs, currentMonthKey, monthKey, monthLabel } from '../../domain/metrics';
@@ -112,87 +130,93 @@ export function PlannerView({
   }
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-border/80 bg-surface/80 p-3.5 backdrop-blur-md shadow-warm-sm">
-        <div>
-          <h2 className="font-display text-lg font-bold text-text">Planner</h2>
-          <p className="text-xs text-text-secondary mt-0.5">
-            {plannerMode === 'current-month'
-              ? `Starts with ${monthLabel(thisMonth)} Google Sheet transactions + staged what-if entries.`
-              : 'Blank canvas — every transaction is 100% in-memory only.'}
-          </p>
-        </div>
+    <Box component="section" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      {/* Header Banner & Mode Selector */}
+      <Card variant="outlined" sx={{ borderRadius: 3, p: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+              Planner
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
+              {plannerMode === 'current-month'
+                ? `Starts with ${monthLabel(thisMonth)} transactions + staged what-if entries.`
+                : 'Blank canvas — every entry is simulated in-memory only.'}
+            </Typography>
+          </Box>
 
-        <div className="grid grid-cols-2 w-full sm:w-auto items-center gap-1 rounded-xl border border-border/80 bg-surface-muted/60 p-1 self-start sm:self-auto shrink-0">
-          {(
-            [
-              { id: 'current-month', label: 'Current Month', icon: Calendar },
-              { id: 'blank', label: 'Blank', icon: Layers },
-            ] as const
-          ).map((mode) => {
-            const active = plannerMode === mode.id;
-            const Icon = mode.icon;
-            return (
-              <button
-                key={mode.id}
-                type="button"
-                onClick={() => setPlannerMode(mode.id)}
-                className={`relative flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors duration-200 outline-none active:scale-95 ${
-                  active ? 'text-primary-foreground' : 'text-text-muted hover:text-text'
-                }`}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="plannerViewModePill"
-                    className="absolute inset-0 rounded-lg bg-primary shadow-sm"
-                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{mode.label}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+          <ToggleButtonGroup
+            value={plannerMode}
+            exclusive
+            size="small"
+            onChange={(_, newMode) => {
+              if (newMode) setPlannerMode(newMode);
+            }}
+            sx={{
+              p: 0.5,
+              bgcolor: 'action.hover',
+              borderRadius: 3,
+              '& .MuiToggleButton-root': {
+                borderRadius: 2.5,
+                border: 'none',
+                fontWeight: 700,
+                textTransform: 'none',
+                px: 1.5,
+                py: 0.5,
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                },
+              },
+            }}
+          >
+            <ToggleButton value="current-month">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <CalendarMonthIcon sx={{ fontSize: 16 }} />
+                <span>Current Month</span>
+              </Box>
+            </ToggleButton>
+            <ToggleButton value="blank">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <LayersIcon sx={{ fontSize: 16 }} />
+                <span>Blank</span>
+              </Box>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      </Card>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-        <Stat
-          label="Income"
-          value={formatCurrency(income)}
-          tone="text-emerald-600 dark:text-emerald-400"
-        />
-        <Stat
-          label="Expenses"
-          value={formatCurrency(expenses)}
-          tone="text-rose-600 dark:text-rose-400"
-        />
-        <Stat
-          label="Investment"
-          value={formatCurrency(investment)}
-          tone="text-violet-600 dark:text-violet-400"
-        />
-        <Stat
-          label="Net Liquid"
-          value={formatCurrency(liquid)}
-          tone={liquid >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400'}
-        />
-        <Stat
-          label="Savings %"
-          value={`${savingsPct.toFixed(1)}%`}
-          tone={savingsPct >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400'}
-        />
-        <Stat
-          label="Closing Cash"
-          value={formatCurrency(closingBalance)}
-          tone={closingBalance >= 0 ? 'text-text' : 'text-rose-600 dark:text-rose-400'}
-        />
-      </div>
+      {/* 6 Stat Tiles */}
+      <Grid container spacing={1.5}>
+        {[
+          { label: 'Income', value: formatCurrency(income), color: 'success.main' },
+          { label: 'Expenses', value: formatCurrency(expenses), color: 'error.main' },
+          { label: 'Investment', value: formatCurrency(investment), color: 'secondary.main' },
+          { label: 'Net Liquid', value: formatCurrency(liquid), color: liquid >= 0 ? 'success.main' : 'error.main' },
+          { label: 'Savings %', value: `${savingsPct.toFixed(1)}%`, color: savingsPct >= 0 ? 'primary.main' : 'error.main' },
+          { label: 'Closing Cash', value: formatCurrency(closingBalance), color: closingBalance >= 0 ? 'text.primary' : 'error.main' },
+        ].map((stat) => (
+          <Grid size={{ xs: 6, sm: 4, md: 2 }} key={stat.label}>
+            <Card variant="outlined" sx={{ borderRadius: 3, p: 1.5, height: '100%' }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', display: 'block' }}>
+                {stat.label}
+              </Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 900, color: stat.color, fontVariantNumeric: 'tabular-nums', mt: 0.5 }}>
+                {stat.value}
+              </Typography>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
-      <div className="cozy-card border-border p-4">
-        <h3 className="mb-3 text-sm font-bold text-text">Add planning entry</h3>
+      {/* Add Planning Entry */}
+      <Card variant="outlined" sx={{ borderRadius: 3, p: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5 }}>
+          Add planning entry
+        </Typography>
         <TransactionForm
           transactions={sheetTransactions}
           submitLabel="Add to plan"
@@ -201,59 +225,50 @@ export function PlannerView({
           showDate={false}
           resetOnSubmit={true}
         />
-      </div>
+      </Card>
 
-      <div className="cozy-card border-border p-4">
-        <h3 className="mb-3 text-sm font-bold text-text">Expense categories</h3>
+      {/* Expense Categories */}
+      <Card variant="outlined" sx={{ borderRadius: 3, p: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5 }}>
+          Expense categories
+        </Typography>
         {expenseBreakdown.length === 0 ? (
-          <p className="text-sm text-text-muted">No expenses this month yet.</p>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            No expenses this month yet.
+          </Typography>
         ) : (
-          <ul className="space-y-2">
-            {expenseBreakdown.map(([name, amount]) => (
-              <li
-                key={name}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="font-medium text-text">{name}</span>
-                <span className="tabular-nums text-rose-600 dark:text-rose-400">
-                  {masked ? (
-                    <span className="text-text-muted">
-                      {pct(amount, expenses).toFixed(1)}%
-                    </span>
-                  ) : (
-                    <>
-                      {formatCurrency(amount)}
-                      <span className="ml-2 text-text-muted">
-                        {pct(amount, expenses).toFixed(1)}%
-                      </span>
-                    </>
-                  )}
-                </span>
-              </li>
+          <List disablePadding>
+            {expenseBreakdown.map(([name, amount], idx) => (
+              <Box key={name}>
+                {idx > 0 && <Divider />}
+                <ListItem sx={{ py: 1, px: 0, display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{name}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800, color: 'error.main', fontVariantNumeric: 'tabular-nums' }}>
+                    {masked ? `${pct(amount, expenses).toFixed(1)}%` : `${formatCurrency(amount)} (${pct(amount, expenses).toFixed(1)}%)`}
+                  </Typography>
+                </ListItem>
+              </Box>
             ))}
-          </ul>
+          </List>
         )}
-      </div>
+      </Card>
 
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-text">
-            {plannerMode === 'blank' ? 'In-Memory Entries' : 'Mock Entries'} (
-            {plannerDisplayList.length})
-          </h3>
+      {/* Mock Entries List */}
+      <Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+            {plannerMode === 'blank' ? 'In-Memory Entries' : 'Mock Entries'} ({plannerDisplayList.length})
+          </Typography>
           {plannerDisplayList.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onClear(plannerMode)}
-              className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline"
-            >
+            <Button size="small" color="error" onClick={() => onClear(plannerMode)} sx={{ textTransform: 'none', fontWeight: 700 }}>
               Clear all
-            </button>
+            </Button>
           )}
-        </div>
+        </Box>
+
         {plannerDisplayList.length === 0 ? (
           <EmptyState
-            icon={<Sparkles className="h-6 w-6" strokeWidth={2} />}
+            icon={<SparklesIcon sx={{ fontSize: 24 }} />}
             title={plannerMode === 'blank' ? 'No in-memory entries yet' : 'No planning entries yet'}
             description={
               plannerMode === 'blank'
@@ -262,61 +277,44 @@ export function PlannerView({
             }
           />
         ) : (
-          <ul className="space-y-2">
-            {plannerDisplayList.map((t) => (
-              <li
-                key={t.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-strong px-3 py-2.5 shadow-warm-sm"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text">
-                    {t.category}
-                    <span className="ml-2 rounded-full bg-surface-muted/70 px-2 py-0.5 text-[10px] uppercase text-text-muted">
-                      {t.type}
-                    </span>
-                  </p>
-                  <p className="text-xs text-text-secondary">
-                    {formatCurrency(t.amount)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onRemove(t.id, plannerMode)}
-                  className="shrink-0 text-xs font-semibold text-rose-600 active:scale-95 dark:text-rose-400 hover:underline"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
+            <List disablePadding>
+              {plannerDisplayList.map((t, idx) => (
+                <Box key={t.id}>
+                  {idx > 0 && <Divider />}
+                  <ListItem
+                    secondaryAction={
+                      <IconButton edge="end" size="small" color="error" onClick={() => onRemove(t.id, plannerMode)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    }
+                    sx={{ py: 1.25, px: 2 }}
+                  >
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                            {t.category}
+                          </Typography>
+                          <Chip label={t.type} size="small" sx={{ height: 20, fontSize: '0.6875rem', textTransform: 'uppercase', fontWeight: 700 }} />
+                        </Box>
+                      }
+                      secondary={formatCurrency(t.amount)}
+                      slotProps={{
+                        secondary: { variant: 'caption', sx: { fontWeight: 600 } },
+                      }}
+                    />
+                  </ListItem>
+                </Box>
+              ))}
+            </List>
+          </Paper>
         )}
-      </div>
-    </section>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-  className = '',
-}: {
-  label: string;
-  value: string;
-  tone: string;
-  className?: string;
-}) {
-  return (
-    <div className={`cozy-card border-border p-3.5 ${className}`}>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
-        {label}
-      </p>
-      <p className={`mt-1 font-display text-xl font-bold tabular-nums ${tone}`}>
-        {value}
-      </p>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
 /** Helper kept for callers that still construct planner rows. */
 export { toPlannerTransaction } from '../../hooks/usePlannerStore';
+

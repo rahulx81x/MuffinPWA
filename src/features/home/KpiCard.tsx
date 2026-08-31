@@ -1,8 +1,12 @@
-import { motion } from 'framer-motion';
-import { ChartNoAxesCombined, List } from 'lucide-react';
+import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import type { ReactNode } from 'react';
 import type { KpiIconHint } from '../../domain/types';
-import { springSoft } from '../../lib/motion';
 
 export type KpiTone =
   | 'default'
@@ -24,24 +28,6 @@ interface KpiCardProps {
   onClick?: () => void;
 }
 
-const toneClass: Record<KpiTone, string> = {
-  default: 'text-text',
-  success: 'text-emerald-600 dark:text-emerald-400',
-  destructive: 'text-rose-600 dark:text-rose-400',
-  teal: 'text-primary',
-  violet: 'text-primary-muted',
-  hero: 'text-primary-foreground',
-};
-
-const glowClass: Record<KpiTone, string> = {
-  default: '',
-  success: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.15),transparent_65%)] before:pointer-events-none',
-  destructive: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(244,63,94,0.15),transparent_65%)] before:pointer-events-none',
-  teal: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(217,119,6,0.15),transparent_65%)] before:pointer-events-none',
-  violet: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(168,85,247,0.15),transparent_65%)] before:pointer-events-none',
-  hero: 'before:absolute before:-inset-px before:rounded-2xl before:bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.22),transparent_70%)] before:pointer-events-none',
-};
-
 function HintIcon({
   hint,
   hero,
@@ -49,20 +35,25 @@ function HintIcon({
   hint: KpiIconHint;
   hero: boolean;
 }) {
-  const containerClass = hero
-    ? 'bg-white/20 text-white'
-    : 'bg-surface-muted/60 text-text-muted dark:bg-surface-muted/40';
-
   return (
-    <span
-      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full backdrop-blur-sm ${containerClass}`}
+    <Box
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 24,
+        height: 24,
+        borderRadius: '50%',
+        bgcolor: hero ? 'rgba(255,255,255,0.2)' : 'action.selected',
+        color: hero ? 'inherit' : 'text.secondary',
+      }}
     >
       {hint === 'list' ? (
-        <List className="h-3.5 w-3.5" strokeWidth={2.2} />
+        <FormatListBulletedIcon sx={{ fontSize: 14 }} />
       ) : (
-        <ChartNoAxesCombined className="h-3.5 w-3.5" strokeWidth={2.2} />
+        <ShowChartIcon sx={{ fontSize: 14 }} />
       )}
-    </span>
+    </Box>
   );
 }
 
@@ -78,68 +69,94 @@ export function KpiCard({
   onClick,
 }: KpiCardProps) {
   const isHero = tone === 'hero';
-  const base = isHero
-    ? `hero-card relative overflow-hidden p-5 ${glowClass[tone]}`
-    : `cozy-card relative overflow-hidden border-border p-4 ${glowClass[tone]}`;
 
-  const content = (
-    <>
-      <div className="flex items-center justify-between gap-2">
-        <h3
-          className={`text-[11px] font-bold uppercase tracking-wider ${
-            isHero ? 'text-primary-foreground/90' : 'text-text-muted'
-          }`}
+  const toneColor =
+    tone === 'success'
+      ? 'success.main'
+      : tone === 'destructive'
+      ? 'error.main'
+      : tone === 'teal' || tone === 'violet'
+      ? 'primary.main'
+      : 'text.primary';
+
+  const cardContent = (
+    <CardContent sx={{ p: isHero ? 2.5 : 2, '&:last-child': { pb: isHero ? 2.5 : 2 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: 1.1,
+            color: isHero ? 'inherit' : 'text.secondary',
+            opacity: isHero ? 0.9 : 1,
+          }}
         >
           {label}
-        </h3>
+        </Typography>
         {interactive && iconHint && <HintIcon hint={iconHint} hero={isHero} />}
-      </div>
+      </Box>
+
       {value !== undefined && (
-        <p
-          className={`mt-2 font-bold tabular-nums ${
-            isHero
-              ? 'font-display text-3xl tracking-tight text-primary-foreground drop-shadow-sm'
-              : `font-display text-2xl tracking-tight ${toneClass[tone]}`
-          }`}
+        <Typography
+          variant={isHero ? 'h4' : 'h5'}
+          sx={{
+            mt: 1,
+            fontWeight: 800,
+            fontFeatureSettings: '"tnum"',
+            fontVariantNumeric: 'tabular-nums',
+            color: isHero ? 'inherit' : toneColor,
+          }}
         >
           {value}
-        </p>
+        </Typography>
       )}
+
       {subtext !== undefined && (
-        <div
-          className={`mt-0.5 text-xs font-semibold tabular-nums ${
-            isHero ? 'text-primary-foreground/80' : 'text-text-muted'
-          }`}
+        <Box
+          sx={{
+            mt: 0.5,
+            fontSize: '0.8125rem',
+            fontWeight: 600,
+            fontFeatureSettings: '"tnum"',
+            fontVariantNumeric: 'tabular-nums',
+            color: isHero ? 'inherit' : 'text.secondary',
+            opacity: isHero ? 0.85 : 1,
+          }}
         >
           {subtext}
-        </div>
+        </Box>
       )}
+
       {children}
-    </>
+    </CardContent>
   );
+
+  const cardStyle = {
+    borderRadius: isHero ? 4 : 3,
+    border: '1px solid',
+    borderColor: isHero ? 'primary.main' : 'divider',
+    bgcolor: isHero ? 'primary.main' : 'background.paper',
+    color: isHero ? 'primary.contrastText' : 'text.primary',
+    boxShadow: isHero ? 4 : 1,
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    '&:hover': interactive ? { transform: 'translateY(-2px)', boxShadow: isHero ? 6 : 3 } : undefined,
+  };
 
   if (interactive) {
     return (
-      <motion.button
-        type="button"
-        onClick={onClick}
-        whileHover={{ scale: 1.018, y: -2 }}
-        whileTap={{ scale: 0.98 }}
-        transition={springSoft}
-        className={`w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${base} ${className}`}
-      >
-        {content}
-      </motion.button>
+      <Card sx={cardStyle} className={className}>
+        <CardActionArea onClick={onClick} sx={{ height: '100%' }}>
+          {cardContent}
+        </CardActionArea>
+      </Card>
     );
   }
 
   return (
-    <motion.div
-      whileHover={{ y: -1 }}
-      transition={springSoft}
-      className={`w-full text-left ${base} ${className}`}
-    >
-      {content}
-    </motion.div>
+    <Card sx={cardStyle} className={className}>
+      {cardContent}
+    </Card>
   );
 }
+

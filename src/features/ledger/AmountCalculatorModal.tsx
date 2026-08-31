@@ -1,18 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Delete, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Grid from '@mui/material/Grid';
+import BackspaceIcon from '@mui/icons-material/Backspace';
+import CloseIcon from '@mui/icons-material/Close';
+import CalculateIcon from '@mui/icons-material/Calculate';
+
 import {
   evaluateAmountExpression,
   looksLikeAmountExpression,
 } from '../../domain/evaluateAmount';
-import { backdropVariants, popoverVariants, springSoft } from '../../lib/motion';
-import { SoftButton } from '../../components/ui/SoftButton';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
 
 interface AmountCalculatorModalProps {
   open: boolean;
-  /** Seed expression when the modal opens (plain number or empty). */
   initialExpression?: string;
   onClose: () => void;
   onApply: (value: number) => void;
@@ -74,15 +81,6 @@ export function AmountCalculatorModal({
     setCommitted(null);
   }, [open, initialExpression]);
 
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
-
   const evaluated = useMemo(
     () => evaluateAmountExpression(expression),
     [expression]
@@ -142,118 +140,130 @@ export function AmountCalculatorModal({
     onClose();
   }
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[110] flex items-end justify-center px-4 pb-6 sm:items-center sm:pb-0">
-          <motion.button
-            type="button"
-            variants={backdropVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 bg-black/50"
-            aria-label="Dismiss calculator"
-            onClick={onClose}
-          />
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            p: 1,
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+            }}
+          >
+            <CalculateIcon fontSize="small" />
+          </Box>
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
+              Calculator
+            </Typography>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+              Amount
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-          <FocusTrap active={open}>
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="amount-calc-title"
-              variants={popoverVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={springSoft}
-              className="relative z-10 w-full max-w-sm rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-4 shadow-elevate sm:rounded-2xl"
-            >
-              <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80 sm:hidden" />
+      <DialogContent sx={{ py: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Screen / Expression Box */}
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            borderRadius: 2.5,
+            bgcolor: 'action.hover',
+            textAlign: 'right',
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: 'monospace',
+              fontWeight: 800,
+              wordBreak: 'break-all',
+            }}
+          >
+            {expression || '0'}
+          </Typography>
+          {evaluated.ok && looksLikeAmountExpression(expression) && (
+            <Typography variant="subtitle2" sx={{ color: 'primary.main', fontWeight: 700, mt: 0.5 }}>
+              = {formatResult(evaluated.value)}
+            </Typography>
+          )}
+          {error && (
+            <Typography variant="caption" color="error" sx={{ fontWeight: 600, display: 'block', mt: 0.5 }}>
+              {error}
+            </Typography>
+          )}
+        </Paper>
 
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                    Calculator
-                  </p>
-                  <h2
-                    id="amount-calc-title"
-                    className="mt-1 font-display text-base font-bold text-text"
-                  >
-                    Amount
-                  </h2>
-                </div>
-                <SoftButton
-                  onClick={onClose}
-                  className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-canvas/90 text-text-secondary shadow-warm-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                  aria-label="Close calculator"
-                >
-                  <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-                </SoftButton>
-              </div>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            size="small"
+            onClick={backspace}
+            startIcon={<BackspaceIcon fontSize="small" />}
+            sx={{ textTransform: 'none', fontWeight: 600 }}
+          >
+            Delete
+          </Button>
+        </Box>
 
-              <div className="mt-4 rounded-xl border border-border/80 bg-canvas/80 px-3.5 py-3">
-                <p
-                  className="min-h-[1.5rem] break-all text-right font-mono text-lg font-semibold tabular-nums text-text"
-                  aria-live="polite"
-                >
-                  {expression || '0'}
-                </p>
-                {evaluated.ok && looksLikeAmountExpression(expression) && (
-                  <p className="mt-1 text-right text-xs font-semibold tabular-nums text-primary">
-                    = {formatResult(evaluated.value)}
-                  </p>
-                )}
-                {error && (
-                  <p className="mt-1 text-right text-xs font-medium text-rose-600 dark:text-rose-400">
-                    {error}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-3 flex justify-end">
-                <button
-                  type="button"
-                  onClick={backspace}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border/70 bg-canvas/70 px-3 text-xs font-semibold text-text-secondary transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary active:scale-95"
-                  aria-label="Backspace"
-                >
-                  <Delete className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-                  Delete
-                </button>
-              </div>
-
-              <div className="mt-3 grid grid-cols-4 gap-2">
-                {KEYS.flat().map((key) => (
-                  <button
-                    key={key.label + key.insert}
-                    type="button"
-                    onClick={() => handleKey(key.insert)}
-                    className={`min-h-11 rounded-xl border text-base font-bold transition active:scale-95 ${
-                      key.accent
-                        ? 'border-primary/40 bg-primary/15 text-primary hover:bg-primary/25'
-                        : 'border-border/70 bg-canvas/70 text-text-secondary hover:border-primary/50 hover:bg-primary/10 hover:text-primary'
-                    }`}
-                  >
-                    {key.label}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                disabled={!canUse}
-                onClick={handleUseResult}
-                className="mt-4 w-full min-h-11 rounded-xl bg-gradient-to-r from-primary-muted to-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-warm-sm transition active:scale-[0.98] disabled:opacity-40"
+        {/* Keypad Grid */}
+        <Grid container spacing={1}>
+          {KEYS.flat().map((key) => (
+            <Grid size={3} key={key.label + key.insert}>
+              <Button
+                fullWidth
+                variant={key.accent ? 'contained' : 'outlined'}
+                color={key.accent ? 'primary' : 'inherit'}
+                onClick={() => handleKey(key.insert)}
+                sx={{
+                  height: 48,
+                  borderRadius: 2,
+                  fontSize: '1.125rem',
+                  fontWeight: 800,
+                }}
               >
-                Use result
-              </button>
-            </motion.div>
-          </FocusTrap>
-        </div>
-      )}
-    </AnimatePresence>,
-    document.body
+                {key.label}
+              </Button>
+            </Grid>
+          ))}
+        </Grid>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button
+          fullWidth
+          variant="contained"
+          disabled={!canUse}
+          onClick={handleUseResult}
+          sx={{ borderRadius: 2.5, fontWeight: 700, textTransform: 'none', py: 1.25 }}
+        >
+          Use result
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
+

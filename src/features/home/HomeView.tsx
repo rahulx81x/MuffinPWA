@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Grid from '@mui/material/Grid';
+import AddIcon from '@mui/icons-material/Add';
 import { useMask } from '../../hooks/useMask';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import type { FinancialMetrics, KpiIconHint, MetricKey, Transaction } from '../../domain/types';
 import { ChartModal } from './ChartModal';
 import { KpiCard, type KpiTone } from './KpiCard';
 import { EmptyState } from '../../components/molecules/EmptyState';
+
 
 interface HomeViewProps {
   metrics: FinancialMetrics;
@@ -778,20 +782,20 @@ export function HomeView({
       )}
 
       {/* Greeting Header */}
-      <div>
-        <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
+      <Box>
+        <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1.2 }}>
           {greeting}
-        </p>
-        <h2 className="mt-1 font-display text-lg font-bold tracking-[-0.02em] text-text">
+        </Typography>
+        <Typography variant="h5" component="h2" sx={{ fontWeight: 800, mt: 0.25 }}>
           Your money at a glance
-        </h2>
-      </div>
+        </Typography>
+      </Box>
 
       {recurringBanner}
 
       {transactions.length === 0 && (
         <EmptyState
-          icon={<Plus className="h-6 w-6" strokeWidth={2.2} />}
+          icon={<AddIcon sx={{ fontSize: 24 }} />}
           title="Ready to track your money"
           description="Log your first income, expense, or investment entry using the + button to see your live financial dashboard."
           action={
@@ -803,44 +807,56 @@ export function HomeView({
       )}
 
       {/* Section 1: Net Worth & Balances */}
-      <section className="space-y-2.5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+      <Box component="section" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
           Net Worth & Balances
-        </h3>
-        <div className="w-full">
+        </Typography>
+        <Box sx={{ width: '100%' }}>
           {balanceCards.map(renderCard)}
-        </div>
-      </section>
+        </Box>
+      </Box>
 
       {/* Section 2: This Month's Overview */}
-      <section className="space-y-2.5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+      <Box component="section" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
           This Month
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 gap-3.5">
-          {monthCards.map(renderCard)}
-        </div>
-      </section>
+        </Typography>
+        <Grid container spacing={2}>
+          {monthCards.map((card) => (
+            <Grid size={{ xs: 6, sm: 6, md: 6 }} key={card.key}>
+              {renderCard(card)}
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
       {/* Section 3: Investment Allocation */}
-      <section className="space-y-2.5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+      <Box component="section" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
           Investments & Allocation
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 gap-3.5">
-          {investmentCards.map(renderCard)}
-        </div>
-      </section>
+        </Typography>
+        <Grid container spacing={2}>
+          {investmentCards.map((card) => (
+            <Grid size={{ xs: 6, sm: 6, md: 6 }} key={card.key}>
+              {renderCard(card)}
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
       {/* Section 4: Lifetime Metrics & Growth */}
-      <section className="space-y-2.5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+      <Box component="section" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
           Lifetime Totals & Growth
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3.5">
-          {lifetimeCards.map(renderCard)}
-        </div>
-      </section>
+        </Typography>
+        <Grid container spacing={2}>
+          {lifetimeCards.map((card) => (
+            <Grid size={{ xs: 6, sm: 4, md: 4 }} key={card.key}>
+              {renderCard(card)}
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
       <ChartModal
         open={activeMetric !== null}
@@ -859,4 +875,5 @@ export function HomeView({
       />
     </div>
   );
+
 }

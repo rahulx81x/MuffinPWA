@@ -1,9 +1,17 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Container from '@mui/material/Container';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import CloseIcon from '@mui/icons-material/Close';
 import { completeTour, unlinkSheet, AuthRequiredError } from './api/client';
 import type { MutationResult } from './api/client';
-import { SoftButton } from './components/ui/SoftButton';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import { FloatingNav } from './components/ui/FloatingNav';
 import { LoadingScreen } from './components/ui/LoadingScreen';
@@ -32,13 +40,11 @@ import { usePlannerStore } from './hooks/usePlannerStore';
 import { useRecipeConfig } from './hooks/useRecipeConfig';
 import { useRecurringAutomation } from './hooks/useRecurringAutomation';
 import { useSheetTransactions } from './hooks/useSheetTransactions';
-import { useTheme } from './hooks/useTheme';
 import { buildFinancialMetrics, EMPTY_METRICS } from './domain/metrics';
-import { pageTransition, pageVariants, springSoft } from './lib/motion';
+import { pageTransition, pageVariants } from './lib/motion';
 import type { AppTab, FinancialMetrics, Transaction } from './domain/types';
 
 export default function App() {
-  const { themeId } = useTheme();
   const { config: recipeConfig } = useRecipeConfig();
   const {
     authBooting,
@@ -271,11 +277,11 @@ export default function App() {
           setAuth((prev) =>
             prev
               ? {
-                  ...prev,
-                  spreadsheetId: info.spreadsheetId,
-                  spreadsheetTitle: info.spreadsheetTitle,
-                  needsSheet: false,
-                }
+                ...prev,
+                spreadsheetId: info.spreadsheetId,
+                spreadsheetTitle: info.spreadsheetTitle,
+                needsSheet: false,
+              }
               : prev
           );
           setStatusMessage(
@@ -298,69 +304,88 @@ export default function App() {
       : undefined;
 
   return (
-    <div className="relative min-h-dvh bg-canvas text-text transition-theme">
-      <motion.div
-        key={themeId}
-        aria-hidden="true"
-        initial={{ opacity: 0.4, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+    <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary' }}>
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          bgcolor: 'background.default',
+          color: 'text.primary',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
       >
-        <div className="absolute -left-10 -top-10 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute -right-16 top-1/4 h-96 w-96 rounded-full bg-primary-muted/25 blur-3xl" />
-        <div className="absolute bottom-12 left-1/3 h-80 w-80 rounded-full bg-primary/18 blur-3xl" />
-      </motion.div>
-
-      <header className="sticky top-0 z-30 border-b border-border bg-canvas safe-pt transition-theme">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2 sm:max-w-3xl lg:max-w-5xl">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
+        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, sm: 3 } }}>
+          <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <MuffinIcon className="muffin-icon h-7 w-7 text-primary" />
-              <h1 className="font-display text-[1.2rem] font-bold leading-none tracking-[-0.03em] text-text">
-                <span className="bg-gradient-to-r from-primary-muted to-primary bg-clip-text text-transparent">
-                  Muffin
-                </span>
-              </h1>
-            </div>
-            <p className="mt-1 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted">
-              <span
-                className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary shadow-[0_0_0_2px] shadow-primary/20"
+              <Typography
+                variant="h6"
+                component="h1"
+                sx={{
+                  fontWeight: 800,
+                  color: 'primary.main',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1,
+                }}
+              >
+                Muffin
+              </Typography>
+            </Box>
+            <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  bgcolor: 'primary.main',
+                }}
                 aria-hidden="true"
               />
-              <button
-                type="button"
+              <Button
+                size="small"
                 onClick={handleChangeSheet}
-                className="truncate text-left outline-none hover:text-text-secondary"
-                title="Change linked spreadsheet"
+                sx={{
+                  p: 0,
+                  minWidth: 0,
+                  fontSize: '0.6875rem',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1.1,
+                  color: 'text.secondary',
+                  justifyContent: 'flex-start',
+                  '&:hover': { color: 'text.primary', bgcolor: 'transparent' },
+                }}
               >
                 {auth.spreadsheetTitle || 'Synced from your Google Sheet'}
-              </button>
-            </p>
-          </div>
+              </Button>
+            </Box>
+          </Box>
+
           <HeaderMenu
             userName={auth.user.name}
             userEmail={auth.user.email}
             userPicture={auth.user.picture}
             onLogout={() => void handleLogout()}
           />
-        </div>
-      </header>
+        </Toolbar>
+      </AppBar>
 
-      <main className="relative z-10 mx-auto max-w-lg px-4 pt-3 main-bottom-pad sm:max-w-3xl lg:max-w-5xl">
+      <Container
+        maxWidth="lg"
+        sx={{
+          pt: 2,
+          pb: 'calc(6.5rem + env(safe-area-inset-bottom, 0px))',
+          px: { xs: 2, sm: 3 },
+        }}
+      >
         <AnimatePresence mode="wait">
           {error && (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={springSoft}
-              className="mb-4 rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-900 shadow-warm-sm backdrop-blur-sm transition-theme dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
-              role="status"
-            >
-              {error}
-            </motion.div>
+            <Box sx={{ mb: 2 }}>
+              <Alert severity="warning" sx={{ borderRadius: 3 }}>
+                {error}
+              </Alert>
+            </Box>
           )}
         </AnimatePresence>
 
@@ -444,45 +469,50 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
+      </Container>
 
-      <AnimatePresence>
-        {toastText && (
-          <motion.div
-            key="toast"
-            initial={{ opacity: 0, y: -10, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={springSoft}
-            className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[calc(env(safe-area-inset-top,0px)+3.75rem)]"
-            role="status"
-            aria-live="polite"
-          >
-            <div className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border border-primary/25 bg-surface-strong/95 px-4 py-3 text-sm text-text shadow-elevate backdrop-blur-xl">
-              <p className="min-w-0 flex-1 leading-snug">{toastText}</p>
+      <Snackbar
+        open={Boolean(toastText)}
+        autoHideDuration={4000}
+        onClose={() => setStatusMessage(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity="info"
+          sx={{
+            width: '100%',
+            borderRadius: 3,
+            boxShadow: 4,
+            alignItems: 'center',
+          }}
+          action={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {toastUndo && (
-                <button
-                  type="button"
+                <Button
+                  color="inherit"
+                  size="small"
                   onClick={() => {
                     void toastUndo();
                   }}
-                  className="shrink-0 rounded-lg bg-primary/15 px-2.5 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/25 active:scale-95"
+                  sx={{ fontWeight: 700 }}
                 >
                   Undo
-                </button>
+                </Button>
               )}
-              <SoftButton
+              <IconButton
+                size="small"
+                aria-label="close"
+                color="inherit"
                 onClick={() => setStatusMessage(null)}
-                className="inline-flex min-h-8 min-w-8 h-8 w-8 shrink-0 items-center justify-center rounded-xl text-text-secondary outline-none hover:bg-surface-muted/70"
-                aria-label="Dismiss notification"
-                glow={false}
               >
-                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              </SoftButton>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          }
+        >
+          {toastText}
+        </Alert>
+      </Snackbar>
 
       <FloatingNav
         activeTab={activeTab}
@@ -563,6 +593,7 @@ export default function App() {
           if (!confirmBusy) closeModal();
         }}
       />
-    </div>
+    </Box>
   );
 }
+

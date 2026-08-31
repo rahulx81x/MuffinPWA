@@ -1,20 +1,36 @@
 import { useState } from 'react';
-import {
-  BookOpen,
-  CalendarSync,
-  Download,
-  Eye,
-  EyeOff,
-  FileSpreadsheet,
-  FileText,
-  Info,
-  LogOut,
-  Palette,
-  RotateCcw,
-  ShieldCheck,
-  Type,
-  UtensilsCrossed,
-} from 'lucide-react';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Switch from '@mui/material/Switch';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
+import Paper from '@mui/material/Paper';
+
+import PaletteIcon from '@mui/icons-material/Palette';
+import TextFieldsIcon from '@mui/icons-material/TextFields';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import ReplayIcon from '@mui/icons-material/Replay';
+import DownloadIcon from '@mui/icons-material/Download';
+import InfoIcon from '@mui/icons-material/Info';
+import DescriptionIcon from '@mui/icons-material/Description';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import LogoutIcon from '@mui/icons-material/Logout';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+
 import { useFont } from '../../hooks/useFont';
 import { useMask } from '../../hooks/useMask';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
@@ -22,7 +38,6 @@ import { useRecipeConfig } from '../../hooks/useRecipeConfig';
 import { useTheme } from '../../hooks/useTheme';
 import { FONTS } from '../../lib/fonts';
 import { DARK_THEMES, LIGHT_THEMES } from '../../lib/themes';
-import { SoftButton } from '../../components/ui/SoftButton';
 import { ThemeModal } from './ThemeModal';
 import { FontModal } from './FontModal';
 
@@ -80,408 +95,433 @@ export function SettingsView({
   const currentFont = FONTS.find((f) => f.id === fontId) || FONTS[0];
 
   return (
-    <div className="space-y-6 pb-12">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, pb: 6 }}>
       {/* Page Title */}
-      <div>
-        <h2 className="font-display text-xl font-bold tracking-tight text-text sm:text-2xl">
+      <Box>
+        <Typography variant="h5" component="h2" sx={{ fontWeight: 800 }}>
           Settings
-        </h2>
-        <p className="text-xs text-text-muted">
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
           Manage your account, appearance, privacy, and preferences
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
       {/* Account Section */}
-      <section aria-labelledby="settings-account-heading" className="space-y-3">
-        <div className="cozy-card flex flex-col gap-4 p-4 sm:p-5">
-          <div className="flex items-center gap-3.5">
-            {userPicture ? (
-              <img
-                src={userPicture}
-                alt={userName || 'User avatar'}
-                className="h-12 w-12 rounded-2xl object-cover ring-2 ring-primary/30 shadow-warm-sm"
-              />
-            ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-muted via-primary to-primary text-base font-bold text-primary-foreground shadow-warm-sm">
-                {userInitial}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-display text-base font-bold text-text">
-                {userName || 'Muffin User'}
-              </p>
-              {userEmail && (
-                <p className="truncate text-xs text-text-muted">{userEmail}</p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive transition-all hover:bg-destructive/15 active:scale-95"
-              title="Sign out of Muffin"
+      <Card variant="outlined" sx={{ borderRadius: 3.5 }}>
+        <CardContent sx={{ p: { xs: 2, sm: 2.5 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar
+              src={userPicture || undefined}
+              alt={userName || 'User avatar'}
+              sx={{
+                width: 48,
+                height: 48,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                fontWeight: 700,
+                fontSize: '1.125rem',
+              }}
             >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>Log out</span>
-            </button>
-          </div>
+              {!userPicture && userInitial}
+            </Avatar>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography variant="subtitle1" noWrap sx={{ fontWeight: 800 }}>
+                {userName || 'Muffin User'}
+              </Typography>
+              {userEmail && (
+                <Typography variant="caption" noWrap sx={{ color: 'text.secondary', display: 'block' }}>
+                  {userEmail}
+                </Typography>
+              )}
+            </Box>
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              onClick={onLogout}
+              startIcon={<LogoutIcon />}
+              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+            >
+              Log out
+            </Button>
+          </Box>
 
           {/* Linked Google Sheet */}
-          <div className="flex flex-col gap-2.5 rounded-xl border border-border/70 bg-surface/80 p-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                <FileSpreadsheet className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 1.5,
+              borderRadius: 2.5,
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              justifyContent: 'space-between',
+              gap: 1.5,
+              bgcolor: 'action.hover',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 34,
+                  height: 34,
+                  borderRadius: 2,
+                  bgcolor: 'success.main',
+                  color: 'success.contrastText',
+                }}
+              >
+                <TableChartIcon fontSize="small" />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.8, display: 'block' }}>
                   Connected Sheet
-                </p>
-                <p className="truncate text-xs font-medium text-text">
+                </Typography>
+                <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
                   {spreadsheetTitle || 'Personal Finance Sheet'}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
+                </Typography>
+              </Box>
+            </Box>
+            <Button
+              variant="outlined"
+              color="inherit"
+              size="small"
               onClick={onChangeSheet}
-              className="shrink-0 self-start sm:self-auto rounded-lg border border-border/80 bg-surface-strong px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:border-border hover:text-text active:scale-95"
+              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, alignSelf: { xs: 'flex-start', sm: 'center' } }}
             >
               Change Sheet
-            </button>
-          </div>
-        </div>
-      </section>
+            </Button>
+          </Paper>
+        </CardContent>
+      </Card>
 
       {/* Appearance Section */}
-      <section aria-labelledby="settings-appearance-heading" className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Palette className="h-4 w-4 text-primary" />
-          <h3
-            id="settings-appearance-heading"
-            className="text-xs font-bold uppercase tracking-wider text-text-muted"
-          >
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PaletteIcon color="primary" sx={{ fontSize: 18 }} />
+          <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
             Appearance & Styling
-          </h3>
-        </div>
+          </Typography>
+        </Box>
 
-        <div className="cozy-card divide-y divide-border/60">
-          {/* Theme & Palette Option */}
-          <button
-            type="button"
-            onClick={() => setThemeModalOpen(true)}
-            className="flex w-full items-center justify-between p-4 text-left hover:bg-surface-strong/40 transition-colors"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Palette className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-text">Theme & Color Palette</p>
-                <div className="mt-0.5 flex items-center gap-1.5 min-w-0">
-                  <span
-                    className="relative inline-flex h-3 w-6 shrink-0 overflow-hidden rounded-full border border-black/10 dark:border-white/15"
-                    aria-hidden="true"
-                  >
-                    <span
-                      className="h-full w-[40%]"
-                      style={{ backgroundColor: currentTheme.background }}
-                    />
-                    <span
-                      className="h-full w-[30%]"
-                      style={{ backgroundColor: currentTheme.card }}
-                    />
-                    <span
-                      className="h-full flex-1"
-                      style={{ backgroundColor: currentTheme.accent }}
-                    />
-                  </span>
-                  <p className="truncate text-[11px] text-text-muted">
-                    {currentTheme.name} ({currentTheme.mode})
-                  </p>
-                </div>
-              </div>
-            </div>
-            <span className="shrink-0 text-xs text-text-muted font-medium ml-2">Change &rarr;</span>
-          </button>
+        <Card variant="outlined" sx={{ borderRadius: 3.5, overflow: 'hidden' }}>
+          <List disablePadding>
+            {/* Theme & Palette Option */}
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => setThemeModalOpen(true)} sx={{ py: 1.5, px: 2 }}>
+                <ListItemIcon sx={{ minWidth: 42, color: 'primary.main' }}>
+                  <PaletteIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Theme & Color Palette"
+                  secondary={
+                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                      <Box
+                        sx={{
+                          display: 'inline-flex',
+                          height: 12,
+                          width: 24,
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                        }}
+                      >
+                        <Box sx={{ width: '40%', height: '100%', bgcolor: currentTheme.background }} />
+                        <Box sx={{ width: '30%', height: '100%', bgcolor: currentTheme.card }} />
+                        <Box sx={{ flex: 1, height: '100%', bgcolor: currentTheme.accent }} />
+                      </Box>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        {currentTheme.name} ({currentTheme.mode})
+                      </Typography>
+                    </Box>
+                  }
+                  slotProps={{
+                    primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                  }}
+                />
+                <ChevronRightIcon sx={{ color: 'text.secondary' }} />
+              </ListItemButton>
+            </ListItem>
 
-          {/* Typography Style Option */}
-          <button
-            type="button"
-            onClick={() => setFontModalOpen(true)}
-            className="flex w-full items-center justify-between p-4 text-left hover:bg-surface-strong/40 transition-colors"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Type className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-text">Typography Style</p>
-                <p
-                  className="truncate text-[11px] text-text-muted mt-0.5"
-                  style={{ fontFamily: currentFont.body }}
-                >
-                  {currentFont.name} · Aa Bb 123
-                </p>
-              </div>
-            </div>
-            <span className="shrink-0 text-xs text-text-muted font-medium ml-2">Change &rarr;</span>
-          </button>
-        </div>
-      </section>
+            <Divider />
+
+            {/* Typography Style Option */}
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => setFontModalOpen(true)} sx={{ py: 1.5, px: 2 }}>
+                <ListItemIcon sx={{ minWidth: 42, color: 'primary.main' }}>
+                  <TextFieldsIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Typography Style"
+                  secondary={`${currentFont.name} · Aa Bb 123`}
+                  slotProps={{
+                    primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                    secondary: { sx: { fontSize: '0.75rem', fontFamily: currentFont.body, mt: 0.5 } },
+                  }}
+                />
+                <ChevronRightIcon sx={{ color: 'text.secondary' }} />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Card>
+      </Box>
 
       {/* Data & Privacy Section */}
-      <section aria-labelledby="settings-data-heading" className="space-y-4">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-primary" />
-          <h3
-            id="settings-data-heading"
-            className="text-xs font-bold uppercase tracking-wider text-text-muted"
-          >
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <VerifiedUserIcon color="primary" sx={{ fontSize: 18 }} />
+          <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
             Data & Privacy
-          </h3>
-        </div>
+          </Typography>
+        </Box>
 
-        <div className="cozy-card divide-y divide-border/60">
-          {/* Mask Amounts Toggle */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                {masked ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-text">Mask Financial Amounts</p>
-                <p className="text-[11px] text-text-muted">
-                  Hide account figures in public places
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={masked}
-              onClick={toggleMask}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                masked ? 'bg-primary' : 'bg-surface-muted'
-              }`}
-            >
-              <span
-                aria-hidden="true"
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                  masked ? 'translate-x-5' : 'translate-x-0'
-                }`}
+        <Card variant="outlined" sx={{ borderRadius: 3.5, overflow: 'hidden' }}>
+          <List disablePadding>
+            {/* Mask Amounts Toggle */}
+            <ListItem sx={{ py: 1.5, px: 2 }}>
+              <ListItemIcon sx={{ minWidth: 42, color: 'primary.main' }}>
+                {masked ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              </ListItemIcon>
+              <ListItemText
+                primary="Mask Financial Amounts"
+                secondary="Hide account figures in public places"
+                slotProps={{
+                  primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                  secondary: { sx: { fontSize: '0.75rem' } },
+                }}
               />
-            </button>
-          </div>
+              <Switch edge="end" checked={masked} onChange={toggleMask} />
+            </ListItem>
 
-          {/* Starting Balances (Recipe) */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <UtensilsCrossed className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-text">Starting Balances</p>
-                <p className="text-[11px] text-text-muted">
-                  Configure opening liquid balance & initial investments
-                </p>
-              </div>
-            </div>
-            <SoftButton
-              onClick={onRecipe}
-              className="px-3 py-1.5 text-xs font-semibold"
-              glow={false}
-            >
-              Configure
-            </SoftButton>
-          </div>
+            <Divider />
 
-          {/* Recurring Rules & SIPs */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <CalendarSync className="h-4 w-4" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="text-xs font-semibold text-text">Recurring Rules & SIPs</p>
-                  {activeRecurringCount > 0 && (
-                    <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                      {activeRecurringCount} Active
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-text-muted">
-                  {activeRecurringCount > 0
-                    ? `${formatCurrency(activeRecurringTotal)}/mo scheduled with smart due alert`
-                    : 'Automate rent, bills, salary, and mutual fund SIPs'}
-                </p>
-              </div>
-            </div>
-            <SoftButton
-              onClick={onRecurring}
-              className="px-3 py-1.5 text-xs font-semibold"
-              glow={false}
-            >
-              Manage
-            </SoftButton>
-          </div>
-        </div>
-      </section>
-
-      {/* Learn & Guides Section */}
-      <section aria-labelledby="settings-guides-heading" className="space-y-4">
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-primary" />
-          <h3
-            id="settings-guides-heading"
-            className="text-xs font-bold uppercase tracking-wider text-text-muted"
-          >
-            Guides & Help
-          </h3>
-        </div>
-
-        <div className="cozy-card divide-y divide-border/60">
-          <button
-            type="button"
-            onClick={onGuide}
-            className="flex w-full items-center justify-between p-4 text-left hover:bg-surface-strong/40 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
-                <BookOpen className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-text">User & Formula Guide</p>
-                <p className="text-[11px] text-text-muted">
-                  Formulas, sheet formatting, and best practices
-                </p>
-              </div>
-            </div>
-            <span className="text-xs text-text-muted font-medium">View &rarr;</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onTour}
-            className="flex w-full items-center justify-between p-4 text-left hover:bg-surface-strong/40 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                <RotateCcw className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-text">Replay Onboarding Tour</p>
-                <p className="text-[11px] text-text-muted">
-                  Interactive walk-through of Muffin features
-                </p>
-              </div>
-            </div>
-            <span className="text-xs text-text-muted font-medium">Replay &rarr;</span>
-          </button>
-        </div>
-      </section>
-
-      {/* App Installation & Legal Section */}
-      <section aria-labelledby="settings-about-heading" className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Info className="h-4 w-4 text-primary" />
-          <h3
-            id="settings-about-heading"
-            className="text-xs font-bold uppercase tracking-wider text-text-muted"
-          >
-            About & App
-          </h3>
-        </div>
-
-        <div className="cozy-card divide-y divide-border/60">
-          {installState !== 'installed' && (
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                  <Download className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-text">Install Muffin App</p>
-                  <p className="text-[11px] text-text-muted">
-                    Install to home screen for native offline experience
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={canPrompt ? () => void install() : onInstallGuide}
-                className="rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:opacity-90 active:scale-95"
+            {/* Starting Balances (Recipe) */}
+            <ListItem sx={{ py: 1.5, px: 2 }}>
+              <ListItemIcon sx={{ minWidth: 42, color: 'warning.main' }}>
+                <AccountBalanceWalletIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary="Starting Balances"
+                secondary="Configure opening liquid balance & initial investments"
+                slotProps={{
+                  primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                  secondary: { sx: { fontSize: '0.75rem' } },
+                }}
+              />
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                onClick={onRecipe}
+                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
               >
-                {canPrompt ? 'Install' : 'Instructions'}
-              </button>
-            </div>
-          )}
+                Configure
+              </Button>
+            </ListItem>
 
-          <button
-            type="button"
-            onClick={onAbout}
-            className="flex w-full items-center justify-between p-4 text-left hover:bg-surface-strong/40 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-muted text-text-secondary">
-                <Info className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-text">About Muffin</p>
-                <p className="text-[11px] text-text-muted">
-                  Version, developer information & license
-                </p>
-              </div>
-            </div>
-            <span className="text-xs text-text-muted font-medium">View &rarr;</span>
-          </button>
+            <Divider />
 
-          <button
-            type="button"
-            onClick={onPrivacy}
-            className="flex w-full items-center justify-between p-4 text-left hover:bg-surface-strong/40 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-muted text-text-secondary">
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-text">Privacy Policy</p>
-                <p className="text-[11px] text-text-muted">
-                  Zero third-party trackers. Your Google Sheet is yours alone.
-                </p>
-              </div>
-            </div>
-            <span className="text-xs text-text-muted font-medium">View &rarr;</span>
-          </button>
+            {/* Recurring Rules & SIPs */}
+            <ListItem sx={{ py: 1.5, px: 2 }}>
+              <ListItemIcon sx={{ minWidth: 42, color: 'primary.main' }}>
+                <EventRepeatIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Recurring Rules & SIPs
+                    </Typography>
+                    {activeRecurringCount > 0 && (
+                      <Chip
+                        label={`${activeRecurringCount} Active`}
+                        size="small"
+                        color="primary"
+                        sx={{ height: 18, fontSize: '0.625rem', fontWeight: 700 }}
+                      />
+                    )}
+                  </Box>
+                }
+                secondary={
+                  activeRecurringCount > 0
+                    ? `${formatCurrency(activeRecurringTotal)}/mo scheduled with smart due alert`
+                    : 'Automate rent, bills, salary, and mutual fund SIPs'
+                }
+                slotProps={{
+                  secondary: { sx: { fontSize: '0.75rem' } },
+                }}
+              />
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="small"
+                onClick={onRecurring}
+                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+              >
+                Manage
+              </Button>
+            </ListItem>
+          </List>
+        </Card>
+      </Box>
 
-          <button
-            type="button"
-            onClick={onTerms}
-            className="flex w-full items-center justify-between p-4 text-left hover:bg-surface-strong/40 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-muted text-text-secondary">
-                <FileText className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-text">Terms of Service</p>
-                <p className="text-[11px] text-text-muted">
-                  Terms of use for Muffin PWA
-                </p>
-              </div>
-            </div>
-            <span className="text-xs text-text-muted font-medium">View &rarr;</span>
-          </button>
-        </div>
+      {/* Guides & Help Section */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MenuBookIcon color="primary" sx={{ fontSize: 18 }} />
+          <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
+            Guides & Help
+          </Typography>
+        </Box>
+
+        <Card variant="outlined" sx={{ borderRadius: 3.5, overflow: 'hidden' }}>
+          <List disablePadding>
+            <ListItem disablePadding>
+              <ListItemButton onClick={onGuide} sx={{ py: 1.5, px: 2 }}>
+                <ListItemIcon sx={{ minWidth: 42, color: 'info.main' }}>
+                  <MenuBookIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="User & Formula Guide"
+                  secondary="Formulas, sheet formatting, and best practices"
+                  slotProps={{
+                    primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                    secondary: { sx: { fontSize: '0.75rem' } },
+                  }}
+                />
+                <ChevronRightIcon sx={{ color: 'text.secondary' }} />
+              </ListItemButton>
+            </ListItem>
+
+            <Divider />
+
+            <ListItem disablePadding>
+              <ListItemButton onClick={onTour} sx={{ py: 1.5, px: 2 }}>
+                <ListItemIcon sx={{ minWidth: 42, color: 'secondary.main' }}>
+                  <ReplayIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Replay Onboarding Tour"
+                  secondary="Interactive walk-through of Muffin features"
+                  slotProps={{
+                    primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                    secondary: { sx: { fontSize: '0.75rem' } },
+                  }}
+                />
+                <ChevronRightIcon sx={{ color: 'text.secondary' }} />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Card>
+      </Box>
+
+      {/* App & About Section */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <InfoIcon color="primary" sx={{ fontSize: 18 }} />
+          <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
+            About & App
+          </Typography>
+        </Box>
+
+        <Card variant="outlined" sx={{ borderRadius: 3.5, overflow: 'hidden' }}>
+          <List disablePadding>
+            {installState !== 'installed' && (
+              <>
+                <ListItem sx={{ py: 1.5, px: 2 }}>
+                  <ListItemIcon sx={{ minWidth: 42, color: 'primary.main' }}>
+                    <DownloadIcon />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Install Muffin App"
+                    secondary="Install to home screen for native offline experience"
+                    slotProps={{
+                      primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                      secondary: { sx: { fontSize: '0.75rem' } },
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={canPrompt ? () => void install() : onInstallGuide}
+                    sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+                  >
+                    {canPrompt ? 'Install' : 'Instructions'}
+                  </Button>
+                </ListItem>
+                <Divider />
+              </>
+            )}
+
+            <ListItem disablePadding>
+              <ListItemButton onClick={onAbout} sx={{ py: 1.5, px: 2 }}>
+                <ListItemIcon sx={{ minWidth: 42, color: 'text.secondary' }}>
+                  <InfoIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="About Muffin"
+                  secondary="Version, developer information & license"
+                  slotProps={{
+                    primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                    secondary: { sx: { fontSize: '0.75rem' } },
+                  }}
+                />
+                <ChevronRightIcon sx={{ color: 'text.secondary' }} />
+              </ListItemButton>
+            </ListItem>
+
+            <Divider />
+
+            <ListItem disablePadding>
+              <ListItemButton onClick={onPrivacy} sx={{ py: 1.5, px: 2 }}>
+                <ListItemIcon sx={{ minWidth: 42, color: 'text.secondary' }}>
+                  <VerifiedUserIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Privacy Policy"
+                  secondary="Zero third-party trackers. Your Google Sheet is yours alone."
+                  slotProps={{
+                    primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                    secondary: { sx: { fontSize: '0.75rem' } },
+                  }}
+                />
+                <ChevronRightIcon sx={{ color: 'text.secondary' }} />
+              </ListItemButton>
+            </ListItem>
+
+            <Divider />
+
+            <ListItem disablePadding>
+              <ListItemButton onClick={onTerms} sx={{ py: 1.5, px: 2 }}>
+                <ListItemIcon sx={{ minWidth: 42, color: 'text.secondary' }}>
+                  <DescriptionIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Terms of Service"
+                  secondary="Terms of use for Muffin PWA"
+                  slotProps={{
+                    primary: { sx: { fontWeight: 700, fontSize: '0.875rem' } },
+                    secondary: { sx: { fontSize: '0.75rem' } },
+                  }}
+                />
+                <ChevronRightIcon sx={{ color: 'text.secondary' }} />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Card>
 
         {/* Developer attribution compliance rule */}
-        <p className="pt-2 text-center text-[11px] text-text-muted">
+        <Typography variant="caption" sx={{ pt: 1, textAlign: 'center', color: 'text.secondary', display: 'block' }}>
           Muffin is an independent developer project crafted with 🧁 by Rahul Gouri.
-        </p>
-      </section>
+        </Typography>
+      </Box>
 
       <ThemeModal open={themeModalOpen} onClose={() => setThemeModalOpen(false)} />
       <FontModal open={fontModalOpen} onClose={() => setFontModalOpen(false)} />
-    </div>
+    </Box>
   );
 }
+

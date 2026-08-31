@@ -11,6 +11,10 @@
     "showcase": "node scripts/capture-showcase.mjs && node scripts/build-showcase-ppt.mjs"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.4.0",
+    "@mui/material": "^9.4.0",
     "@netlify/blobs": "^10.7.12",
     "framer-motion": "^13.0.0",
     "google-auth-library": "^11.0.0",

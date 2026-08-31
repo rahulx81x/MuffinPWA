@@ -1,31 +1,39 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Calendar,
-  CalendarSync,
-  Check,
-  ChevronLeft,
-  Loader2,
-  Pause,
-  Play,
-  Plus,
-  Sparkles,
-  TrendingUp,
-  X,
-  Zap,
-} from 'lucide-react';
-import { useEffect, useId, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import CreatableSelect from 'react-select/creatable';
-import type {
-  CSSObjectWithLabel,
-  ControlProps,
-  GroupBase,
-  OptionProps,
-  StylesConfig,
-} from 'react-select';
+import { useState, useMemo, useEffect } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
+import Paper from '@mui/material/Paper';
+import Chip from '@mui/material/Chip';
+import Slider from '@mui/material/Slider';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import InputAdornment from '@mui/material/InputAdornment';
+
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
+import BoltIcon from '@mui/icons-material/Bolt';
+import CheckIcon from '@mui/icons-material/Check';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import PauseIcon from '@mui/icons-material/Pause';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import EditIcon from '@mui/icons-material/Edit';
+
 import { newRecurringRuleId, type RecurrenceType, type RecurringRule, type Transaction } from '@shared';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
-import { SoftButton } from '../../components/ui/SoftButton';
 import {
   calculateRecurringDueSummary,
   formatRecurrenceDay,
@@ -33,7 +41,6 @@ import {
 } from '../../domain/recurring';
 import { useMask } from '../../hooks/useMask';
 import { useRecipeConfig } from '../../hooks/useRecipeConfig';
-import { backdropVariants, popoverVariants, springSoft } from '../../lib/motion';
 
 interface RecurringManagerModalProps {
   open: boolean;
@@ -45,103 +52,7 @@ interface RecurringManagerModalProps {
   investmentTypeOptions?: string[];
 }
 
-type InvestmentTypeOption = {
-  value: string;
-  label: string;
-};
-
-const labelClass =
-  'mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted';
-const fieldClass =
-  'w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text outline-none transition-theme focus:border-primary/50 focus:ring-2 focus:ring-primary/25 disabled:opacity-60';
-
-function buildSelectStyles(): StylesConfig<InvestmentTypeOption, false> {
-  return {
-    control: (
-      base: CSSObjectWithLabel,
-      state: ControlProps<InvestmentTypeOption, false>
-    ) => ({
-      ...base,
-      minHeight: 42,
-      borderRadius: 12,
-      borderColor: state.isFocused ? 'var(--color-primary)' : 'var(--color-border)',
-      backgroundColor: 'var(--color-canvas)',
-      boxShadow: state.isFocused ? '0 0 0 3px rgba(var(--accent-rgb), 0.25)' : 'none',
-      '&:hover': {
-        borderColor: 'var(--color-primary)',
-      },
-      transition: 'border-color 0.2s, box-shadow 0.2s',
-    }),
-    valueContainer: (base: CSSObjectWithLabel) => ({
-      ...base,
-      padding: '2px 12px',
-    }),
-    input: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text)',
-      fontFamily: 'var(--font-body)',
-    }),
-    placeholder: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text-muted)',
-      fontSize: 14,
-      fontFamily: 'var(--font-body)',
-    }),
-    singleValue: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text)',
-      fontSize: 14,
-      fontFamily: 'var(--font-body)',
-    }),
-    menu: (base: CSSObjectWithLabel) => ({
-      ...base,
-      borderRadius: 12,
-      border: '1px solid var(--color-border)',
-      backgroundColor: 'var(--color-surface-strong)',
-      boxShadow: 'var(--shadow-elevate)',
-      overflow: 'hidden',
-      zIndex: 50,
-    }),
-    menuList: (base: CSSObjectWithLabel) => ({
-      ...base,
-      padding: 4,
-    }),
-    option: (
-      base: CSSObjectWithLabel,
-      state: OptionProps<InvestmentTypeOption, false, GroupBase<InvestmentTypeOption>>
-    ) => ({
-      ...base,
-      borderRadius: 8,
-      backgroundColor: state.isSelected
-        ? 'var(--color-primary)'
-        : state.isFocused
-          ? 'var(--color-surface)'
-          : 'transparent',
-      color: state.isSelected ? 'var(--color-on-primary)' : 'var(--color-text)',
-      cursor: 'pointer',
-      fontSize: 14,
-      fontFamily: 'var(--font-body)',
-    }),
-    dropdownIndicator: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text-secondary)',
-      padding: 8,
-      '&:hover': { color: 'var(--color-text)' },
-    }),
-    clearIndicator: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text-secondary)',
-      padding: 8,
-      '&:hover': { color: 'var(--color-text)' },
-    }),
-    indicatorSeparator: () => ({ display: 'none' }),
-    noOptionsMessage: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text-secondary)',
-      fontSize: 13,
-    }),
-  };
-}
+const filter = createFilterOptions<string>();
 
 export function RecurringManagerModal({
   open,
@@ -152,7 +63,6 @@ export function RecurringManagerModal({
   transactions = [],
   investmentTypeOptions = [],
 }: RecurringManagerModalProps) {
-  const titleId = useId();
   const { formatCurrency } = useMask();
   const {
     recurringRules,
@@ -170,7 +80,6 @@ export function RecurringManagerModal({
   const [type, setType] = useState<RecurrenceType>('expense');
   const [category, setCategory] = useState('');
   const [investmentType, setInvestmentType] = useState('');
-  const [investmentTypeInput, setInvestmentTypeInput] = useState('');
   const [amountText, setAmountText] = useState('');
   const [dayOfMonth, setDayOfMonth] = useState<number>(1);
   const [comment, setComment] = useState('');
@@ -180,9 +89,7 @@ export function RecurringManagerModal({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const selectStyles = useMemo(() => buildSelectStyles(), []);
-
-  // Derive category chips strictly from user's real transactions
+  // Category suggestions
   const categoryChips = useMemo(() => {
     if (!transactions || !transactions.length) return [];
     const counts: Record<string, number> = {};
@@ -198,30 +105,20 @@ export function RecurringManagerModal({
       .map(([cat]) => cat);
   }, [transactions, type]);
 
-  // Derive investment types strictly from user's real options
-  const typeOptions = useMemo<InvestmentTypeOption[]>(() => {
+  // Investment type options
+  const typeOptions = useMemo<string[]>(() => {
     const seen = new Set<string>();
-    const ordered: InvestmentTypeOption[] = [];
+    const list: string[] = [];
     for (const label of investmentTypeOptions || []) {
       const trimmed = label.trim();
       if (!trimmed) continue;
       const key = trimmed.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      ordered.push({ value: trimmed, label: trimmed });
+      list.push(trimmed);
     }
-    return ordered.sort((a, b) => a.label.localeCompare(b.label));
+    return list.sort((a, b) => a.localeCompare(b));
   }, [investmentTypeOptions]);
-
-  const selectedOption = useMemo(() => {
-    const trimmed = investmentType.trim();
-    if (!trimmed) return null;
-    return (
-      typeOptions.find(
-        (opt) => opt.value.toLowerCase() === trimmed.toLowerCase()
-      ) ?? { value: trimmed, label: trimmed }
-    );
-  }, [investmentType, typeOptions]);
 
   const dueSummary = useMemo(() => {
     return calculateRecurringDueSummary(recurringRules);
@@ -246,7 +143,6 @@ export function RecurringManagerModal({
     setType('expense');
     setCategory('');
     setInvestmentType('');
-    setInvestmentTypeInput('');
     setAmountText('');
     setDayOfMonth(1);
     setComment('');
@@ -263,7 +159,6 @@ export function RecurringManagerModal({
     setType(rule.type);
     setCategory(rule.category);
     setInvestmentType(rule.investmentType || '');
-    setInvestmentTypeInput('');
     setAmountText(String(rule.amount));
     setDayOfMonth(rule.dayOfMonth);
     setComment(rule.comment || '');
@@ -361,645 +256,508 @@ export function RecurringManagerModal({
     }
   }
 
-  if (!open) return null;
+  return (
+    <Dialog
+      open={open}
+      onClose={saving ? undefined : onClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            p: 1,
+            maxHeight: '90dvh',
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {formMode !== 'list' && (
+            <IconButton onClick={() => setFormMode('list')} size="small">
+              <ChevronLeftIcon />
+            </IconButton>
+          )}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              borderRadius: 2.5,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+            }}
+          >
+            <EventRepeatIcon />
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              {formMode === 'list'
+                ? 'Recurring Rules & SIPs'
+                : formMode === 'add'
+                ? 'Add Recurring Rule'
+                : 'Edit Recurring Rule'}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {formMode === 'list'
+                ? `${recurringRules.filter((r) => r.active).length} active (${formatCurrency(activeMonthlyTotal)}/mo)`
+                : 'Auto-schedule monthly transactions'}
+            </Typography>
+          </Box>
+        </Box>
 
-  return createPortal(
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-        {/* Backdrop */}
-        <motion.div
-          key="backdrop"
-          variants={backdropVariants}
-          initial="closed"
-          animate="open"
-          exit="closed"
-          onClick={() => !saving && onClose()}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {formMode === 'list' && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={startAdd}
+              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+            >
+              Add
+            </Button>
+          )}
+          <IconButton onClick={onClose} disabled={saving} size="small" sx={{ color: 'text.secondary' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </DialogTitle>
 
-        {/* Modal Container */}
-        <motion.div
-          key="modal"
-          variants={popoverVariants}
-          initial="closed"
-          animate="open"
-          exit="closed"
-          transition={springSoft}
-          className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-border/80 bg-surface shadow-warm-xl"
-        >
-          <FocusTrap active={open}>
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-border/60 px-5 py-4 bg-surface-strong/40">
-              <div className="flex items-center gap-2.5">
-                {formMode !== 'list' && (
-                  <button
-                    type="button"
-                    onClick={() => setFormMode('list')}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-canvas hover:text-text active:scale-95 transition-all"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                )}
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                  <CalendarSync className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 id={titleId} className="text-base font-bold text-text">
-                    {formMode === 'list'
-                      ? 'Recurring Rules & SIPs'
-                      : formMode === 'add'
-                      ? 'Add Recurring Rule'
-                      : 'Edit Recurring Rule'}
-                  </h2>
-                  <p className="text-xs text-text-muted">
-                    {formMode === 'list'
-                      ? `${recurringRules.filter((r) => r.active).length} active (${formatCurrency(activeMonthlyTotal)}/mo)`
-                      : 'Auto-schedule monthly transactions'}
-                  </p>
-                </div>
-              </div>
+      <DialogContent sx={{ py: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {error && (
+          <Alert severity="error" sx={{ borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-              <div className="flex items-center gap-1.5">
-                {formMode === 'list' && (
-                  <button
-                    type="button"
-                    onClick={startAdd}
-                    className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-warm-sm hover:brightness-110 active:scale-95 transition-all"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>Add</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={saving}
-                  className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:bg-surface-strong hover:text-text active:scale-95 transition-all disabled:opacity-50"
+        {/* LIST MODE */}
+        {formMode === 'list' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Due Action Header Banner */}
+            {dueSummary.dueItems.length > 0 && onLogAllDue && (
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  borderColor: 'primary.main',
+                  bgcolor: 'action.hover',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 1.5,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <BoltIcon color="primary" />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                      {dueSummary.dueItems.length} Due Now ({formatCurrency(dueSummary.totalDueAmount)})
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Scheduled up to today in this billing cycle
+                    </Typography>
+                  </Box>
+                </Box>
+                <Button
+                  variant="contained"
+                  size="small"
+                  disabled={logging}
+                  onClick={() => void onLogAllDue()}
+                  startIcon={logging ? <CircularProgress size={14} color="inherit" /> : <CheckIcon />}
+                  sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
                 >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+                  Log All
+                </Button>
+              </Paper>
+            )}
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-              {error && (
-                <div className="rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-2.5 text-xs font-medium text-danger">
-                  {error}
-                </div>
-              )}
+            {/* Empty state */}
+            {recurringRules.length === 0 ? (
+              <Box sx={{ py: 6, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 48, height: 48, borderRadius: 3, bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
+                  <EventRepeatIcon />
+                </Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  No recurring rules yet
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: 300 }}>
+                  Automate monthly expenses, utility bills, salary, and mutual fund SIPs with 1-tap logging.
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={startAdd}
+                  sx={{ mt: 1, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+                >
+                  Add First Recurring Rule
+                </Button>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {recurringRules.map((rule) => {
+                  const isDue = dueSummary.dueItems.some((d) => d.id === rule.id);
+                  const isLoggedThisMonth = dueSummary.loggedThisMonthItems.some((l) => l.id === rule.id);
+                  const isExpired = dueSummary.expiredItems.some((e) => e.id === rule.id);
 
-              {/* LIST MODE */}
-              {formMode === 'list' && (
-                <div className="space-y-4">
-                  {/* Due Action Header Banner if items due */}
-                  {dueSummary.dueItems.length > 0 && onLogAllDue && (
-                    <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/10 p-3.5">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-primary fill-current" />
-                        <div>
-                          <p className="text-xs font-bold text-text">
-                            {dueSummary.dueItems.length} Due Now ({formatCurrency(dueSummary.totalDueAmount)})
-                          </p>
-                          <p className="text-[11px] text-text-muted">
-                            Scheduled up to today in this billing cycle
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        disabled={logging}
-                        onClick={() => void onLogAllDue()}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 transition-all disabled:opacity-60"
-                      >
-                        {logging ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Check className="h-3.5 w-3.5" />
-                        )}
-                        <span>Log All</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Empty state */}
-                  {recurringRules.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-strong text-text-muted shadow-warm-sm">
-                        <Calendar className="h-6 w-6" />
-                      </div>
-                      <h3 className="mt-3 text-sm font-semibold text-text">
-                        No recurring rules yet
-                      </h3>
-                      <p className="mt-1 max-w-xs text-xs text-text-muted">
-                        Automate monthly expenses, utility bills, salary, and mutual fund SIPs with 1-tap logging.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={startAdd}
-                        className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-warm-sm hover:brightness-110 active:scale-95 transition-all"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span>Add First Recurring Rule</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {recurringRules.map((rule) => {
-                        const isDue = dueSummary.dueItems.some((d) => d.id === rule.id);
-                        const isLoggedThisMonth = dueSummary.loggedThisMonthItems.some((l) => l.id === rule.id);
-                        const isExpired = dueSummary.expiredItems.some((e) => e.id === rule.id);
-
-                        return (
-                          <div
-                            key={rule.id}
-                            className={`group relative flex flex-col gap-2 rounded-2xl border p-3.5 transition-all ${
-                              !rule.active || isExpired
-                                ? 'border-border/50 bg-surface/40 opacity-70'
-                                : isDue
-                                ? 'border-primary/40 bg-primary/5 shadow-warm-sm'
-                                : isLoggedThisMonth
-                                ? 'border-success/30 bg-success/5'
-                                : 'border-border/80 bg-surface/90 hover:border-border hover:bg-surface-strong/40'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-start gap-2.5">
-                                <div
-                                  className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                                    rule.type === 'income'
-                                      ? 'bg-success/15 text-success'
-                                      : rule.type === 'investment'
-                                      ? 'bg-accent/15 text-accent'
-                                      : 'bg-primary/15 text-primary'
-                                  }`}
-                                >
-                                  {rule.type === 'income' ? (
-                                    <TrendingUp className="h-3.5 w-3.5" />
-                                  ) : rule.type === 'investment' ? (
-                                    <Sparkles className="h-3.5 w-3.5" />
-                                  ) : (
-                                    <CalendarSync className="h-3.5 w-3.5" />
-                                  )}
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <h4 className="text-xs font-bold text-text">
-                                      {rule.name}
-                                    </h4>
-
-                                    {/* Status Badge */}
-                                    {!rule.active ? (
-                                      <span className="inline-flex items-center rounded-md bg-surface-strong px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
-                                        Paused
-                                      </span>
-                                    ) : isExpired ? (
-                                      <span className="inline-flex items-center rounded-md bg-surface-strong px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
-                                        Ended ({formatRuleEndDate(rule.endDate)})
-                                      </span>
-                                    ) : isDue ? (
-                                      <span className="inline-flex items-center rounded-md bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                                        Due Now
-                                      </span>
-                                    ) : isLoggedThisMonth ? (
-                                      <span className="inline-flex items-center gap-0.5 rounded-md bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-success">
-                                        <Check className="h-2.5 w-2.5" />
-                                        Logged this month
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center rounded-md bg-surface-strong px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
-                                        Scheduled
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <p className="mt-0.5 text-[11px] text-text-muted">
-                                    {rule.category}
-                                    {rule.investmentType ? ` • ${rule.investmentType}` : ''}
-                                    {' • '}
-                                    {formatRecurrenceDay(rule.dayOfMonth)}
-                                    {rule.endDate && !isExpired ? ` • Ends ${formatRuleEndDate(rule.endDate)}` : ''}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="text-right">
-                                <span className="text-xs font-bold text-text">
-                                  {formatCurrency(rule.amount)}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Actions bar on card */}
-                            <div className="flex items-center justify-between border-t border-border/40 pt-2 text-[11px]">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => void handleToggle(rule.id)}
-                                  className="inline-flex items-center gap-1 text-text-muted hover:text-text transition-colors"
-                                >
-                                  {rule.active ? (
-                                    <>
-                                      <Pause className="h-3 w-3" />
-                                      <span>Pause</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Play className="h-3 w-3" />
-                                      <span>Resume</span>
-                                    </>
-                                  )}
-                                </button>
-                                <span className="text-border">•</span>
-                                <button
-                                  type="button"
-                                  onClick={() => startEdit(rule)}
-                                  className="text-text-muted hover:text-text transition-colors"
-                                >
-                                  Edit
-                                </button>
-                                <span className="text-border">•</span>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleDelete(rule.id)}
-                                  className="text-danger/80 hover:text-danger transition-colors"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-
-                              {rule.active && onLogSingleRule && (
-                                <button
-                                  type="button"
-                                  disabled={logging}
-                                  onClick={() => void onLogSingleRule(rule)}
-                                  className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
-                                    isDue
-                                      ? 'bg-primary text-primary-foreground shadow-xs hover:brightness-110 active:scale-95'
-                                      : 'border border-border/80 bg-surface-strong/60 text-text-secondary hover:bg-surface-strong active:scale-95'
-                                  }`}
-                                >
-                                  <Zap className="h-3 w-3 fill-current" />
-                                  <span>{isLoggedThisMonth ? 'Log Again' : 'Log Now'}</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ADD / EDIT FORM MODE */}
-              {formMode !== 'list' && (
-                <div className="space-y-4">
-                  {/* Type Segmented Control */}
-                  <div>
-                    <label className={labelClass}>Transaction Type</label>
-                    <div className="relative flex rounded-2xl border border-border/80 bg-canvas/90 p-1">
-                      {(
-                        [
-                          { id: 'expense', label: 'Expense' },
-                          { id: 'investment', label: 'Investment' },
-                          { id: 'income', label: 'Income' },
-                        ] as const
-                      ).map((item) => {
-                        const active = type === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => {
-                              setType(item.id);
+                  return (
+                    <Paper
+                      key={rule.id}
+                      variant="outlined"
+                      sx={{
+                        p: 2,
+                        borderRadius: 3,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1.5,
+                        borderColor: isDue ? 'primary.main' : isLoggedThisMonth ? 'success.main' : 'divider',
+                        bgcolor: isDue ? 'action.hover' : 'background.paper',
+                        opacity: !rule.active || isExpired ? 0.7 : 1,
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 32,
+                              height: 32,
+                              borderRadius: 2,
+                              bgcolor: rule.type === 'income' ? 'success.main' : rule.type === 'investment' ? 'secondary.main' : 'primary.main',
+                              color: '#fff',
                             }}
-                            className={`relative flex-1 rounded-[12px] py-2 text-xs font-semibold capitalize transition-colors duration-200 ${
-                              active
-                                ? 'text-primary-foreground font-bold'
-                                : 'text-text-muted hover:text-text'
-                            }`}
                           >
-                            {active && (
-                              <motion.span
-                                layoutId="recurringModalTypePill"
-                                className="absolute inset-0 rounded-[12px] bg-gradient-to-r from-primary-muted to-primary shadow-warm-sm"
-                                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                              />
+                            {rule.type === 'income' ? (
+                              <TrendingUpIcon fontSize="small" />
+                            ) : rule.type === 'investment' ? (
+                              <AutoAwesomeIcon fontSize="small" />
+                            ) : (
+                              <EventRepeatIcon fontSize="small" />
                             )}
-                            <span className="relative z-10">{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                          </Box>
 
-                  {/* Name Input */}
-                  <div>
-                    <label className={labelClass}>Rule Name</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder={
-                        type === 'income'
-                          ? 'e.g. Monthly Salary'
-                          : type === 'investment'
-                          ? 'e.g. HDFC Nifty 50 SIP'
-                          : 'e.g. Apartment Rent'
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                                {rule.name}
+                              </Typography>
+                              {!rule.active ? (
+                                <Chip label="Paused" size="small" sx={{ height: 18, fontSize: '0.625rem' }} />
+                              ) : isExpired ? (
+                                <Chip label={`Ended (${formatRuleEndDate(rule.endDate)})`} size="small" sx={{ height: 18, fontSize: '0.625rem' }} />
+                              ) : isDue ? (
+                                <Chip label="Due Now" size="small" color="primary" sx={{ height: 18, fontSize: '0.625rem', fontWeight: 700 }} />
+                              ) : isLoggedThisMonth ? (
+                                <Chip label="Logged this month" size="small" color="success" sx={{ height: 18, fontSize: '0.625rem' }} />
+                              ) : (
+                                <Chip label="Scheduled" size="small" sx={{ height: 18, fontSize: '0.625rem' }} />
+                              )}
+                            </Box>
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                              {rule.category}
+                              {rule.investmentType ? ` • ${rule.investmentType}` : ''}
+                              {' • '}
+                              {formatRecurrenceDay(rule.dayOfMonth)}
+                              {rule.endDate && !isExpired ? ` • Ends ${formatRuleEndDate(rule.endDate)}` : ''}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                          {formatCurrency(rule.amount)}
+                        </Typography>
+                      </Box>
+
+                      {/* Card Actions Bar */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Button
+                            size="small"
+                            onClick={() => void handleToggle(rule.id)}
+                            startIcon={rule.active ? <PauseIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+                            sx={{ textTransform: 'none', fontSize: '0.75rem', p: 0.5 }}
+                          >
+                            {rule.active ? 'Pause' : 'Resume'}
+                          </Button>
+                          <Button
+                            size="small"
+                            onClick={() => startEdit(rule)}
+                            startIcon={<EditIcon fontSize="small" />}
+                            sx={{ textTransform: 'none', fontSize: '0.75rem', p: 0.5 }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="small"
+                            color="error"
+                            onClick={() => void handleDelete(rule.id)}
+                            startIcon={<DeleteOutlineIcon fontSize="small" />}
+                            sx={{ textTransform: 'none', fontSize: '0.75rem', p: 0.5 }}
+                          >
+                            Delete
+                          </Button>
+                        </Box>
+
+                        {rule.active && onLogSingleRule && (
+                          <Button
+                            variant={isDue ? 'contained' : 'outlined'}
+                            size="small"
+                            disabled={logging}
+                            onClick={() => void onLogSingleRule(rule)}
+                            startIcon={<BoltIcon />}
+                            sx={{ borderRadius: 2, textTransform: 'none', fontSize: '0.75rem', fontWeight: 700 }}
+                          >
+                            {isLoggedThisMonth ? 'Log Again' : 'Log Now'}
+                          </Button>
+                        )}
+                      </Box>
+                    </Paper>
+                  );
+                })}
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* ADD / EDIT FORM MODE */}
+        {formMode !== 'list' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 1 }}>
+            {/* Type Toggle */}
+            <ToggleButtonGroup
+              value={type}
+              exclusive
+              onChange={(_, val) => val && setType(val)}
+              fullWidth
+              size="small"
+            >
+              <ToggleButton value="expense" sx={{ fontWeight: 700, textTransform: 'none' }}>
+                Expense
+              </ToggleButton>
+              <ToggleButton value="investment" sx={{ fontWeight: 700, textTransform: 'none' }}>
+                Investment
+              </ToggleButton>
+              <ToggleButton value="income" sx={{ fontWeight: 700, textTransform: 'none' }}>
+                Income
+              </ToggleButton>
+            </ToggleButtonGroup>
+
+            {/* Rule Name */}
+            <TextField
+              label="Rule Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={type === 'income' ? 'e.g. Monthly Salary' : type === 'investment' ? 'e.g. Mutual Fund SIP' : 'e.g. Apartment Rent'}
+              fullWidth
+              size="small"
+            />
+
+            {/* Category / Investment Asset Name */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <TextField
+                label={type === 'investment' ? 'Investment Asset / Fund Name' : 'Category'}
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder={type === 'investment' ? 'e.g. Nifty 50 Index Fund' : type === 'income' ? 'e.g. Salary' : 'e.g. Rent, Electricity'}
+                fullWidth
+                size="small"
+              />
+              {categoryChips.length > 0 && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {categoryChips.map((chip) => (
+                    <Chip
+                      key={chip}
+                      label={chip}
+                      size="small"
+                      onClick={() => setCategory(chip)}
+                      color={category.toLowerCase() === chip.toLowerCase() ? 'primary' : 'default'}
+                      variant={category.toLowerCase() === chip.toLowerCase() ? 'filled' : 'outlined'}
+                      sx={{ fontSize: '0.6875rem' }}
+                    />
+                  ))}
+                </Box>
+              )}
+            </Box>
+
+            {/* Investment Type (if investment) */}
+            {type === 'investment' && (
+              <Autocomplete
+                freeSolo
+                value={investmentType}
+                onChange={(_, newValue) => setInvestmentType(newValue || '')}
+                filterOptions={(options, params) => {
+                  const filtered = filter(options, params);
+                  const { inputValue } = params;
+                  const isExisting = options.some((option) => inputValue === option);
+                  if (inputValue !== '' && !isExisting) {
+                    filtered.push(inputValue);
+                  }
+                  return filtered;
+                }}
+                options={typeOptions}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Investment Type"
+                    size="small"
+                    helperText="Pick from existing types or type a new one (e.g. SIP, Stocks, PF)"
+                  />
+                )}
+              />
+            )}
+
+            {/* Amount */}
+            <TextField
+              label="Amount"
+              type="number"
+              value={amountText}
+              onChange={(e) => setAmountText(e.target.value)}
+              fullWidth
+              size="small"
+              slotProps={{
+                input: {
+                  startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                },
+              }}
+            />
+
+            {/* Day of Month Selector */}
+            <Box sx={{ px: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 0.8 }}>
+                  Day of Month
+                </Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                  {formatRecurrenceDay(dayOfMonth)}
+                </Typography>
+              </Box>
+              <Slider
+                value={dayOfMonth}
+                min={1}
+                max={31}
+                step={1}
+                onChange={(_, val) => setDayOfMonth(val as number)}
+                valueLabelDisplay="auto"
+              />
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                For months with fewer days (e.g., Feb 28/29, Apr 30), it triggers on the month&apos;s last day.
+              </Typography>
+            </Box>
+
+            {/* Comment / Notes */}
+            <TextField
+              label="Notes / Comment (Optional)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="e.g. Auto-debit via HDFC Netbanking"
+              fullWidth
+              size="small"
+            />
+
+            {/* End Date Configuration */}
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={hasEndDate}
+                    onChange={(e) => {
+                      setHasEndDate(e.target.checked);
+                      if (e.target.checked && !endDate) {
+                        const nextYear = new Date();
+                        nextYear.setFullYear(nextYear.getFullYear() + 1);
+                        const y = nextYear.getFullYear();
+                        const m = String(nextYear.getMonth() + 1).padStart(2, '0');
+                        setEndDate(`${y}-${m}`);
                       }
-                      className={fieldClass}
-                    />
-                  </div>
+                    }}
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Set End Date / Duration
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Automatically stop recurring after a fixed period (EMIs, loans)
+                    </Typography>
+                  </Box>
+                }
+              />
 
-                  {/* Category & Investment Type */}
-                  {type === 'investment' ? (
-                    <div className="space-y-3">
-                      <div>
-                        <label className={labelClass}>Investment Asset / Fund Name (Category)</label>
-                        <input
-                          type="text"
-                          value={category}
-                          onChange={(e) => setCategory(e.target.value)}
-                          placeholder="e.g. HDFC Nifty 50 Index Fund, PPF, Sovereign Gold Bond"
-                          className={fieldClass}
-                        />
-                        {categoryChips.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {categoryChips.map((chip) => (
-                              <button
-                                key={chip}
-                                type="button"
-                                onClick={() => setCategory(chip)}
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-medium transition-all ${
-                                  category.toLowerCase() === chip.toLowerCase()
-                                    ? 'border border-primary/50 bg-primary/20 text-primary font-bold shadow-warm-xs'
-                                    : 'border border-border/80 bg-surface text-text-muted hover:text-text hover:bg-surface-muted/60'
-                                }`}
-                              >
-                                {chip}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className={labelClass}>Investment Type</label>
-                        <CreatableSelect
-                          isClearable
-                          styles={selectStyles}
-                          options={typeOptions}
-                          value={selectedOption}
-                          inputValue={investmentTypeInput}
-                          onInputChange={(val) => setInvestmentTypeInput(val)}
-                          onChange={(opt) => {
-                            setInvestmentType(opt?.value ?? '');
-                          }}
-                          onCreateOption={(custom) => {
-                            const label = custom.trim();
-                            if (!label) return;
-                            setInvestmentType(label);
-                            setInvestmentTypeInput('');
-                          }}
-                          placeholder="e.g. SIP, FD, Stocks"
-                          formatCreateLabel={(inputValue) => `Use "${inputValue}"`}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && investmentTypeInput.trim()) {
-                              e.preventDefault();
-                              setInvestmentType(investmentTypeInput.trim());
-                              setInvestmentTypeInput('');
-                            }
-                          }}
-                          noOptionsMessage={({ inputValue }) => {
-                            if (!inputValue) return 'Type to add custom investment type';
-                            return inputValue;
-                          }}
-                        />
-                        <span className="mt-1 block text-[10px] leading-snug text-text-muted">
-                          Pick from existing types or type a new one. Use “Provident Fund”, “PF”, or “EPF” to track PF on its own card.
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className={labelClass}>Amount (₹)</label>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={amountText}
-                          onChange={(e) => setAmountText(e.target.value)}
-                          placeholder="0"
-                          className={fieldClass}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div>
-                        <label className={labelClass}>Category</label>
-                        <input
-                          type="text"
-                          value={category}
-                          onChange={(e) => setCategory(e.target.value)}
-                          placeholder={type === 'income' ? 'e.g. Salary, Freelance' : 'e.g. Rent, Groceries, Electricity'}
-                          className={fieldClass}
-                        />
-                        {categoryChips.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {categoryChips.map((chip) => (
-                              <button
-                                key={chip}
-                                type="button"
-                                onClick={() => setCategory(chip)}
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-medium transition-all ${
-                                  category.toLowerCase() === chip.toLowerCase()
-                                    ? 'border border-primary/50 bg-primary/20 text-primary font-bold shadow-warm-xs'
-                                    : 'border border-border/80 bg-surface text-text-muted hover:text-text hover:bg-surface-muted/60'
-                                }`}
-                              >
-                                {chip}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className={labelClass}>Amount (₹)</label>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={amountText}
-                          onChange={(e) => setAmountText(e.target.value)}
-                          placeholder="0"
-                          className={fieldClass}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Day of Month Selector */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className={labelClass}>Day of Month</label>
-                      <span className="text-xs font-bold text-primary">
-                        {formatRecurrenceDay(dayOfMonth)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="1"
-                        max="31"
-                        value={dayOfMonth}
-                        onChange={(e) => setDayOfMonth(Number(e.target.value))}
-                        className="flex-1 accent-primary cursor-pointer"
-                      />
-                      <input
-                        type="number"
-                        min="1"
-                        max="31"
-                        value={dayOfMonth}
-                        onChange={(e) => setDayOfMonth(Number(e.target.value))}
-                        className="w-14 rounded-xl border border-border bg-canvas px-2 py-1.5 text-center text-xs font-semibold text-text"
-                      />
-                    </div>
-                    <p className="mt-1 text-[10px] text-text-muted">
-                      For months with fewer days (e.g., Feb 28/29, Apr 30), it automatically triggers on the month's last day.
-                    </p>
-                  </div>
-
-                  {/* Comment / Notes */}
-                  <div>
-                    <label className={labelClass}>Notes / Comment (Optional)</label>
-                    <input
-                      type="text"
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      placeholder="e.g. Paid via Auto-debit"
-                      className={fieldClass}
-                    />
-                  </div>
-
-                  {/* End Date Configuration */}
-                  <div className="space-y-2 rounded-xl border border-border/70 bg-canvas p-3">
-                    <label className="flex items-center justify-between cursor-pointer">
-                      <div>
-                        <p className="text-xs font-semibold text-text">Set End Date / Duration</p>
-                        <p className="text-[10px] text-text-muted">
-                          Automatically stop recurring after a fixed period (EMIs, subscriptions)
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={hasEndDate}
-                        onChange={(e) => {
-                          setHasEndDate(e.target.checked);
-                          if (e.target.checked && !endDate) {
-                            const nextYear = new Date();
-                            nextYear.setFullYear(nextYear.getFullYear() + 1);
-                            const y = nextYear.getFullYear();
-                            const m = String(nextYear.getMonth() + 1).padStart(2, '0');
-                            setEndDate(`${y}-${m}`);
-                          }
-                        }}
-                        className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                      />
-                    </label>
-
-                    {hasEndDate && (
-                      <div className="pt-2.5 border-t border-border/40 space-y-1">
-                        <label className={labelClass}>Recurring End Month (YYYY-MM)</label>
-                        <input
-                          type="month"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          className={fieldClass}
-                        />
-                        <p className="text-[10px] text-text-muted">
-                          Rule will cease to prompt or log after this month concludes.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Auto Prompt Switch (Editable only after creation) */}
-                  {formMode === 'edit' ? (
-                    <label className="flex items-center justify-between rounded-xl border border-border/60 bg-canvas p-3 cursor-pointer">
-                      <div>
-                        <p className="text-xs font-semibold text-text">Auto-prompt in Due Banner</p>
-                        <p className="text-[10px] text-text-muted">
-                          Display in the top due banner when scheduled date arrives
-                        </p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={autoPrompt}
-                        onChange={(e) => setAutoPrompt(e.target.checked)}
-                        className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                      />
-                    </label>
-                  ) : (
-                    <div className="flex items-center justify-between rounded-xl border border-border/40 bg-canvas/60 p-3 opacity-80">
-                      <div>
-                        <p className="text-xs font-semibold text-text">Auto-prompt in Due Banner</p>
-                        <p className="text-[10px] text-text-muted">
-                          Enabled on creation. Can be customized by editing the rule later.
-                        </p>
-                      </div>
-                      <span className="rounded-md bg-primary/15 px-2 py-0.5 text-[10px] font-bold text-primary">
-                        Enabled
-                      </span>
-                    </div>
-                  )}
-                </div>
+              {hasEndDate && (
+                <TextField
+                  label="Recurring End Month (YYYY-MM)"
+                  type="month"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  fullWidth
+                  size="small"
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
+                />
               )}
-            </div>
+            </Paper>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between border-t border-border/60 px-5 py-3.5 bg-surface-strong/30">
-              {formMode === 'list' ? (
-                <div className="w-full flex justify-end">
-                  <SoftButton
-                    className="rounded-xl border border-border/80 bg-surface-strong px-4 py-2 text-xs font-semibold text-text shadow-warm-xs hover:bg-surface-muted/60"
-                    glow={false}
-                    onClick={onClose}
-                  >
-                    Done
-                  </SoftButton>
-                </div>
-              ) : (
-                <>
-                  <SoftButton
-                    className="rounded-xl border border-border/80 bg-surface-strong px-4 py-2 text-xs font-semibold text-text-secondary shadow-warm-xs hover:bg-surface-muted/60"
-                    glow={false}
-                    onClick={() => setFormMode('list')}
-                    disabled={saving}
-                  >
-                    Cancel
-                  </SoftButton>
-                  <SoftButton
-                    className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-warm-sm hover:brightness-110"
-                    onClick={() => void handleSaveForm()}
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Rule'
-                    )}
-                  </SoftButton>
-                </>
-              )}
-            </div>
-          </FocusTrap>
-        </motion.div>
-      </div>
-    </AnimatePresence>,
-    document.body
+            {/* Auto Prompt Switch */}
+            {formMode === 'edit' && (
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+                <FormControlLabel
+                  control={<Switch checked={autoPrompt} onChange={(e) => setAutoPrompt(e.target.checked)} />}
+                  label={
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        Auto-prompt in Due Banner
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        Display in top due banner when scheduled date arrives
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Paper>
+            )}
+          </Box>
+        )}
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, pb: 2, display: 'flex', gap: 1 }}>
+        {formMode === 'list' ? (
+          <Button
+            variant="contained"
+            onClick={onClose}
+            fullWidth
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+          >
+            Done
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant="outlined"
+              onClick={() => setFormMode('list')}
+              disabled={saving}
+              sx={{ flex: 1, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => void handleSaveForm()}
+              disabled={saving}
+              sx={{ flex: 1, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+            >
+              {saving ? 'Saving…' : 'Save Rule'}
+            </Button>
+          </>
+        )}
+      </DialogActions>
+    </Dialog>
   );
 }
+

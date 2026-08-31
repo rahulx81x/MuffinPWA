@@ -1,86 +1,20 @@
-import { LayoutGroup, motion } from 'framer-motion';
-import {
-  BarChart3,
-  Home,
-  NotebookTabs,
-  Plus,
-  Settings,
-} from 'lucide-react';
+import Paper from '@mui/material/Paper';
+import BottomNavigation from '@mui/material/BottomNavigation';
+import BottomNavigationAction from '@mui/material/BottomNavigationAction';
+import Fab from '@mui/material/Fab';
+import Box from '@mui/material/Box';
+import HomeIcon from '@mui/icons-material/Home';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import SettingsIcon from '@mui/icons-material/Settings';
+import AddIcon from '@mui/icons-material/Add';
 import type { AppTab } from '../../domain/types';
-import { springLayout, springSoft } from '../../lib/motion';
 
 interface FloatingNavProps {
   activeTab: AppTab;
   onTabChange: (tab: AppTab) => void;
   onAdd?: () => void;
   showAdd?: boolean;
-}
-
-const leftTabs: { id: AppTab; label: string }[] = [
-  { id: 'home', label: 'Home' },
-  { id: 'insights', label: 'Insights' },
-];
-
-const rightTabs: { id: AppTab; label: string }[] = [
-  { id: 'ledger', label: 'Ledger' },
-  { id: 'settings', label: 'Settings' },
-];
-
-function TabIcon({ id, active }: { id: AppTab; active: boolean }) {
-  const className = `h-5 w-5 ${active ? 'text-primary-foreground' : 'text-text-secondary group-hover:text-text'}`;
-  const stroke = active ? 2.4 : 2;
-
-  if (id === 'home') return <Home className={className} strokeWidth={stroke} />;
-  if (id === 'ledger')
-    return <NotebookTabs className={className} strokeWidth={stroke} />;
-  if (id === 'insights')
-    return <BarChart3 className={className} strokeWidth={stroke} />;
-  return <Settings className={className} strokeWidth={stroke} />;
-}
-
-function NavTab({
-  id,
-  label,
-  active,
-  onSelect,
-}: {
-  id: AppTab;
-  label: string;
-  active: boolean;
-  onSelect: (tab: AppTab) => void;
-}) {
-  return (
-    <motion.button
-      type="button"
-      onClick={() => {
-        onSelect(id);
-      }}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.95 }}
-      transition={springSoft}
-      className="group relative flex min-h-12 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:px-3"
-      aria-current={active ? 'page' : undefined}
-    >
-      {active && (
-        <motion.span
-          layoutId="activeTab"
-          className="nav-tab-indicator absolute inset-0 rounded-full"
-          transition={springLayout}
-          aria-hidden="true"
-        />
-      )}
-      <span className="relative z-10 flex flex-col items-center gap-0.5">
-        <TabIcon id={id} active={active} />
-        <span
-          className={`text-[11px] font-bold tracking-tight ${
-            active ? 'text-primary-foreground' : 'text-text-secondary group-hover:text-text'
-          }`}
-        >
-          {label}
-        </span>
-      </span>
-    </motion.button>
-  );
 }
 
 export function FloatingNav({
@@ -90,52 +24,110 @@ export function FloatingNav({
   showAdd = true,
 }: FloatingNavProps) {
   return (
-    <nav
-      className="pointer-events-none fixed inset-x-0 bottom-3 z-40 mb-safe sm:bottom-5"
+    <Box
+      sx={{
+        position: 'fixed',
+        bottom: { xs: 12, sm: 20 },
+        left: 0,
+        right: 0,
+        zIndex: 1200,
+        pointerEvents: 'none',
+        display: 'flex',
+        justifyContent: 'center',
+        px: 2,
+      }}
       aria-label="Primary"
     >
-      <div className="mx-auto max-w-lg px-4 sm:max-w-xl">
-        <LayoutGroup id="muffin-nav">
-          <div className="nav-glass pointer-events-auto flex w-full items-center gap-1 rounded-full border p-2 transition-theme sm:gap-1.5 sm:p-2.5">
-            {leftTabs.map((tab) => (
-              <NavTab
-                key={tab.id}
-                id={tab.id}
-                label={tab.label}
-                active={activeTab === tab.id}
-                onSelect={onTabChange}
-              />
-            ))}
+      <Paper
+        elevation={6}
+        sx={{
+          pointerEvents: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          borderRadius: 8,
+          px: 1,
+          py: 0.5,
+          maxWidth: { xs: 440, sm: 540 },
+          width: '100%',
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <BottomNavigation
+          value={activeTab}
+          onChange={(_, newValue: AppTab) => {
+            if (newValue) {
+              onTabChange(newValue);
+            }
+          }}
+          showLabels
+          sx={{
+            flex: 1,
+            bgcolor: 'transparent',
+            '& .MuiBottomNavigationAction-root': {
+              minWidth: 'auto',
+              py: 0.5,
+              borderRadius: 4,
+              color: 'text.secondary',
+              '&.Mui-selected': {
+                color: 'primary.main',
+                fontWeight: 700,
+              },
+            },
+          }}
+        >
+          <BottomNavigationAction
+            label="Home"
+            value="home"
+            icon={<HomeIcon />}
+          />
+          <BottomNavigationAction
+            label="Insights"
+            value="insights"
+            icon={<BarChartIcon />}
+          />
 
-            {showAdd && onAdd && (
-              <motion.button
-                type="button"
-                onClick={() => {
-                  onAdd();
-                }}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.92 }}
-                transition={springSoft}
-                className="soft-glow pulse-glow-btn mx-1 inline-flex h-12 w-12 shrink-0 items-center justify-center self-center rounded-full bg-gradient-to-br from-primary-muted via-primary to-primary text-primary-foreground shadow-glow outline-none ring-4 ring-canvas/90 focus-visible:ring-2 focus-visible:ring-primary sm:mx-1.5"
+          {showAdd && onAdd && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                px: 0.5,
+              }}
+            >
+              <Fab
+                color="primary"
                 aria-label="Add transaction"
-                title="Add transaction"
+                size="medium"
+                onClick={onAdd}
+                sx={{
+                  boxShadow: 4,
+                  '&:hover': {
+                    transform: 'scale(1.06)',
+                  },
+                  transition: 'transform 0.2s ease',
+                }}
               >
-                <Plus className="h-6 w-6" strokeWidth={2.8} aria-hidden="true" />
-              </motion.button>
-            )}
+                <AddIcon />
+              </Fab>
+            </Box>
+          )}
 
-            {rightTabs.map((tab) => (
-              <NavTab
-                key={tab.id}
-                id={tab.id}
-                label={tab.label}
-                active={activeTab === tab.id}
-                onSelect={onTabChange}
-              />
-            ))}
-          </div>
-        </LayoutGroup>
-      </div>
-    </nav>
+          <BottomNavigationAction
+            label="Ledger"
+            value="ledger"
+            icon={<MenuBookIcon />}
+          />
+          <BottomNavigationAction
+            label="Settings"
+            value="settings"
+            icon={<SettingsIcon />}
+          />
+        </BottomNavigation>
+      </Paper>
+    </Box>
   );
 }
+

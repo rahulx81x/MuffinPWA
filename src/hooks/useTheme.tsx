@@ -7,10 +7,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import {
   applyThemeToDocument,
   getTheme,
   resolveInitialThemeId,
+  toMuiTheme,
   THEME_STORAGE_KEY,
   type ThemeDefinition,
   type ThemeId,
@@ -47,8 +50,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeId(id);
   }, []);
 
+  const theme = useMemo(() => getTheme(themeId), [themeId]);
+  const muiTheme = useMemo(() => toMuiTheme(theme), [theme]);
+
   const value = useMemo<ThemeContextValue>(() => {
-    const theme = getTheme(themeId);
     return {
       themeId,
       theme,
@@ -56,10 +61,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       mode: theme.mode,
       setTheme,
     };
-  }, [themeId, setTheme]);
+  }, [themeId, theme, setTheme]);
 
   return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>
+      <MuiThemeProvider theme={muiTheme}>
+        <CssBaseline />
+        {children}
+      </MuiThemeProvider>
+    </ThemeContext.Provider>
   );
 }
 
@@ -70,3 +80,4 @@ export function useTheme(): ThemeContextValue {
   }
   return ctx;
 }
+

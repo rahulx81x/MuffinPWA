@@ -1,14 +1,12 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { ShieldCheck, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
-import {
-  backdropVariants,
-  popoverVariants,
-  springSoft,
-} from '../../lib/motion';
-import { SoftButton } from '../../components/ui/SoftButton';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
-import { useEffect } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import CloseIcon from '@mui/icons-material/Close';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 
 interface PrivacyModalProps {
   open: boolean;
@@ -16,141 +14,131 @@ interface PrivacyModalProps {
 }
 
 export function PrivacyModal({ open, onClose }: PrivacyModalProps) {
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            p: 1,
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              borderRadius: 2.5,
+              bgcolor: 'success.main',
+              color: 'success.contrastText',
+            }}
+          >
+            <VerifiedUserIcon fontSize="small" />
+          </Box>
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
+              Legal & Compliance
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Privacy Policy
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-6 sm:items-center sm:pb-0">
-          <motion.button
-            type="button"
-            variants={backdropVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 bg-black/50"
-            aria-label="Dismiss privacy policy"
-            onClick={onClose}
-          />
+      <DialogContent sx={{ py: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem', lineHeight: 1.6 }}>
+          At <strong>Muffin</strong>, your privacy is paramount. All your financial transactions, opening balances, and investment baselines are stored inside your own personal Google Account spreadsheet across dedicated <code>Income</code>, <code>Expense</code>, <code>Investment</code>, and <code>Recipe</code> tabs. Zero financial values are stored in central cloud databases or Blobs.
+        </Typography>
 
-          <FocusTrap active={open}>
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="privacy-title"
-              variants={popoverVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={springSoft}
-              className="relative z-10 max-h-[85dvh] w-full max-w-sm overflow-y-auto rounded-t-3xl rounded-b-2xl border border-border bg-surface-strong p-5 shadow-elevate sm:max-w-md sm:rounded-2xl"
+        <Paper
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            p: 2,
+            borderColor: 'primary.main',
+            bgcolor: 'action.hover',
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main', mb: 0.5 }}>
+            Google API Limited Use Disclosure
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block', lineHeight: 1.6 }}>
+            Muffin&apos;s use and transfer to any other app of information received from Google APIs will adhere to{' '}
+            <a
+              href="https://developers.google.com/terms/api-services-user-data-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontWeight: 700, color: 'inherit' }}
             >
-            <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border/80 sm:hidden" />
+              Google API Services User Data Policy
+            </a>
+            , including Limited Use requirements.
+          </Typography>
+        </Paper>
 
-            <div className="flex items-start justify-between gap-3 border-b border-border/60 pb-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                  <ShieldCheck className="h-5 w-5" strokeWidth={2} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                    Legal & Compliance
-                  </p>
-                  <h2
-                    id="privacy-title"
-                    className="font-display text-base font-bold text-text"
-                  >
-                    Privacy Policy
-                  </h2>
-                </div>
-              </div>
-              <SoftButton
-                onClick={onClose}
-                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              </SoftButton>
-            </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+            1. Information Collected
+          </Typography>
+          <Typography variant="body2" component="ul" sx={{ pl: 2, m: 0, fontSize: '0.8125rem', color: 'text.secondary' }}>
+            <li>Google Account email & display name for login authentication.</li>
+            <li>Google Sheets spreadsheet data for authorized personal budget syncing.</li>
+          </Typography>
+        </Box>
 
-            <div className="mt-4 space-y-3.5 text-xs text-text-secondary">
-              <p>
-                At <strong>Muffin</strong>, your privacy is paramount. All your financial transactions, opening balances, and investment baselines are stored inside your own personal Google Account spreadsheet across dedicated <code>Income</code>, <code>Expense</code>, <code>Investment</code>, and <code>Recipe</code> tabs. Zero financial values are stored in central cloud databases or Blobs.
-              </p>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+            2. Zero Commercial Use or AI Training
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+            We do NOT sell, rent, trade, or share your financial data with third parties. Your data is NEVER used for advertising targeting or training artificial intelligence (AI) models.
+          </Typography>
+        </Box>
 
-              <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3.5 text-text">
-                <h3 className="font-bold text-primary mb-1 text-xs">
-                  Google API Limited Use Disclosure
-                </h3>
-                <p className="text-[11px] leading-relaxed">
-                  Muffin's use and transfer to any other app of information received from Google APIs will adhere to{' '}
-                  <a
-                    href="https://developers.google.com/terms/api-services-user-data-policy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-bold underline text-primary"
-                  >
-                    Google API Services User Data Policy
-                  </a>
-                  , including Limited Use requirements.
-                </p>
-              </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+            3. Full Access Control
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+            You can revoke access anytime via{' '}
+            <a
+              href="https://myaccount.google.com/permissions"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontWeight: 700 }}
+            >
+              Google Permissions Settings
+            </a>
+            .
+          </Typography>
+        </Box>
 
-              <div>
-                <h4 className="font-bold text-text mb-1">1. Information Collected</h4>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>Google Account email & display name for login authentication.</li>
-                  <li>Google Sheets spreadsheet data for authorized personal budget syncing.</li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-text mb-1">2. Zero Commercial Use or AI Training</h4>
-                <p>
-                  We do NOT sell, rent, trade, or share your financial data with third parties. Your data is NEVER used for advertising targeting or training artificial intelligence (AI) models.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-text mb-1">3. Full Access Control</h4>
-                <p>
-                  You can revoke access anytime via{' '}
-                  <a
-                    href="https://myaccount.google.com/permissions"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-bold underline text-primary"
-                  >
-                    Google Permissions Settings
-                  </a>
-                  .
-                </p>
-              </div>
-
-              <div className="pt-2 text-center">
-                <a
-                  href="/privacy.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] font-bold text-primary hover:underline"
-                >
-                  View Full External Privacy Webpage →
-                </a>
-              </div>
-            </div>
-          </motion.div>
-        </FocusTrap>
-      </div>
-    )}
-  </AnimatePresence>,
-    document.body
+        <Box sx={{ pt: 1, textAlign: 'center' }}>
+          <a
+            href="/privacy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: '0.75rem', fontWeight: 700 }}
+          >
+            View Full External Privacy Webpage →
+          </a>
+        </Box>
+      </DialogContent>
+    </Dialog>
   );
 }
+

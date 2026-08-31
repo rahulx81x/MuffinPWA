@@ -1,8 +1,21 @@
-export function Skeleton({ className = '' }: { className?: string }) {
+import MuiSkeleton, { type SkeletonProps } from '@mui/material/Skeleton';
+
+export function Skeleton({
+  className = '',
+  sx,
+  variant = 'rounded',
+  ...props
+}: SkeletonProps) {
   return (
-    <div
-      className={`animate-pulse rounded-xl bg-surface-muted/60 ${className}`}
-      aria-hidden="true"
+    <MuiSkeleton
+      variant={variant}
+      className={className}
+      sx={{
+        borderRadius: 2,
+        ...sx,
+      }}
+      {...props}
     />
   );
 }
+

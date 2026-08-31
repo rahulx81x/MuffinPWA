@@ -1,14 +1,28 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Calendar,
-  ChevronDown,
-  ChevronRight,
-  Layers,
-  PieChart as PieChartIcon,
-  Sparkles,
-  TrendingUp,
-} from 'lucide-react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
+import Grid from '@mui/material/Grid';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Chip from '@mui/material/Chip';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import Divider from '@mui/material/Divider';
+
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import PieChartIcon from '@mui/icons-material/PieChart';
+import SparklesIcon from '@mui/icons-material/AutoAwesome';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import LayersIcon from '@mui/icons-material/Layers';
+
 import { useRecipeConfig } from '../../hooks/useRecipeConfig';
 import { useMask } from '../../hooks/useMask';
 import { useTheme } from '../../hooks/useTheme';
@@ -18,15 +32,10 @@ import {
   monthKey,
   monthLabel,
 } from '../../domain/metrics';
-import { isCountedInvestment } from '../../domain/providentFund';
 import type { NewTransactionInput, Transaction } from '../../domain/types';
 import type { PlannerMode } from '../../hooks/usePlannerStore';
-import {
-  TransactionForm,
-  type TransactionFormData,
-} from '../../components/molecules/TransactionForm';
+import { PlannerView } from '../planner/PlannerView';
 import { EmptyState } from '../../components/molecules/EmptyState';
-import { springSoft } from '../../lib/motion';
 
 type InsightsSubTab = 'trends' | 'categories' | 'planner';
 
@@ -94,13 +103,11 @@ export function InsightsView({
   const [selectedMonth, setSelectedMonth] = useState<string>(thisMonth);
   const [selectedYear, setSelectedYear] = useState<string>(currentYear);
 
-  // Monthly KPIs for Trends
   const monthlyList = useMemo(
     () => buildMonthlyKPIs(transactions, recipeConfig.openingBalance).slice().reverse(),
     [transactions, recipeConfig.openingBalance]
   );
 
-  // Category Breakdown calculations
   const categoryData = useMemo(() => {
     let targetTxs: Transaction[] = [];
 
@@ -145,132 +152,70 @@ export function InsightsView({
     return 'All Time';
   }, [categoryScope, selectedMonth, selectedYear]);
 
-  const [plannerMode, setPlannerMode] = useState<PlannerMode>('current-month');
-
-  const currentMonthEntries = useMemo(
-    () => currentMonthPlannerTransactions ?? plannerTransactions,
-    [currentMonthPlannerTransactions, plannerTransactions]
-  );
-  const blankEntries = useMemo(
-    () => blankPlannerTransactions ?? [],
-    [blankPlannerTransactions]
-  );
-
-  // Planner calculations
-  const plannerRelevantTx = useMemo(() => {
-    if (plannerMode === 'blank') {
-      return blankEntries;
-    }
-    const currentMonthSheetTx = transactions.filter((t) => monthKey(t.date) === thisMonth);
-    return [...currentMonthSheetTx, ...currentMonthEntries];
-  }, [transactions, currentMonthEntries, blankEntries, thisMonth, plannerMode]);
-
-  const plannerIncome = plannerRelevantTx
-    .filter((t) => t.type === 'income')
-    .reduce((s, t) => s + t.amount, 0);
-  const plannerExpenses = plannerRelevantTx
-    .filter((t) => t.type === 'expense')
-    .reduce((s, t) => s + t.amount, 0);
-  const plannerInvestment = plannerRelevantTx
-    .filter(isCountedInvestment)
-    .reduce((s, t) => s + t.amount, 0);
-  const plannerLiquid = plannerIncome - plannerExpenses - plannerInvestment;
-  const plannerSavingsPct = pct(plannerInvestment + plannerLiquid, plannerIncome);
-
-  const previousClose = useMemo(() => {
-    if (plannerMode === 'blank') {
-      return 0;
-    }
-    const monthly = buildMonthlyKPIs(transactions, recipeConfig.openingBalance);
-    const prior = monthly.filter((m) => m.key < thisMonth);
-    return prior.length > 0
-      ? prior[prior.length - 1].closingLiquid
-      : recipeConfig.openingBalance;
-  }, [transactions, thisMonth, recipeConfig, plannerMode]);
-  const plannerClosingBalance = previousClose + plannerLiquid;
-
-  const plannerDisplayList = useMemo(() => {
-    return plannerMode === 'blank' ? blankEntries : currentMonthEntries;
-  }, [blankEntries, currentMonthEntries, plannerMode]);
-
-  function handlePlannerFormSubmit(data: TransactionFormData) {
-    onAddPlanner(
-      {
-        date: data.date,
-        type: data.type,
-        category: data.category,
-        amount: data.amount,
-        comment: data.comment,
-        investmentType: data.investmentType,
-      },
-      plannerMode
-    );
-  }
-
   const chartColors = theme.chartColors;
 
   return (
-    <div className="space-y-4 pb-12">
-      {/* Header & Sub-tab Pill Switcher */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-display text-xl font-bold tracking-tight text-text sm:text-2xl">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 4 }}>
+      {/* Header & Tabs */}
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
+        <Box>
+          <Typography variant="h5" component="h2" sx={{ fontWeight: 800 }}>
             Financial Insights
-          </h2>
-          <p className="text-xs text-text-muted">
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
             Trends, category breakdown, and scenario planner
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
-        {/* Sub-tab Pills (Full width on mobile, inline on desktop) */}
-        <div className="grid grid-cols-3 w-full sm:w-auto items-center gap-1 rounded-2xl border border-border/80 bg-surface/80 p-1 backdrop-blur-md shadow-warm-sm">
-          {(
-            [
-              { id: 'trends', label: 'Trends', icon: TrendingUp },
-              { id: 'categories', label: 'Categories', icon: PieChartIcon },
-              { id: 'planner', label: 'Planner', icon: Sparkles },
-            ] as const
-          ).map((tab) => {
-            const active = subTab === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setSubTab(tab.id)}
-                className={`relative flex min-h-10 items-center justify-center gap-1.5 rounded-[12px] px-2 py-2 sm:px-3 sm:py-1.5 text-xs font-bold transition-colors duration-200 outline-none active:scale-95 ${
-                  active ? 'text-primary-foreground' : 'text-text-muted hover:text-text'
-                }`}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="insightsSubTabPill"
-                    className="absolute inset-0 rounded-[12px] bg-primary shadow-sm"
-                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{tab.label}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+        <Tabs
+          value={subTab}
+          onChange={(_, val) => setSubTab(val)}
+          sx={{
+            minHeight: 40,
+            bgcolor: 'action.hover',
+            borderRadius: 3,
+            p: 0.5,
+            '& .MuiTabs-indicator': {
+              display: 'none',
+            },
+          }}
+        >
+          {[
+            { id: 'trends', label: 'Trends', icon: <TrendingUpIcon sx={{ fontSize: 18 }} /> },
+            { id: 'categories', label: 'Categories', icon: <PieChartIcon sx={{ fontSize: 18 }} /> },
+            { id: 'planner', label: 'Planner', icon: <SparklesIcon sx={{ fontSize: 18 }} /> },
+          ].map((t) => (
+            <Tab
+              key={t.id}
+              value={t.id}
+              label={t.label}
+              icon={t.icon}
+              iconPosition="start"
+              sx={{
+                minHeight: 36,
+                py: 0.5,
+                px: 2,
+                borderRadius: 2.5,
+                fontWeight: 700,
+                textTransform: 'none',
+                fontSize: '0.8125rem',
+                color: 'text.secondary',
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                },
+              }}
+            />
+          ))}
+        </Tabs>
+      </Box>
 
       {/* SUB-TAB 1: TRENDS */}
       {subTab === 'trends' && (
-        <motion.div
-          key="trends-tab"
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={springSoft}
-          className="space-y-4"
-        >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {monthlyList.length === 0 ? (
             <EmptyState
-              icon={<Calendar className="h-6 w-6" />}
+              icon={<CalendarMonthIcon sx={{ fontSize: 24 }} />}
               title="No monthly history yet"
               description="Your month-by-month financial progression and savings rate will appear here as soon as transactions are logged."
               action={
@@ -280,199 +225,184 @@ export function InsightsView({
               }
             />
           ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
                   {monthlyList.length} Months Tracked
-                </span>
-                <span className="text-[11px] text-text-muted">
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                   Tap any month to view Ledger entries
-                </span>
-              </div>
+                </Typography>
+              </Box>
 
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Grid container spacing={2}>
                 {monthlyList.map((m) => {
                   const isClickable = Boolean(onSelectMonth);
 
                   return (
-                    <motion.li
-                      key={m.key}
-                      whileHover={isClickable ? { y: -2 } : undefined}
-                      whileTap={isClickable ? { scale: 0.985 } : undefined}
-                      transition={springSoft}
-                      onClick={isClickable ? () => onSelectMonth?.(m.key) : undefined}
-                      className={`cozy-card p-4 transition-all duration-200 ${
-                        isClickable
-                          ? 'cursor-pointer hover:border-primary/40 hover:shadow-warm'
-                          : ''
-                      }`}
-                    >
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-display text-base font-bold text-text">
-                            {m.label}
-                          </h3>
-                          {isClickable && (
-                            <span className="flex items-center text-[11px] font-semibold text-primary">
-                              <span>Ledger</span>
-                              <ChevronRight className="h-3.5 w-3.5" />
-                            </span>
-                          )}
-                        </div>
-                        <span
-                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-bold ${
-                            m.totalSavingsPct >= 30
-                              ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                              : m.totalSavingsPct > 0
-                              ? 'border-primary/30 bg-primary/20 text-primary'
-                              : 'border-rose-500/30 bg-rose-500/15 text-rose-600 dark:text-rose-400'
-                          }`}
+                    <Grid size={{ xs: 12, sm: 6 }} key={m.key}>
+                      <Card variant="outlined" sx={{ borderRadius: 3 }}>
+                        <CardActionArea
+                          disabled={!isClickable}
+                          onClick={isClickable ? () => onSelectMonth?.(m.key) : undefined}
+                          sx={{ p: 2 }}
                         >
-                          Save {m.totalSavingsPct.toFixed(1)}%
-                        </span>
-                      </div>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                                {m.label}
+                              </Typography>
+                              {isClickable && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', color: 'primary.main' }}>
+                                  <Typography variant="caption" sx={{ fontWeight: 700 }}>Ledger</Typography>
+                                  <ChevronRightIcon sx={{ fontSize: 16 }} />
+                                </Box>
+                              )}
+                            </Box>
 
-                      <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4 pt-1">
-                        <div className="rounded-xl bg-surface/60 p-2">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                            Income
-                          </p>
-                          <p className="mt-0.5 text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                            {formatCurrency(m.income)}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-surface/60 p-2">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                            Spends
-                          </p>
-                          <p className="mt-0.5 text-xs font-bold tabular-nums text-rose-600 dark:text-rose-400">
-                            {formatCurrency(m.spends)}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-surface/60 p-2">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                            Invest
-                          </p>
-                          <p className="mt-0.5 text-xs font-bold tabular-nums text-violet-600 dark:text-violet-400">
-                            {formatCurrency(m.investment)}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-surface/60 p-2">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                            Closing
-                          </p>
-                          <p className="mt-0.5 text-xs font-bold tabular-nums text-teal-600 dark:text-teal-400">
-                            {formatCurrency(m.closingLiquid)}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.li>
+                            <Chip
+                              label={`Save ${m.totalSavingsPct.toFixed(1)}%`}
+                              size="small"
+                              color={m.totalSavingsPct >= 30 ? 'success' : m.totalSavingsPct > 0 ? 'primary' : 'error'}
+                              sx={{ fontWeight: 800, fontSize: '0.75rem' }}
+                            />
+                          </Box>
+
+                          <Grid container spacing={1} sx={{ textAlign: 'center' }}>
+                            <Grid size={3}>
+                              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 2 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', fontSize: '0.625rem', textTransform: 'uppercase' }}>
+                                  Income
+                                </Typography>
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: 'success.main', fontVariantNumeric: 'tabular-nums' }}>
+                                  {formatCurrency(m.income)}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid size={3}>
+                              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 2 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', fontSize: '0.625rem', textTransform: 'uppercase' }}>
+                                  Spends
+                                </Typography>
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: 'error.main', fontVariantNumeric: 'tabular-nums' }}>
+                                  {formatCurrency(m.spends)}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid size={3}>
+                              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 2 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', fontSize: '0.625rem', textTransform: 'uppercase' }}>
+                                  Invest
+                                </Typography>
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: 'secondary.main', fontVariantNumeric: 'tabular-nums' }}>
+                                  {formatCurrency(m.investment)}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid size={3}>
+                              <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 2 }}>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', fontSize: '0.625rem', textTransform: 'uppercase' }}>
+                                  Closing
+                                </Typography>
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: 'primary.main', fontVariantNumeric: 'tabular-nums' }}>
+                                  {formatCurrency(m.closingLiquid)}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          </Grid>
+                        </CardActionArea>
+                      </Card>
+                    </Grid>
                   );
                 })}
-              </ul>
-            </div>
+              </Grid>
+            </Box>
           )}
-        </motion.div>
+        </Box>
       )}
 
       {/* SUB-TAB 2: CATEGORIES */}
       {subTab === 'categories' && (
-        <motion.div
-          key="categories-tab"
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={springSoft}
-          className="space-y-4"
-        >
-          {/* Time Range Filter Header */}
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between px-1">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 1.5, px: 0.5 }}>
+            <Box>
+              <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', display: 'block' }}>
                 Expense Distribution
-              </span>
-              <p className="text-xs font-bold text-text">
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
                 {scopeLabel}
-              </p>
-            </div>
+              </Typography>
+            </Box>
 
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {/* Segmented Scope Switcher */}
-              <div className="flex items-center gap-1 rounded-2xl border border-border/80 bg-surface/90 p-1 shadow-warm-xs">
-                {(
-                  [
-                    { id: 'month', label: 'Month' },
-                    { id: 'year', label: 'Year' },
-                    { id: 'all', label: 'All Time' },
-                  ] as const
-                ).map((scope) => {
-                  const active = categoryScope === scope.id;
-                  return (
-                    <button
-                      key={scope.id}
-                      type="button"
-                      onClick={() => setCategoryScope(scope.id)}
-                      className={`relative rounded-[12px] px-2.5 py-1 text-xs font-semibold transition-colors duration-200 outline-none active:scale-95 ${
-                        active
-                          ? 'text-primary-foreground font-bold'
-                          : 'text-text-muted hover:text-text'
-                      }`}
-                    >
-                      {active && (
-                        <motion.span
-                          layoutId="categoryScopePill"
-                          className="absolute inset-0 rounded-[12px] bg-primary shadow-warm-xs"
-                          transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                        />
-                      )}
-                      <span className="relative z-10">{scope.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <ToggleButtonGroup
+                value={categoryScope}
+                exclusive
+                size="small"
+                onChange={(_, val) => {
+                  if (val) setCategoryScope(val);
+                }}
+                sx={{
+                  bgcolor: 'action.hover',
+                  borderRadius: 2.5,
+                  p: 0.5,
+                  '& .MuiToggleButton-root': {
+                    border: 'none',
+                    borderRadius: 2,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    py: 0.5,
+                    px: 1.5,
+                    fontSize: '0.75rem',
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                    },
+                  },
+                }}
+              >
+                <ToggleButton value="month">Month</ToggleButton>
+                <ToggleButton value="year">Year</ToggleButton>
+                <ToggleButton value="all">All Time</ToggleButton>
+              </ToggleButtonGroup>
 
-              {/* Month Picker */}
               {categoryScope === 'month' && availableMonths.length > 0 && (
-                <div className="relative">
-                  <select
+                <FormControl size="small">
+                  <Select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    aria-label="Select month"
-                    className="h-8 rounded-xl border border-border/80 bg-surface/90 pl-2.5 pr-7 text-xs font-semibold text-text shadow-warm-xs transition hover:border-primary/40 focus:border-primary focus:outline-none cursor-pointer appearance-none"
+                    sx={{ borderRadius: 2.5, fontSize: '0.75rem', height: 32 }}
                   >
                     {availableMonths.map((m) => (
-                      <option key={m} value={m}>
+                      <MenuItem key={m} value={m} sx={{ fontSize: '0.8125rem' }}>
                         {monthLabel(m)}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-                </div>
+                  </Select>
+                </FormControl>
               )}
 
-              {/* Year Picker */}
               {categoryScope === 'year' && availableYears.length > 0 && (
-                <div className="relative">
-                  <select
+                <FormControl size="small">
+                  <Select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
-                    aria-label="Select year"
-                    className="h-8 rounded-xl border border-border/80 bg-surface/90 pl-2.5 pr-7 text-xs font-semibold text-text shadow-warm-xs transition hover:border-primary/40 focus:border-primary focus:outline-none cursor-pointer appearance-none"
+                    sx={{ borderRadius: 2.5, fontSize: '0.75rem', height: 32 }}
                   >
                     {availableYears.map((y) => (
-                      <option key={y} value={y}>
+                      <MenuItem key={y} value={y} sx={{ fontSize: '0.8125rem' }}>
                         {y}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
-                </div>
+                  </Select>
+                </FormControl>
               )}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {categoryData.entries.length === 0 ? (
             <EmptyState
-              icon={<Layers className="h-6 w-6" />}
+              icon={<LayersIcon sx={{ fontSize: 24 }} />}
               title="No expense data"
               description={`No expenses found for ${
                 categoryScope === 'month'
@@ -488,327 +418,122 @@ export function InsightsView({
               }
             />
           ) : (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-              {/* Category Donut & Total Summary */}
-              <div className="cozy-card flex flex-col items-center justify-center p-5 text-center lg:col-span-1">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
-                  Total Expenses ({scopeLabel})
-                </p>
-                <p className="mt-1 font-display text-2xl font-bold text-text tabular-nums">
-                  {formatCurrency(categoryData.totalExpense)}
-                </p>
+            <Grid container spacing={2}>
+              {/* Donut Summary */}
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Card variant="outlined" sx={{ borderRadius: 3, p: 3, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary' }}>
+                    Total Expenses ({scopeLabel})
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 900, mt: 0.5, fontVariantNumeric: 'tabular-nums' }}>
+                    {formatCurrency(categoryData.totalExpense)}
+                  </Typography>
 
-                {/* SVG Visual Ring */}
-                <div className="relative my-4 flex h-40 w-40 items-center justify-center">
-                  <svg
-                    className="h-full w-full -rotate-90"
-                    viewBox="0 0 100 100"
-                    role="img"
-                    aria-label="Category expense distribution"
-                  >
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="transparent"
-                      stroke="currentColor"
-                      strokeWidth="12"
-                      className="text-surface-muted opacity-40"
-                    />
-                    {(() => {
-                      let accumulatedPct = 0;
-                      const circumference = 2 * Math.PI * 40;
-                      return categoryData.entries.slice(0, 8).map((entry, idx) => {
-                        const strokeDasharray = `${(entry.share / 100) * circumference} ${circumference}`;
-                        const strokeDashoffset = -((accumulatedPct / 100) * circumference);
-                        accumulatedPct += entry.share;
-                        const color = chartColors[idx % chartColors.length];
+                  <Box sx={{ position: 'relative', width: 160, height: 160, my: 3 }}>
+                    <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100" role="img" aria-label="Category expense distribution">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="transparent"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        style={{ opacity: 0.15 }}
+                      />
+                      {(() => {
+                        let accumulatedPct = 0;
+                        const circumference = 2 * Math.PI * 40;
+                        return categoryData.entries.slice(0, 8).map((entry, idx) => {
+                          const strokeDasharray = `${(entry.share / 100) * circumference} ${circumference}`;
+                          const strokeDashoffset = -((accumulatedPct / 100) * circumference);
+                          accumulatedPct += entry.share;
+                          const color = chartColors[idx % chartColors.length];
 
-                        return (
-                          <circle
-                            key={entry.name}
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            fill="transparent"
-                            stroke={color}
-                            strokeWidth="12"
-                            strokeDasharray={strokeDasharray}
-                            strokeDashoffset={strokeDashoffset}
-                            strokeLinecap="round"
-                            className="transition-all duration-300"
-                          />
-                        );
-                      });
-                    })()}
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className="text-[10px] uppercase font-bold text-text-muted">
-                      Categories
-                    </span>
-                    <span className="font-display text-lg font-bold text-text">
-                      {categoryData.entries.length}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                          return (
+                            <circle
+                              key={entry.name}
+                              cx="50"
+                              cy="50"
+                              r="40"
+                              fill="transparent"
+                              stroke={color}
+                              strokeWidth="12"
+                              strokeDasharray={strokeDasharray}
+                              strokeDashoffset={strokeDashoffset}
+                              strokeLinecap="round"
+                            />
+                          );
+                        });
+                      })()}
+                    </svg>
+                    <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', fontSize: '0.625rem' }}>
+                        Categories
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 900 }}>
+                        {categoryData.entries.length}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Card>
+              </Grid>
 
-              {/* Category Breakdown Table / List */}
-              <div className="cozy-card p-4 lg:col-span-2">
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-text-muted">
-                  Category Breakdown
-                </h3>
-                <ul className="divide-y divide-border/60">
-                  {categoryData.entries.map((entry, idx) => {
-                    const color = chartColors[idx % chartColors.length];
-                    return (
-                      <li
-                        key={entry.name}
-                        className="flex items-center justify-between py-2.5 text-sm"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span
-                            className="h-3 w-3 shrink-0 rounded-full shadow-warm-sm"
-                            style={{ backgroundColor: color }}
-                          />
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-text">
-                              {entry.name}
-                            </p>
-                            <p className="text-[10px] text-text-muted">
-                              {entry.count} transaction{entry.count > 1 ? 's' : ''}
-                            </p>
-                          </div>
-                        </div>
+              {/* Category Breakdown List */}
+              <Grid size={{ xs: 12, md: 8 }}>
+                <Card variant="outlined" sx={{ borderRadius: 3, p: 2.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.5 }}>
+                    Category Breakdown
+                  </Typography>
+                  <List disablePadding>
+                    {categoryData.entries.map((entry, idx) => {
+                      const color = chartColors[idx % chartColors.length];
+                      return (
+                        <Box key={entry.name}>
+                          {idx > 0 && <Divider />}
+                          <ListItem sx={{ py: 1.25, px: 0, display: 'flex', justifyContent: 'space-between' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: color }} />
+                              <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 700 }}>{entry.name}</Typography>
+                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                  {entry.count} transaction{entry.count > 1 ? 's' : ''}
+                                </Typography>
+                              </Box>
+                            </Box>
 
-                        <div className="text-right">
-                          <p className="font-bold tabular-nums text-rose-600 dark:text-rose-400">
-                            {formatCurrency(entry.total)}
-                          </p>
-                          <p className="text-[11px] font-medium text-text-muted">
-                            {entry.share.toFixed(1)}% of total
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
+                            <Box sx={{ textAlign: 'right' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 800, color: 'error.main', fontVariantNumeric: 'tabular-nums' }}>
+                                {formatCurrency(entry.total)}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                {entry.share.toFixed(1)}% of total
+                              </Typography>
+                            </Box>
+                          </ListItem>
+                        </Box>
+                      );
+                    })}
+                  </List>
+                </Card>
+              </Grid>
+            </Grid>
           )}
-        </motion.div>
+        </Box>
       )}
 
       {/* SUB-TAB 3: PLANNER */}
       {subTab === 'planner' && (
-        <motion.div
-          key="planner-tab"
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={springSoft}
-          className="space-y-4"
-        >
-          {/* Planner Mode Selector */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-border/80 bg-surface/80 p-3.5 backdrop-blur-md shadow-warm-sm">
-            <div className="min-w-0">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                Simulation Baseline
-              </span>
-              <p className="text-xs text-text-secondary mt-0.5">
-                {plannerMode === 'current-month'
-                  ? `Includes actual Google Sheet entries for ${monthLabel(thisMonth)} + staged what-if entries.`
-                  : 'Blank canvas — every transaction is 100% in-memory only.'}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 w-full sm:w-auto items-center gap-1 rounded-xl border border-border/80 bg-surface-muted/60 p-1 self-start sm:self-auto shrink-0">
-              {(
-                [
-                  { id: 'current-month', label: 'Current Month', icon: Calendar },
-                  { id: 'blank', label: 'Blank', icon: Layers },
-                ] as const
-              ).map((mode) => {
-                const active = plannerMode === mode.id;
-                const Icon = mode.icon;
-                return (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    onClick={() => setPlannerMode(mode.id)}
-                    className={`relative flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors duration-200 outline-none active:scale-95 ${
-                      active ? 'text-primary-foreground' : 'text-text-muted hover:text-text'
-                    }`}
-                  >
-                    {active && (
-                      <motion.span
-                        layoutId="plannerModePill"
-                        className="absolute inset-0 rounded-lg bg-primary shadow-sm"
-                        transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                      />
-                    )}
-                    <span className="relative z-10 flex items-center gap-1.5">
-                      <Icon className="h-3.5 w-3.5" />
-                      <span>{mode.label}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Planner KPIs */}
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-6">
-            <StatCard
-              label="Income"
-              value={formatCurrency(plannerIncome)}
-              tone="text-emerald-600 dark:text-emerald-400"
-            />
-            <StatCard
-              label="Expenses"
-              value={formatCurrency(plannerExpenses)}
-              tone="text-rose-600 dark:text-rose-400"
-            />
-            <StatCard
-              label="Investment"
-              value={formatCurrency(plannerInvestment)}
-              tone="text-violet-600 dark:text-violet-400"
-            />
-            <StatCard
-              label="Net Liquid"
-              value={formatCurrency(plannerLiquid)}
-              tone={
-                plannerLiquid >= 0
-                  ? 'text-teal-600 dark:text-teal-400'
-                  : 'text-rose-600 dark:text-rose-400'
-              }
-            />
-            <StatCard
-              label="Savings %"
-              value={`${plannerSavingsPct.toFixed(1)}%`}
-              tone={
-                plannerSavingsPct >= 0
-                  ? 'text-teal-600 dark:text-teal-400'
-                  : 'text-rose-600 dark:text-rose-400'
-              }
-            />
-            <StatCard
-              label="Closing Cash"
-              value={formatCurrency(plannerClosingBalance)}
-              tone={
-                plannerClosingBalance >= 0
-                  ? 'text-text'
-                  : 'text-rose-600 dark:text-rose-400'
-              }
-            />
-          </div>
-
-          {/* Add Planning Entry Form */}
-          <div className="cozy-card border-border p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-display text-sm font-bold text-text">
-                Simulate New Entry
-              </h3>
-              <span className="text-[11px] font-medium text-text-muted">In-memory only</span>
-            </div>
-            <TransactionForm
-              transactions={transactions}
-              submitLabel="Add to Plan"
-              onSubmit={handlePlannerFormSubmit}
-              layout="inline"
-              showDate={false}
-              resetOnSubmit={true}
-            />
-          </div>
-
-          {/* Staged Planning Entries */}
-          <div>
-            <div className="mb-2 flex items-center justify-between px-1">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
-                {plannerMode === 'blank' ? 'In-Memory Entries' : 'Staged What-If Entries'} (
-                {plannerDisplayList.length})
-              </h3>
-              {plannerDisplayList.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => onClearPlanner(plannerMode)}
-                  className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline active:scale-95"
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
-
-            {plannerDisplayList.length === 0 ? (
-              <EmptyState
-                icon={<Sparkles className="h-6 w-6" strokeWidth={2} />}
-                title={plannerMode === 'blank' ? 'No in-memory entries yet' : 'No planning entries yet'}
-                description={
-                  plannerMode === 'blank'
-                    ? 'In Blank mode, every transaction is in-memory. Add what-if income, expenses, or investments above to build a scenario from scratch.'
-                    : 'Add what-if income, expenses, or investments above to simulate cash flow on top of your current month without altering your Google Sheet.'
-                }
-              />
-            ) : (
-              <ul className="space-y-2">
-                {plannerDisplayList.map((t) => (
-                  <li
-                    key={t.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-border/80 bg-surface-strong/90 px-4 py-3 shadow-warm-sm"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-text">
-                        {t.category}
-                        <span
-                          className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                            t.type === 'income'
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                              : t.type === 'expense'
-                              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
-                              : 'bg-violet-500/15 text-violet-600 dark:text-violet-400'
-                          }`}
-                        >
-                          {t.type}
-                        </span>
-                      </p>
-                      <p className="text-xs font-bold text-text-secondary mt-0.5 tabular-nums">
-                        {formatCurrency(t.amount)}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onRemovePlanner(t.id, plannerMode)}
-                      className="shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold text-rose-600 active:scale-95 dark:text-rose-400 hover:bg-rose-500/10"
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </motion.div>
+        <PlannerView
+          sheetTransactions={transactions}
+          currentMonthPlannerTransactions={currentMonthPlannerTransactions}
+          blankPlannerTransactions={blankPlannerTransactions}
+          plannerTransactions={plannerTransactions}
+          onAdd={onAddPlanner}
+          onRemove={onRemovePlanner}
+          onClear={onClearPlanner}
+        />
       )}
-    </div>
+    </Box>
   );
 }
 
-function StatCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: string;
-}) {
-  return (
-    <div className="cozy-card border-border p-3">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-        {label}
-      </p>
-      <p className={`mt-1 font-display text-base sm:text-lg font-bold tabular-nums ${tone}`}>
-        {value}
-      </p>
-    </div>
-  );
-}

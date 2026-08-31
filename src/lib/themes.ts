@@ -328,3 +328,69 @@ export function applyThemeToDocument(themeId: ThemeId): void {
     .querySelectorAll('meta[name="theme-color"]')
     .forEach((el) => el.setAttribute('content', theme.background));
 }
+
+import { createTheme, type Theme } from '@mui/material/styles';
+
+export function toMuiTheme(def: ThemeDefinition): Theme {
+  return createTheme({
+    palette: {
+      mode: def.mode,
+      primary: {
+        main: def.accent,
+      },
+      background: {
+        default: def.background,
+        paper: def.card,
+      },
+      text: {
+        primary: def.text,
+      },
+      divider: def.border,
+    },
+    shape: {
+      borderRadius: 16,
+    },
+    typography: {
+      fontFamily: 'var(--font-body), "Roboto", "Helvetica", "Arial", sans-serif',
+      h1: { fontFamily: 'var(--font-display), "Roboto", "Helvetica", "Arial", sans-serif', fontWeight: 700 },
+      h2: { fontFamily: 'var(--font-display), "Roboto", "Helvetica", "Arial", sans-serif', fontWeight: 700 },
+      h3: { fontFamily: 'var(--font-display), "Roboto", "Helvetica", "Arial", sans-serif', fontWeight: 700 },
+      h4: { fontFamily: 'var(--font-display), "Roboto", "Helvetica", "Arial", sans-serif', fontWeight: 700 },
+      h5: { fontFamily: 'var(--font-display), "Roboto", "Helvetica", "Arial", sans-serif', fontWeight: 700 },
+      h6: { fontFamily: 'var(--font-display), "Roboto", "Helvetica", "Arial", sans-serif', fontWeight: 700 },
+      button: { textTransform: 'none', fontWeight: 600 },
+    },
+    components: {
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: 12,
+            padding: '8px 16px',
+          },
+        },
+      },
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            borderRadius: 16,
+            backgroundImage: 'none',
+          },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none',
+          },
+        },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 20,
+          },
+        },
+      },
+    },
+  });
+}

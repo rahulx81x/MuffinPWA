@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
-import { springSoft } from '../../lib/motion';
-import { SoftButton } from '../ui/SoftButton';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 
 export interface EmptyStateProps {
   icon?: ReactNode;
@@ -22,29 +23,66 @@ export function EmptyState({
   className = '',
 }: EmptyStateProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={springSoft}
-      className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-surface-strong/60 px-6 py-10 text-center transition-theme ${className}`}
+    <Paper
+      variant="outlined"
+      className={className}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+        borderRadius: 4,
+        borderStyle: 'dashed',
+        borderColor: 'divider',
+        p: 4,
+        textAlign: 'center',
+        bgcolor: 'background.paper',
+      }}
     >
       {icon && (
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary shadow-warm-sm">
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 48,
+            height: 48,
+            borderRadius: 3,
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            opacity: 0.9,
+          }}
+        >
           {icon}
-        </div>
+        </Box>
       )}
-      <div className="max-w-xs space-y-1">
-        <h3 className="font-display text-base font-bold text-text">{title}</h3>
-        <p className="text-xs leading-relaxed text-text-muted">{description}</p>
-      </div>
+      <Box sx={{ maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+          {title}
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
+          {description}
+        </Typography>
+      </Box>
       {action && (
-        <SoftButton
+        <Button
+          variant="contained"
+          size="small"
           onClick={action.onClick}
-          className="mt-1 rounded-xl bg-primary/15 px-4 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary/25"
+          sx={{
+            mt: 0.5,
+            borderRadius: 2.5,
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: '0.75rem',
+            px: 2,
+          }}
         >
           {action.label}
-        </SoftButton>
+        </Button>
       )}
-    </motion.div>
+    </Paper>
   );
 }
+

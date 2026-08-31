@@ -1,24 +1,24 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Check,
-  Download,
-  Laptop,
-  MoreVertical,
-  PlusSquare,
-  Share,
-  Smartphone,
-  X,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import {
-  backdropVariants,
-  popoverVariants,
-  springSoft,
-} from '../../lib/motion';
+import { useState, type SyntheticEvent } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Grid from '@mui/material/Grid';
+import Divider from '@mui/material/Divider';
+import DownloadIcon from '@mui/icons-material/Download';
+import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
+import IosShareIcon from '@mui/icons-material/IosShare';
+import LaptopIcon from '@mui/icons-material/Laptop';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CloseIcon from '@mui/icons-material/Close';
 import { MuffinIcon } from '../../components/ui/MuffinIcon';
-import { SoftButton } from '../../components/ui/SoftButton';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
 
 interface PwaInstallModalProps {
   open: boolean;
@@ -33,271 +33,239 @@ export function PwaInstallModal({
   canPrompt,
   onNativeInstall,
 }: PwaInstallModalProps) {
-  const [deviceTab, setDeviceTab] = useState<'mobile' | 'ios' | 'desktop'>(() => {
-    if (typeof navigator === 'undefined') return 'desktop';
-    if (/iphone|ipad|ipod/i.test(navigator.userAgent)) return 'ios';
-    if (/android/i.test(navigator.userAgent)) return 'mobile';
-    return 'desktop';
+  const [tabIndex, setTabIndex] = useState<number>(() => {
+    if (typeof navigator === 'undefined') return 2;
+    if (/iphone|ipad|ipod/i.test(navigator.userAgent)) return 1;
+    if (/android/i.test(navigator.userAgent)) return 0;
+    return 2;
   });
 
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  const handleTabChange = (_: SyntheticEvent, newValue: number) => {
+    setTabIndex(newValue);
+  };
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <motion.button
-            type="button"
-            variants={backdropVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-xs"
-            aria-label="Dismiss install guide modal"
-            onClick={onClose}
-          />
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            p: 1,
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              borderRadius: 2.5,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+            }}
+          >
+            <MuffinIcon className="h-6 w-6" />
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Install Muffin PWA
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Add to your home screen for an app-like experience
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-          <FocusTrap active={open}>
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="install-modal-title"
-              variants={popoverVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={springSoft}
-              className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-border bg-surface-strong p-5 shadow-elevate"
+      <DialogContent sx={{ py: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Direct Native Install Action */}
+        {canPrompt && onNativeInstall && (
+          <Paper
+            variant="outlined"
+            sx={{
+              borderRadius: 3,
+              p: 2,
+              borderColor: 'primary.main',
+              bgcolor: 'action.hover',
+              textAlign: 'center',
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+              Your browser supports 1-click installation!
+            </Typography>
+            <Button
+              variant="contained"
+              fullWidth
+              startIcon={<DownloadIcon />}
+              onClick={() => {
+                onClose();
+                onNativeInstall();
+              }}
+              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
             >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/30">
-                  <MuffinIcon className="h-6 w-6" />
-                </div>
-                <div>
-                  <h2
-                    id="install-modal-title"
-                    className="font-display text-base font-bold text-text"
-                  >
-                    Install Muffin PWA
-                  </h2>
-                  <p className="text-xs text-text-secondary">
-                    Add to your home screen for an app-like experience
-                  </p>
-                </div>
-              </div>
+              Install App Now
+            </Button>
+          </Paper>
+        )}
 
-              <SoftButton
-                onClick={onClose}
-                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              </SoftButton>
-            </div>
+        {/* Device tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={tabIndex} onChange={handleTabChange} textColor="primary" indicatorColor="primary" variant="fullWidth">
+            <Tab icon={<PhoneAndroidIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Android" sx={{ textTransform: 'none', fontWeight: 700 }} />
+            <Tab icon={<IosShareIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="iOS Safari" sx={{ textTransform: 'none', fontWeight: 700 }} />
+            <Tab icon={<LaptopIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Desktop" sx={{ textTransform: 'none', fontWeight: 700 }} />
+          </Tabs>
+        </Box>
 
-            {/* Direct Native Install Action if available */}
-            {canPrompt && onNativeInstall && (
-              <div className="mt-4 rounded-2xl border border-primary/25 bg-primary/10 p-3.5 text-center">
-                <p className="text-xs font-medium text-text">
-                  Your browser supports 1-click installation!
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onNativeInstall();
-                  }}
-                  className="mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow-glow transition-transform active:scale-95"
-                >
-                  <Download className="h-4 w-4" />
-                  Install App Now
-                </button>
-              </div>
-            )}
+        {/* Step-by-Step Instructions */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {tabIndex === 0 && (
+            <>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', shrink: 0 }}>
+                  1
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                  Open Muffin in Chrome on your Android phone.
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', shrink: 0 }}>
+                  2
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                  Tap the three-dots menu icon in the top right corner.
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', shrink: 0 }}>
+                  3
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                  Select <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+                </Typography>
+              </Paper>
+            </>
+          )}
 
-            {/* Device tabs */}
-            <div className="mt-4 flex rounded-xl border border-border/60 bg-surface-muted/50 p-1">
-              <button
-                type="button"
-                onClick={() => setDeviceTab('mobile')}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                  deviceTab === 'mobile'
-                    ? 'bg-surface-strong text-text shadow-warm-sm'
-                    : 'text-text-muted hover:text-text'
-                }`}
-              >
-                <Smartphone className="h-3.5 w-3.5" />
-                Android
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeviceTab('ios')}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                  deviceTab === 'ios'
-                    ? 'bg-surface-strong text-text shadow-warm-sm'
-                    : 'text-text-muted hover:text-text'
-                }`}
-              >
-                <Share className="h-3.5 w-3.5" />
-                iOS Safari
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeviceTab('desktop')}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                  deviceTab === 'desktop'
-                    ? 'bg-surface-strong text-text shadow-warm-sm'
-                    : 'text-text-muted hover:text-text'
-                }`}
-              >
-                <Laptop className="h-3.5 w-3.5" />
-                Desktop
-              </button>
-            </div>
+          {tabIndex === 1 && (
+            <>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', shrink: 0 }}>
+                  1
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                  Open Muffin in <strong>Safari</strong> on your iPhone or iPad.
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', shrink: 0 }}>
+                  2
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                  Tap the <strong>Share</strong> button at the bottom of the screen.
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', shrink: 0 }}>
+                  3
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                  Scroll down and tap <strong>Add to Home Screen</strong>.
+                </Typography>
+              </Paper>
+            </>
+          )}
 
-            {/* Instructions steps */}
-            <div className="mt-4 space-y-2.5 text-xs">
-              {deviceTab === 'mobile' && (
-                <>
-                  <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-surface/50 p-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
-                      1
-                    </span>
-                    <p className="pt-0.5 text-text-secondary">
-                      Open Muffin in Chrome on your phone.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-surface/50 p-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
-                      2
-                    </span>
-                    <p className="pt-0.5 text-text-secondary">
-                      Tap the menu icon (
-                      <MoreVertical className="inline h-3.5 w-3.5 text-text" />) in the top right corner.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-surface/50 p-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
-                      3
-                    </span>
-                    <p className="pt-0.5 text-text-secondary">
-                      Select <strong className="text-text">Install app</strong> (preferred) or <strong className="text-text">Add to Home screen</strong>. Prefer Install so Android packages Muffin as a full PWA, not a browser shortcut.
-                    </p>
-                  </div>
-                </>
-              )}
+          {tabIndex === 2 && (
+            <>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', shrink: 0 }}>
+                  1
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                  Look at your browser address bar in Chrome, Edge, or Brave.
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', shrink: 0 }}>
+                  2
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                  Click the <strong>Install Muffin</strong> icon in the address bar.
+                </Typography>
+              </Paper>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', shrink: 0 }}>
+                  3
+                </Box>
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem' }}>
+                  Confirm installation to launch Muffin in its standalone window!
+                </Typography>
+              </Paper>
+            </>
+          )}
+        </Box>
 
-              {deviceTab === 'ios' && (
-                <>
-                  <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-surface/50 p-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
-                      1
-                    </span>
-                    <p className="pt-0.5 text-text-secondary">
-                      Open Muffin in <strong className="text-text">Safari</strong> on your iPhone or iPad.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-surface/50 p-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
-                      2
-                    </span>
-                    <p className="pt-0.5 text-text-secondary">
-                      Tap the <strong className="text-text">Share</strong> button (
-                      <Share className="inline h-3.5 w-3.5 text-primary" />) at the bottom toolbar.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-surface/50 p-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
-                      3
-                    </span>
-                    <p className="pt-0.5 text-text-secondary">
-                      Scroll down and select <strong className="text-text">Add to Home Screen</strong> (
-                      <PlusSquare className="inline h-3.5 w-3.5 text-text" />).
-                    </p>
-                  </div>
-                </>
-              )}
+        <Divider sx={{ my: 0.5 }} />
 
-              {deviceTab === 'desktop' && (
-                <>
-                  <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-surface/50 p-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
-                      1
-                    </span>
-                    <p className="pt-0.5 text-text-secondary">
-                      Look at your browser address bar in Chrome, Edge, or Brave.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-surface/50 p-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
-                      2
-                    </span>
-                    <p className="pt-0.5 text-text-secondary">
-                      Click the <strong className="text-text">Install Muffin</strong> icon (
-                      <Download className="inline h-3.5 w-3.5 text-primary" />) or browser menu options.
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-surface/50 p-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary">
-                      3
-                    </span>
-                    <p className="pt-0.5 text-text-secondary">
-                      Confirm installation to launch Muffin in its own standalone window!
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
+        {/* Benefits */}
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1, display: 'block', mb: 1 }}>
+            Benefits of Installing
+          </Typography>
+          <Grid container spacing={1}>
+            <Grid size={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircleIcon color="success" sx={{ fontSize: 16 }} />
+                <Typography variant="caption">Full-screen experience</Typography>
+              </Box>
+            </Grid>
+            <Grid size={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircleIcon color="success" sx={{ fontSize: 16 }} />
+                <Typography variant="caption">Home screen access</Typography>
+              </Box>
+            </Grid>
+            <Grid size={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircleIcon color="success" sx={{ fontSize: 16 }} />
+                <Typography variant="caption">Faster launch speeds</Typography>
+              </Box>
+            </Grid>
+            <Grid size={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircleIcon color="success" sx={{ fontSize: 16 }} />
+                <Typography variant="caption">Offline cached shell</Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+      </DialogContent>
 
-            {/* Features list */}
-            <div className="mt-4 border-t border-border/60 pt-3">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-                Benefits of Installing
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-[11px] text-text-secondary">
-                <div className="flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                  Full-screen experience
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                  Home screen access
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                  Faster launch speeds
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                  Offline cached shell
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 flex justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full rounded-xl bg-surface-muted px-4 py-2 text-xs font-bold text-text transition-colors hover:bg-surface-muted/80"
-              >
-                Got it
-              </button>
-            </div>
-          </motion.div>
-        </FocusTrap>
-      </div>
-    )}
-  </AnimatePresence>,
-    document.body
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={onClose}
+          sx={{ borderRadius: 2.5, fontWeight: 700, textTransform: 'none' }}
+        >
+          Got it
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
+

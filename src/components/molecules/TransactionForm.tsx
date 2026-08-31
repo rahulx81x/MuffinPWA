@@ -1,20 +1,21 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { motion } from 'framer-motion';
-import CreatableSelect from 'react-select/creatable';
-import type {
-  CSSObjectWithLabel,
-  ControlProps,
-  GroupBase,
-  OptionProps,
-  StylesConfig,
-} from 'react-select';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Autocomplete from '@mui/material/Autocomplete';
+import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+
 import {
   evaluateAmountExpression,
   looksLikeAmountExpression,
 } from '../../domain/evaluateAmount';
 import type { Transaction, TransactionType } from '../../domain/types';
 import { SmartAmountInput } from '../../features/ledger/SmartAmountInput';
-import { SoftButton } from '../ui/SoftButton';
 
 export interface TransactionFormData {
   date: string;
@@ -50,105 +51,9 @@ export interface TransactionFormProps {
   resetOnSubmit?: boolean;
 }
 
-type InvestmentTypeOption = {
-  value: string;
-  label: string;
-};
-
 function todayIso(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
-
-const labelClass = 'mb-1 block text-xs font-semibold text-text-muted';
-const fieldClass = 'field-cozy';
-
-function buildSelectStyles(): StylesConfig<InvestmentTypeOption, false> {
-  return {
-    control: (
-      base: CSSObjectWithLabel,
-      state: ControlProps<InvestmentTypeOption, false>
-    ) => ({
-      ...base,
-      minHeight: 42,
-      borderRadius: 12,
-      borderColor: state.isFocused ? 'var(--color-primary)' : 'var(--color-border)',
-      backgroundColor: 'var(--color-canvas)',
-      boxShadow: state.isFocused ? '0 0 0 3px rgba(var(--accent-rgb), 0.25)' : 'none',
-      '&:hover': {
-        borderColor: 'var(--color-primary)',
-      },
-      transition: 'border-color 0.2s, box-shadow 0.2s',
-    }),
-    valueContainer: (base: CSSObjectWithLabel) => ({
-      ...base,
-      padding: '2px 12px',
-    }),
-    input: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text)',
-      fontFamily: 'var(--font-body)',
-    }),
-    placeholder: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text-muted)',
-      fontSize: 14,
-      fontFamily: 'var(--font-body)',
-    }),
-    singleValue: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text)',
-      fontSize: 14,
-      fontFamily: 'var(--font-body)',
-    }),
-    menu: (base: CSSObjectWithLabel) => ({
-      ...base,
-      borderRadius: 12,
-      border: '1px solid var(--color-border)',
-      backgroundColor: 'var(--color-surface-strong)',
-      boxShadow: 'var(--shadow-elevate)',
-      overflow: 'hidden',
-      zIndex: 50,
-    }),
-    menuList: (base: CSSObjectWithLabel) => ({
-      ...base,
-      padding: 4,
-    }),
-    option: (
-      base: CSSObjectWithLabel,
-      state: OptionProps<InvestmentTypeOption, false, GroupBase<InvestmentTypeOption>>
-    ) => ({
-      ...base,
-      borderRadius: 8,
-      backgroundColor: state.isSelected
-        ? 'var(--color-primary)'
-        : state.isFocused
-          ? 'var(--color-surface)'
-          : 'transparent',
-      color: state.isSelected ? 'var(--color-on-primary)' : 'var(--color-text)',
-      cursor: 'pointer',
-      fontSize: 14,
-      fontFamily: 'var(--font-body)',
-    }),
-    dropdownIndicator: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text-secondary)',
-      padding: 8,
-      '&:hover': { color: 'var(--color-text)' },
-    }),
-    clearIndicator: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text-secondary)',
-      padding: 8,
-      '&:hover': { color: 'var(--color-text)' },
-    }),
-    indicatorSeparator: () => ({ display: 'none' }),
-    noOptionsMessage: (base: CSSObjectWithLabel) => ({
-      ...base,
-      color: 'var(--color-text-secondary)',
-      fontSize: 13,
-    }),
-  };
 }
 
 export function TransactionForm({
@@ -174,7 +79,6 @@ export function TransactionForm({
   const [amountText, setAmountText] = useState(initialValues?.amountText || '');
   const [comment, setComment] = useState(initialValues?.comment || '');
   const [investmentType, setInvestmentType] = useState(initialValues?.investmentType || '');
-  const [investmentTypeInput, setInvestmentTypeInput] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const activeCategoryChips = useMemo(() => {
@@ -194,31 +98,19 @@ export function TransactionForm({
     return categoryChips.slice(0, 4);
   }, [transactions, categoryChips, type]);
 
-  const selectStyles = useMemo(() => buildSelectStyles(), []);
-
-  const typeOptions = useMemo<InvestmentTypeOption[]>(() => {
+  const uniqueInvestmentOptions = useMemo(() => {
     const seen = new Set<string>();
-    const ordered: InvestmentTypeOption[] = [];
+    const ordered: string[] = [];
     for (const label of investmentTypeOptions) {
       const trimmed = label.trim();
       if (!trimmed) continue;
       const key = trimmed.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      ordered.push({ value: trimmed, label: trimmed });
+      ordered.push(trimmed);
     }
-    return ordered.sort((a, b) => a.label.localeCompare(b.label));
+    return ordered.sort((a, b) => a.localeCompare(b));
   }, [investmentTypeOptions]);
-
-  const selectedOption = useMemo(() => {
-    const trimmed = investmentType.trim();
-    if (!trimmed) return null;
-    return (
-      typeOptions.find(
-        (opt) => opt.value.toLowerCase() === trimmed.toLowerCase()
-      ) ?? { value: trimmed, label: trimmed }
-    );
-  }, [investmentType, typeOptions]);
 
   const activeError = externalError || error;
 
@@ -270,7 +162,6 @@ export function TransactionForm({
         setAmountText('');
         setComment('');
         setInvestmentType('');
-        setInvestmentTypeInput('');
         setDate(initialValues?.date || todayIso());
         setError(null);
       }
@@ -280,208 +171,221 @@ export function TransactionForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`space-y-3.5 ${className}`}>
-      <div>
-        <span className={labelClass}>Transaction Type</span>
-        <div className="relative flex rounded-2xl border border-border/80 bg-canvas/80 p-1">
-          {(
-            [
-              { id: 'expense', label: 'Expense' },
-              { id: 'income', label: 'Income' },
-              { id: 'investment', label: 'Investment' },
-            ] as const
-          ).map((item) => {
-            const active = type === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setType(item.id)}
-                disabled={busy}
-                className={`relative flex-1 rounded-[12px] py-1.5 text-xs font-semibold transition-colors duration-200 ${
-                  active ? 'text-primary-foreground font-bold' : 'text-text-muted hover:text-text'
-                }`}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="txTypeActive"
-                    className="absolute inset-0 rounded-[12px] bg-gradient-to-r from-primary-muted to-primary shadow-warm-sm"
-                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                  />
-                )}
-                <span className="relative z-10">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+    <Box component="form" onSubmit={handleSubmit} className={className} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Type Toggle */}
+      <Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mb: 0.75, display: 'block' }}>
+          Transaction Type
+        </Typography>
+        <ToggleButtonGroup
+          value={type}
+          exclusive
+          fullWidth
+          size="small"
+          onChange={(_, newType) => {
+            if (newType) setType(newType);
+          }}
+          sx={{
+            p: 0.5,
+            bgcolor: 'action.hover',
+            borderRadius: 3,
+            '& .MuiToggleButton-root': {
+              borderRadius: 2.5,
+              border: 'none',
+              fontWeight: 700,
+              textTransform: 'none',
+              py: 0.75,
+              '&.Mui-selected': {
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                },
+              },
+            },
+          }}
+        >
+          <ToggleButton value="expense">Expense</ToggleButton>
+          <ToggleButton value="income">Income</ToggleButton>
+          <ToggleButton value="investment">Investment</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
+      {/* Date */}
       {showDate && (
-        <label className="block">
-          <span className={labelClass}>Date</span>
-          <input
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mb: 0.5, display: 'block' }}>
+            Date
+          </Typography>
+          <TextField
+            fullWidth
             type="date"
+            size="small"
             required={requireDate}
             value={date}
             disabled={busy}
             onChange={(e) => setDate(e.target.value)}
-            className={fieldClass}
+            slotProps={{
+              input: { sx: { borderRadius: 2.5 } },
+            }}
           />
-        </label>
+        </Box>
       )}
 
-      <div>
-        <label className="block">
-          <span className={labelClass}>Category</span>
-          <input
-            type="text"
-            required
-            placeholder="e.g. Groceries, Rent, Salary"
-            value={category}
-            disabled={busy}
-            onChange={(e) => setCategory(e.target.value)}
-            className={fieldClass}
-          />
-        </label>
+      {/* Category */}
+      <Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mb: 0.5, display: 'block' }}>
+          Category
+        </Typography>
+        <TextField
+          fullWidth
+          size="small"
+          required
+          placeholder="e.g. Groceries, Rent, Salary"
+          value={category}
+          disabled={busy}
+          onChange={(e) => setCategory(e.target.value)}
+          slotProps={{
+            input: { sx: { borderRadius: 2.5 } },
+          }}
+        />
 
         {activeCategoryChips.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
             {activeCategoryChips.map((cat) => (
-              <button
+              <Chip
                 key={cat}
-                type="button"
+                label={cat}
+                size="small"
+                clickable
                 disabled={busy}
                 onClick={() => {
                   setCategory(cat);
                   navigator.vibrate?.(8);
                 }}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                  category.toLowerCase() === cat.toLowerCase()
-                    ? 'border border-primary/50 bg-primary/20 text-primary font-bold shadow-warm-sm'
-                    : 'border border-border/80 bg-surface text-text-secondary hover:bg-surface-muted/60'
-                }`}
-              >
-                {cat}
-              </button>
+                color={category.toLowerCase() === cat.toLowerCase() ? 'primary' : 'default'}
+                variant={category.toLowerCase() === cat.toLowerCase() ? 'filled' : 'outlined'}
+                sx={{ fontWeight: 600 }}
+              />
             ))}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
-      <div>
-        <label className="block">
-          <span className={labelClass}>Amount</span>
-          <SmartAmountInput
-            required
-            placeholder="0 or 1200 + 450 or 1000 * 18%"
-            value={amountText}
-            disabled={busy}
-            onChange={(v) => {
-              setAmountText(v);
-              setError(null);
-            }}
-            className={fieldClass}
-          />
-        </label>
+      {/* Amount */}
+      <Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mb: 0.5, display: 'block' }}>
+          Amount
+        </Typography>
+        <SmartAmountInput
+          required
+          placeholder="0 or 1200 + 450 or 1000 * 18%"
+          value={amountText}
+          disabled={busy}
+          onChange={(v) => {
+            setAmountText(v);
+            setError(null);
+          }}
+        />
         {looksLikeAmountExpression(amountText) && (
-          <div className="mt-1 flex items-center justify-between text-xs text-text-muted">
-            <span>Formula preview</span>
-            <span className="font-mono font-semibold text-primary">
+          <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>Formula preview</Typography>
+            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.main' }}>
               {(() => {
                 const res = evaluateAmountExpression(amountText);
                 return res.ok ? `= ${res.value}` : '…';
               })()}
-            </span>
-          </div>
+            </Typography>
+          </Box>
         )}
-      </div>
+      </Box>
 
+      {/* Investment Type */}
       {type === 'investment' && (
-        <div>
-          <label className={labelClass}>Investment Type</label>
-          <CreatableSelect
-            isClearable
-            isDisabled={busy}
-            styles={selectStyles}
-            options={typeOptions}
-            value={selectedOption}
-            inputValue={investmentTypeInput}
-            onInputChange={(val) => setInvestmentTypeInput(val)}
-            onChange={(opt) => {
-              setInvestmentType(opt?.value ?? '');
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mb: 0.5, display: 'block' }}>
+            Investment Type
+          </Typography>
+          <Autocomplete
+            freeSolo
+            options={uniqueInvestmentOptions}
+            value={investmentType}
+            disabled={busy}
+            onChange={(_, newValue) => {
+              setInvestmentType(newValue || '');
             }}
-            onCreateOption={(custom) => {
-              const label = custom.trim();
-              if (!label) return;
-              setInvestmentType(label);
-              setInvestmentTypeInput('');
+            onInputChange={(_, newInputValue) => {
+              setInvestmentType(newInputValue);
             }}
-            placeholder="e.g. SIP, FD, Stocks"
-            formatCreateLabel={(inputValue) => `Use "${inputValue}"`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && investmentTypeInput.trim()) {
-                e.preventDefault();
-                setInvestmentType(investmentTypeInput.trim());
-                setInvestmentTypeInput('');
-              }
-            }}
-            noOptionsMessage={({ inputValue }) => {
-              if (!inputValue) return 'Type to add custom investment type';
-              return inputValue;
-            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                size="small"
+                placeholder="e.g. SIP, FD, Stocks, Provident Fund"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2.5 } }}
+              />
+            )}
           />
-          <span className="mt-1 block text-[11px] leading-snug text-text-muted">
-            Pick from existing types or type a new one. Use “Provident Fund”,
-            “PF”, or “EPF” to track PF on its own card (excluded from net
-            worth and investment breakup).
-          </span>
-        </div>
+          <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block', fontSize: '0.6875rem' }}>
+            Pick or type a type. Use “Provident Fund”, “PF”, or “EPF” to track PF separately.
+          </Typography>
+        </Box>
       )}
 
-      <label className="block">
-        <span className={labelClass}>Comment</span>
-        <input
-          type="text"
+      {/* Comment */}
+      <Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', mb: 0.5, display: 'block' }}>
+          Comment
+        </Typography>
+        <TextField
+          fullWidth
+          size="small"
           placeholder="Optional note"
           value={comment}
           disabled={busy}
           onChange={(e) => setComment(e.target.value)}
-          className={fieldClass}
+          slotProps={{
+            input: { sx: { borderRadius: 2.5 } },
+          }}
         />
-      </label>
+      </Box>
 
       {activeError && (
-        <p
-          className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 transition-theme dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
-          role="alert"
-        >
+        <Alert severity="error" sx={{ borderRadius: 2 }}>
           {activeError}
-        </p>
+        </Alert>
       )}
 
-      <div className={`flex gap-2 pt-1 ${layout === 'inline' ? 'justify-end' : ''}`}>
+      {/* Action Buttons */}
+      <Box sx={{ display: 'flex', gap: 1.5, pt: 1, ...(layout === 'inline' ? { justifyContent: 'flex-end' } : {}) }}>
         {onCancel && (
-          <SoftButton
+          <Button
             type="button"
+            variant="outlined"
             onClick={onCancel}
             disabled={busy}
-            glow={false}
-            className="flex-1 rounded-xl border border-border bg-canvas px-4 py-2.5 text-sm font-semibold text-text-secondary disabled:opacity-60"
+            sx={{ flex: 1, borderRadius: 2.5, textTransform: 'none', fontWeight: 700 }}
           >
             {cancelLabel}
-          </SoftButton>
+          </Button>
         )}
-        <SoftButton
+        <Button
           type="submit"
+          variant="contained"
           disabled={busy}
-          loading={busy}
-          className={`${
-            onCancel ? 'flex-1' : 'w-full'
-          } min-h-11 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow disabled:opacity-60`}
+          startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
+          sx={{
+            flex: onCancel ? 1 : '1 1 100%',
+            borderRadius: 2.5,
+            textTransform: 'none',
+            fontWeight: 700,
+            py: 1,
+          }}
         >
           {submitLabel}
-        </SoftButton>
-      </div>
-    </form>
+        </Button>
+      </Box>
+    </Box>
   );
 }
+

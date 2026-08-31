@@ -1,15 +1,13 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
-import { createPortal } from 'react-dom';
-import {
-  backdropVariants,
-  popoverVariants,
-  springSoft,
-} from '../../lib/motion';
-import { SoftButton } from '../../components/ui/SoftButton';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Divider from '@mui/material/Divider';
+import CloseIcon from '@mui/icons-material/Close';
 import { MuffinIcon } from '../../components/ui/MuffinIcon';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
-import { useEffect } from 'react';
 
 interface AboutModalProps {
   open: boolean;
@@ -24,127 +22,98 @@ export function AboutModal({
   onPrivacy,
   onTerms,
 }: AboutModalProps) {
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 4,
+            p: 1,
+          },
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Box>
+          <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'text.secondary', letterSpacing: 1 }}>
+            About
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+            <MuffinIcon className="muffin-icon h-6 w-6 text-primary" />
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Muffin
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Vibe Coded by Rahul Gouri, 2026
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-          <motion.button
-            type="button"
-            variants={backdropVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 bg-black/50"
-            aria-label="Dismiss about dialog"
-            onClick={onClose}
-          />
+      <DialogContent sx={{ py: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
+          A cozy personal finance PWA that turns your Google Sheet into a live
+          dashboard — income, expenses, investments, Provident Fund tracking,
+          and net worth — baked for the phone and installable as an app.
+        </Typography>
 
-          <FocusTrap active={open}>
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="about-title"
-              variants={popoverVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={springSoft}
-              className="relative z-10 w-full max-w-sm sm:max-w-md rounded-2xl border border-border bg-surface-strong p-5 shadow-elevate"
+        <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.6 }}>
+          Twelve cozy muffin themes across matching light and dark palettes,
+          tactile Material UI interactions, amount masking, ledger add/edit, and themed drill-down charts.
+        </Typography>
+
+        <Divider sx={{ my: 0.5 }} />
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Privacy note: Your records are stored in your Google Drive.
+            Muffin has no server database.
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Muffin is an independent developer project by Rahul Gouri.
+          </Typography>
+        </Box>
+      </DialogContent>
+
+      <Box sx={{ px: 3, pb: 2, pt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {onPrivacy && (
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={onPrivacy}
+              sx={{ flex: 1, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
             >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                  About
-                </p>
-                <h2
-                  id="about-title"
-                  className="mt-1 flex items-center gap-2 font-display text-base font-bold text-text"
-                >
-                  <MuffinIcon className="muffin-icon h-6 w-6 text-primary" />
-                  Muffin
-                </h2>
-                <p className="mt-0.5 text-xs text-text-secondary">
-                  Vibe Coded by Rahul Gouri, 2026
-                </p>
-              </div>
-              <SoftButton
-                onClick={onClose}
-                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-canvas text-text-secondary shadow-warm-sm"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              </SoftButton>
-            </div>
-
-            <p className="mt-3 text-sm leading-relaxed text-text-secondary">
-              A cozy personal finance PWA that turns your Google Sheet into a live
-              dashboard — income, expenses, investments, Provident Fund tracking,
-              and net worth — baked for the phone and installable as an app.
-            </p>
-
-            <p className="mt-3 text-sm leading-relaxed text-text-secondary">
-              Twelve cozy muffin themes across matching light and dark palettes,
-              soft motion and tactile UI, amount masking, ledger add/edit, and themed drill-down charts.
-            </p>
-
-            <p className="mt-3 text-sm leading-relaxed text-text-secondary">
-              Stack: React, TypeScript, Vite, Tailwind CSS, Framer Motion, Lucide,
-              Netlify Functions, Google Sheets, and Workbox PWA. Built with Antigravity,
-              Cursor, and GitHub Copilot.
-            </p>
-
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-border/60 pt-3 text-xs">
-              <a
-                href="/guide.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={onClose}
-                className="font-semibold text-primary hover:underline"
-              >
-                User Guide
-              </a>
-              <span className="text-text-muted">•</span>
-              {onPrivacy && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onPrivacy();
-                  }}
-                  className="font-semibold text-primary hover:underline"
-                >
-                  Privacy Policy
-                </button>
-              )}
-              {onPrivacy && onTerms && <span className="text-text-muted">•</span>}
-              {onTerms && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onTerms();
-                  }}
-                  className="font-semibold text-primary hover:underline"
-                >
-                  Terms of Service
-                </button>
-              )}
-            </div>
-          </motion.div>
-        </FocusTrap>
-      </div>
-    )}
-  </AnimatePresence>,
-    document.body
+              Privacy Policy
+            </Button>
+          )}
+          {onTerms && (
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={onTerms}
+              sx={{ flex: 1, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+            >
+              Terms
+            </Button>
+          )}
+        </Box>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={onClose}
+          sx={{ borderRadius: 2.5, fontWeight: 700, textTransform: 'none', py: 0.875 }}
+        >
+          Got It
+        </Button>
+      </Box>
+    </Dialog>
   );
 }

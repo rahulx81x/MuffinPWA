@@ -1,5 +1,18 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { SoftButton } from '../../components/ui/SoftButton';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+
+import LinkIcon from '@mui/icons-material/Link';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutlineOutlined';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+
 import { MuffinIcon } from '../../components/ui/MuffinIcon';
 import { createSheet, linkSheet } from '../../api/client';
 
@@ -11,183 +24,205 @@ interface SheetOnboardingProps {
 const DEFAULT_SHEET_TITLE = 'Muffin Finances';
 
 export function SheetOnboarding({ userName, onLinked }: SheetOnboardingProps) {
-  const [mode, setMode] = useState<'choose' | 'create' | 'link'>('choose');
+  const [mode, setMode] = useState<'choose' | 'link' | 'create'>('choose');
+  const [sheetTitle, setSheetTitle] = useState('');
   const [sheetInput, setSheetInput] = useState('');
-  const [sheetTitle, setSheetTitle] = useState(DEFAULT_SHEET_TITLE);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /** Guards double-submit before React re-renders `busy`. */
-  const inFlightRef = useRef(false);
-
-  async function handleCreate(event: FormEvent) {
-    event.preventDefault();
-    if (inFlightRef.current) return;
-    inFlightRef.current = true;
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await createSheet(sheetTitle.trim() || DEFAULT_SHEET_TITLE);
-      onLinked(result);
-      // Keep inFlight locked — success leaves this screen.
-    } catch (err) {
-      inFlightRef.current = false;
-      setError(err instanceof Error ? err.message : 'Could not create sheet.');
-      setBusy(false);
-    }
-  }
-
-  async function handleLink(event: FormEvent) {
-    event.preventDefault();
-    if (inFlightRef.current) return;
-    inFlightRef.current = true;
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await linkSheet(sheetInput.trim());
-      onLinked(result);
-    } catch (err) {
-      inFlightRef.current = false;
-      setError(err instanceof Error ? err.message : 'Could not link sheet.');
-      setBusy(false);
-    }
-  }
+  const linkingRef = useRef(false);
 
   function goChoose() {
-    if (busy) return;
     setMode('choose');
     setError(null);
   }
 
-  return (
-    <div className="relative flex min-h-dvh flex-col items-center justify-center bg-canvas px-6 text-text transition-theme">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(var(--accent-rgb),0.14),transparent_55%)]"
-      />
-      <div className="relative z-10 w-full max-w-md">
-        <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">
-          Almost ready{userName ? `, ${userName.split(' ')[0]}` : ''}
-        </p>
-        <h1 className="mt-2 flex items-center gap-2.5 font-display text-2xl font-bold tracking-[-0.02em] text-text">
-          <MuffinIcon className="muffin-icon h-8 w-8 text-primary" />
-          Connect your Google Sheet
-        </h1>
-        <p className="mt-2 text-sm text-text-secondary">
-          Use a workbook you already keep, or let Muffin create one with Income,
-          Expense, and Investment tabs.
-        </p>
+  async function handleLink(e: FormEvent) {
+    e.preventDefault();
+    if (busy || linkingRef.current) return;
+    const raw = sheetInput.trim();
+    if (!raw) {
+      setError('Please paste a spreadsheet URL or ID.');
+      return;
+    }
 
-        {error ? (
-          <p
-            className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
-            role="alert"
-          >
+    setBusy(true);
+    setError(null);
+    linkingRef.current = true;
+
+    try {
+      const res = await linkSheet(raw);
+      onLinked(res);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not link spreadsheet.';
+      setError(message);
+    } finally {
+      setBusy(false);
+      linkingRef.current = false;
+    }
+  }
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    if (busy || linkingRef.current) return;
+
+    setBusy(true);
+    setError(null);
+    linkingRef.current = true;
+
+    try {
+      const res = await createSheet(sheetTitle.trim() || DEFAULT_SHEET_TITLE);
+      onLinked(res);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not create spreadsheet.';
+      setError(message);
+    } finally {
+      setBusy(false);
+      linkingRef.current = false;
+    }
+  }
+
+  return (
+    <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default', color: 'text.primary', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 3, py: 6 }}>
+      <Container maxWidth="xs">
+        <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: 'text.secondary', display: 'block' }}>
+            Almost ready{userName ? `, ${userName.split(' ')[0]}` : ''}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, my: 1 }}>
+            <MuffinIcon className="muffin-icon h-9 w-9" />
+            <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
+              Connect your Sheet
+            </Typography>
+          </Box>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.875rem', mt: 1 }}>
+            Use a workbook you already keep, or let Muffin create one with Income, Expense, and Investment tabs.
+          </Typography>
+        </Box>
+
+        {error && (
+          <Alert severity="warning" sx={{ mb: 3, borderRadius: 2.5 }}>
             {error}
-          </p>
-        ) : null}
+          </Alert>
+        )}
 
         {mode === 'choose' ? (
-          <div className="mt-6 flex flex-col gap-3">
-            <SoftButton
-              disabled={busy}
-              onClick={() => setMode('link')}
-              className="rounded-2xl border border-border bg-surface-strong px-4 py-3 text-left text-sm font-semibold text-text shadow-warm-sm"
-              glow={false}
-            >
-              I already have a sheet
-              <span className="mt-1 block text-xs font-normal text-text-muted">
-                Paste the spreadsheet URL or ID
-              </span>
-            </SoftButton>
-            <SoftButton
-              disabled={busy}
-              onClick={() => {
-                setMode('create');
-                setError(null);
-              }}
-              className="rounded-2xl bg-primary px-4 py-3 text-left text-sm font-semibold text-on-primary shadow-glow"
-            >
-              Create a sheet for me
-              <span className="mt-1 block text-xs font-normal text-on-primary/80">
-                New workbook in your Google Drive
-              </span>
-            </SoftButton>
-          </div>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Card variant="outlined" sx={{ borderRadius: 3 }}>
+              <CardActionArea disabled={busy} onClick={() => setMode('link')} sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ width: 40, height: 40, borderRadius: 2.5, bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.main', flexShrink: 0 }}>
+                    <LinkIcon />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                      I already have a sheet
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                      Paste the spreadsheet URL or ID
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardActionArea>
+            </Card>
+
+            <Card variant="outlined" sx={{ borderRadius: 3, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+              <CardActionArea
+                disabled={busy}
+                onClick={() => {
+                  setMode('create');
+                  setError(null);
+                }}
+                sx={{ p: 2.5 }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ width: 40, height: 40, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'inherit', flexShrink: 0 }}>
+                    <AddCircleOutlineIcon />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'inherit' }}>
+                      Create a sheet for me
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', display: 'block' }}>
+                      New workbook in your Google Drive
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardActionArea>
+            </Card>
+          </Box>
         ) : mode === 'create' ? (
-          <form className="mt-6 space-y-3" onSubmit={(e) => void handleCreate(e)}>
-            <label className="block text-left text-sm font-medium text-text">
-              Sheet name
-              <input
-                value={sheetTitle}
-                onChange={(e) => setSheetTitle(e.target.value)}
-                placeholder={DEFAULT_SHEET_TITLE}
-                maxLength={120}
-                className="mt-1.5 w-full rounded-xl border border-border bg-surface-strong px-3 py-2.5 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40"
-                autoFocus
-                disabled={busy}
-              />
-            </label>
-            <p className="text-xs text-text-muted">
-              Muffin will create Income, Expense, and Investment tabs in this
-              workbook.
-            </p>
-            <div className="flex gap-2">
-              <SoftButton
-                type="button"
+          <Box component="form" onSubmit={(e) => void handleCreate(e)} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            <TextField
+              label="Sheet name"
+              value={sheetTitle}
+              onChange={(e) => setSheetTitle(e.target.value)}
+              placeholder={DEFAULT_SHEET_TITLE}
+              slotProps={{ htmlInput: { maxLength: 120 } }}
+              disabled={busy}
+              autoFocus
+              fullWidth
+              size="small"
+              helperText="Muffin will create Income, Expense, and Investment tabs in this workbook."
+            />
+
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                variant="outlined"
                 disabled={busy}
                 onClick={goChoose}
-                className="flex-1 rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-text"
-                glow={false}
+                startIcon={<ArrowBackIcon />}
+                sx={{ flex: 1, borderRadius: 2.5, textTransform: 'none', fontWeight: 700 }}
               >
                 Back
-              </SoftButton>
-              <SoftButton
+              </Button>
+              <Button
                 type="submit"
+                variant="contained"
                 disabled={busy}
-                className="flex-1 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-glow"
+                sx={{ flex: 1, borderRadius: 2.5, textTransform: 'none', fontWeight: 800 }}
               >
-                {busy ? 'Creating…' : 'Create sheet'}
-              </SoftButton>
-            </div>
-          </form>
+                {busy ? <CircularProgress size={20} color="inherit" /> : 'Create sheet'}
+              </Button>
+            </Box>
+          </Box>
         ) : (
-          <form className="mt-6 space-y-3" onSubmit={(e) => void handleLink(e)}>
-            <label className="block text-left text-sm font-medium text-text">
-              Spreadsheet URL or ID
-              <input
-                value={sheetInput}
-                onChange={(e) => setSheetInput(e.target.value)}
-                placeholder="https://docs.google.com/spreadsheets/d/…"
-                className="mt-1.5 w-full rounded-xl border border-border bg-surface-strong px-3 py-2.5 text-sm text-text outline-none focus:ring-2 focus:ring-primary/40"
-                autoFocus
-                required
-                disabled={busy}
-              />
-            </label>
-            <p className="text-xs text-text-muted">
-              Tabs must be named exactly Income, Expense, and Investment.
-            </p>
-            <div className="flex gap-2">
-              <SoftButton
-                type="button"
+          <Box component="form" onSubmit={(e) => void handleLink(e)} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            <TextField
+              label="Spreadsheet URL or ID"
+              value={sheetInput}
+              onChange={(e) => setSheetInput(e.target.value)}
+              placeholder="https://docs.google.com/spreadsheets/d/…"
+              required
+              disabled={busy}
+              autoFocus
+              fullWidth
+              size="small"
+              helperText="Tabs must be named exactly Income, Expense, and Investment."
+            />
+
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                variant="outlined"
                 disabled={busy}
                 onClick={goChoose}
-                className="flex-1 rounded-2xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-text"
-                glow={false}
+                startIcon={<ArrowBackIcon />}
+                sx={{ flex: 1, borderRadius: 2.5, textTransform: 'none', fontWeight: 700 }}
               >
                 Back
-              </SoftButton>
-              <SoftButton
+              </Button>
+              <Button
                 type="submit"
+                variant="contained"
                 disabled={busy || !sheetInput.trim()}
-                className="flex-1 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-glow"
+                sx={{ flex: 1, borderRadius: 2.5, textTransform: 'none', fontWeight: 800 }}
               >
-                {busy ? 'Linking…' : 'Link sheet'}
-              </SoftButton>
-            </div>
-          </form>
+                {busy ? <CircularProgress size={20} color="inherit" /> : 'Link sheet'}
+              </Button>
+            </Box>
+          </Box>
         )}
-      </div>
-    </div>
+      </Container>
+    </Box>
   );
 }
+

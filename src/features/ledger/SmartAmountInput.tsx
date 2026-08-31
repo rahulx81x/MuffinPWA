@@ -1,14 +1,18 @@
-import { useState, type InputHTMLAttributes } from 'react';
-import { Calculator } from 'lucide-react';
+import { useState } from 'react';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
+import CalculateIcon from '@mui/icons-material/Calculate';
 import { AmountCalculatorModal } from './AmountCalculatorModal';
 
-type SmartAmountInputProps = Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  'type' | 'inputMode' | 'value' | 'onChange'
-> & {
+interface SmartAmountInputProps {
   value: string;
   onChange: (value: string) => void;
-};
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  className?: string;
+}
 
 function formatApplied(value: number): string {
   if (Number.isInteger(value)) return String(value);
@@ -18,36 +22,46 @@ function formatApplied(value: number): string {
 export function SmartAmountInput({
   value,
   onChange,
-  className = '',
+  placeholder,
   disabled,
-  ...rest
+  required,
 }: SmartAmountInputProps) {
   const [calcOpen, setCalcOpen] = useState(false);
 
   return (
     <>
-      <div className="relative">
-        <input
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
-          spellCheck={false}
-          disabled={disabled}
-          {...rest}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={`${className} pr-10`.trim()}
-        />
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => setCalcOpen(true)}
-          className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-xl text-text-muted transition hover:text-primary disabled:opacity-40"
-          aria-label="Open calculator"
-        >
-          <Calculator className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-        </button>
-      </div>
+      <OutlinedInput
+        fullWidth
+        size="small"
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        inputProps={{
+          inputMode: 'decimal',
+          autoComplete: 'off',
+          spellCheck: false,
+        }}
+        endAdornment={
+          <InputAdornment position="end">
+            <IconButton
+              edge="end"
+              size="small"
+              disabled={disabled}
+              onClick={() => setCalcOpen(true)}
+              aria-label="Open calculator"
+            >
+              <CalculateIcon fontSize="small" />
+            </IconButton>
+          </InputAdornment>
+        }
+        sx={{
+          borderRadius: 2.5,
+          fontFamily: 'monospace',
+          fontWeight: 600,
+        }}
+      />
 
       <AmountCalculatorModal
         open={calcOpen}
@@ -58,3 +72,4 @@ export function SmartAmountInput({
     </>
   );
 }
+

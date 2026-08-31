@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { createPortal } from 'react-dom';
+import Drawer from '@mui/material/Drawer';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
 import {
   formatCurrency as formatCurrencyRaw,
 } from '../../config';
@@ -12,15 +14,10 @@ import {
   currentMonthKey,
   monthKey,
 } from '../../domain/metrics';
-import {
-  backdropVariants,
-  sheetTransition,
-  sheetVariants,
-} from '../../lib/motion';
 import { isCountedInvestment, isProvidentFund } from '../../domain/providentFund';
 import type { MetricKey, Transaction } from '../../domain/types';
-import { FocusTrap } from '../../components/atoms/FocusTrap';
 import { TransactionList } from './TransactionList';
+
 
 interface ChartModalProps {
   open: boolean;
@@ -999,92 +996,64 @@ export function ChartModal({
     };
   }, [open, onClose]);
 
-  const show = open && !!activeKey && !!kind;
+  const show = open && Boolean(activeKey);
 
-  return createPortal(
-    <AnimatePresence>
-      {show && (
-        <motion.button
-          key="chart-backdrop"
-          type="button"
-          variants={backdropVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-0 z-[100] bg-black/50"
-          aria-label="Dismiss modal"
-          onClick={onClose}
-        />
-      )}
-      {show && (
-        <FocusTrap active={show}>
-          <motion.div
-            key="chart-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label={activeTitle}
-            variants={sheetVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={sheetTransition}
-            className="fixed inset-x-0 bottom-0 z-[101] mx-auto flex max-h-[88dvh] w-full max-w-lg flex-col rounded-t-3xl border border-border bg-canvas shadow-elevate transition-theme pb-safe"
-          >
-            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-border" />
+  return (
+    <Drawer
+      anchor="bottom"
+      open={show}
+      onClose={onClose}
+      slotProps={{
+        paper: {
+          sx: {
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            maxHeight: '90dvh',
+            maxWidth: 600,
+            mx: 'auto',
+            p: 2,
+            bgcolor: 'background.paper',
+          },
+        },
+      }}
+    >
+      <Box sx={{ width: 40, height: 4, bgcolor: 'divider', borderRadius: 2, mx: 'auto', mb: 2 }} />
 
-            <header className="flex items-start justify-between gap-3 px-4 pb-3 pt-4">
-              <div className="min-w-0">
-                <h2 className="truncate font-display text-lg font-bold text-text">
-                  {activeTitle}
-                </h2>
-                {activeSubtitle && (
-                  <p className="mt-0.5 text-sm text-text-muted">{activeSubtitle}</p>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', pb: 2, gap: 1.5 }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h6" noWrap sx={{ fontWeight: 800 }}>
+            {activeTitle}
+          </Typography>
+          {activeSubtitle && (
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
+              {activeSubtitle}
+            </Typography>
+          )}
+                </Box>
+                <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </IconButton>
+              </Box>
+
+              <Box sx={{ overflowY: 'auto', pb: 4 }}>
+                {kind === 'list' && (
+                  <TransactionList transactions={listTransactions} />
                 )}
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex min-h-11 min-w-11 h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-strong text-text-secondary shadow-warm-sm transition-colors duration-200 active:scale-95"
-                aria-label="Close"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 6l12 12M18 6 6 18"
+                {kind === 'pie' && <PieChart data={activeBreakup} />}
+                {kind === 'line' && (
+                  <LineChart
+                    points={series.points}
+                    labels={series.labels}
+                    multiSeries={series.multiSeries}
+                    footer={series.footer}
+                    asPercent={series.asPercent}
+                    masked={masked}
                   />
-                </svg>
-              </button>
-            </header>
-
-            <div className="overflow-y-auto px-4 pb-6">
-              {kind === 'list' && (
-                <TransactionList transactions={listTransactions} />
-              )}
-              {kind === 'pie' && <PieChart data={activeBreakup} />}
-              {kind === 'line' && (
-                <LineChart
-                  points={series.points}
-                  labels={series.labels}
-                  multiSeries={series.multiSeries}
-                  footer={series.footer}
-                  asPercent={series.asPercent}
-                  masked={masked}
-                />
-              )}
-            </div>
-          </motion.div>
-        </FocusTrap>
-      )}
-    </AnimatePresence>,
-    document.body
-  );
+                )}
+              </Box>
+            </Drawer>
+          );
 }
+

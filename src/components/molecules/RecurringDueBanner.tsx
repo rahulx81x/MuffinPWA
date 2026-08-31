@@ -1,5 +1,15 @@
-import { motion } from 'framer-motion';
-import { CalendarSync, ChevronRight, Loader2, X, Zap } from 'lucide-react';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CloseIcon from '@mui/icons-material/Close';
 import { useMask } from '../../hooks/useMask';
 import type { RecurringDueSummary } from '../../domain/recurring';
 
@@ -24,101 +34,110 @@ export function RecurringDueBanner({
   if (dueItems.length === 0) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -12, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.98 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/15 via-primary/8 to-accent/10 p-3.5 sm:p-4 shadow-warm-md backdrop-blur-xl"
+    <Card
+      variant="outlined"
+      sx={{
+        borderRadius: 3,
+        borderColor: 'primary.main',
+        bgcolor: 'background.paper',
+        boxShadow: 2,
+      }}
     >
-      {/* Decorative ambient glow */}
-      <div
-        className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/20 blur-2xl"
-        aria-hidden="true"
-      />
-
-      <div className="relative flex flex-col gap-3">
-        {/* Top Header Row */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/30">
-              <CalendarSync className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                  Monthly Due
-                </span>
-                <span className="inline-flex items-center rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                  {dueItems.length} {dueItems.length === 1 ? 'item' : 'items'}
-                </span>
-              </div>
-              <p className="text-sm font-semibold text-text">
-                {formatCurrency(totalDueAmount)} scheduled for this month
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onDismiss}
-            aria-label="Dismiss banner"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-surface-strong/60 hover:text-text active:scale-95 transition-all"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Due Items Preview Chips */}
-        <div className="flex flex-wrap gap-1.5">
-          {dueItems.slice(0, 4).map((item) => (
-            <span
-              key={item.id}
-              className="inline-flex items-center gap-1 rounded-lg border border-border/60 bg-surface/80 px-2 py-0.5 text-[11px] font-medium text-text-secondary backdrop-blur-sm"
+      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 36,
+                height: 36,
+                borderRadius: 2,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+              }}
             >
-              <span className="truncate max-w-[110px]">{item.name}</span>
-              <span className="font-semibold text-text">{formatCurrency(item.amount)}</span>
-            </span>
+              <EventRepeatIcon fontSize="small" />
+            </Box>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', color: 'primary.main', letterSpacing: 0.8 }}>
+                  Monthly Due
+                </Typography>
+                <Chip
+                  label={`${dueItems.length} ${dueItems.length === 1 ? 'item' : 'items'}`}
+                  size="small"
+                  color="primary"
+                  sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 700 }}
+                />
+              </Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                {formatCurrency(totalDueAmount)} scheduled for this month
+              </Typography>
+            </Box>
+          </Box>
+
+          <IconButton size="small" onClick={onDismiss} aria-label="Dismiss banner" sx={{ color: 'text.secondary' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        {/* Due Items Chips */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+          {dueItems.slice(0, 4).map((item) => (
+            <Chip
+              key={item.id}
+              variant="outlined"
+              size="small"
+              label={
+                <Box component="span" sx={{ display: 'flex', gap: 0.5 }}>
+                  <Box component="span" sx={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.name}
+                  </Box>
+                  <Box component="strong">{formatCurrency(item.amount)}</Box>
+                </Box>
+              }
+              sx={{ borderRadius: 1.5, fontSize: '0.75rem' }}
+            />
           ))}
           {dueItems.length > 4 && (
-            <span className="inline-flex items-center rounded-lg border border-border/60 bg-surface/60 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
-              +{dueItems.length - 4} more
-            </span>
+            <Chip
+              size="small"
+              variant="outlined"
+              label={`+${dueItems.length - 4} more`}
+              sx={{ borderRadius: 1.5, fontSize: '0.75rem', color: 'text.secondary' }}
+            />
           )}
-        </div>
+        </Box>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 pt-0.5">
-          <button
-            type="button"
+        {/* Actions */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pt: 0.5 }}>
+          <Button
+            variant="contained"
+            color="primary"
             disabled={logging}
             onClick={() => void onLogAll()}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-warm-sm hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60"
+            startIcon={logging ? <CircularProgress size={16} color="inherit" /> : <FlashOnIcon />}
+            sx={{ flex: 1, textTransform: 'none', borderRadius: 2, fontWeight: 700, fontSize: '0.8125rem' }}
           >
-            {logging ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>Logging to Sheet...</span>
-              </>
-            ) : (
-              <>
-                <Zap className="h-3.5 w-3.5 fill-current" />
-                <span>Log All Due ({formatCurrency(totalDueAmount)})</span>
-              </>
-            )}
-          </button>
+            {logging ? 'Logging to Sheet...' : `Log All Due (${formatCurrency(totalDueAmount)})`}
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            variant="outlined"
+            color="inherit"
             disabled={logging}
             onClick={onReview}
-            className="inline-flex items-center justify-center gap-1 rounded-xl border border-border/80 bg-surface/90 px-3 py-2 text-xs font-semibold text-text shadow-warm-sm hover:bg-surface-strong active:scale-[0.98] transition-all disabled:opacity-60"
+            endIcon={<ChevronRightIcon />}
+            sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600, fontSize: '0.8125rem' }}
           >
-            <span>Review</span>
-            <ChevronRight className="h-3 w-3 text-text-muted" />
-          </button>
-        </div>
-      </div>
-    </motion.div>
+            Review
+          </Button>
+        </Box>
+      </CardContent>
+    </Card>
   );
 }
+

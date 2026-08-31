@@ -1,3 +1,10 @@
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
 import { useMask } from '../../hooks/useMask';
 import type { Transaction } from '../../domain/types';
 
@@ -5,10 +12,10 @@ interface TransactionListProps {
   transactions: Transaction[];
 }
 
-function amountClass(type: Transaction['type']): string {
-  if (type === 'income') return 'text-emerald-700 dark:text-emerald-400';
-  if (type === 'expense') return 'text-rose-700 dark:text-rose-400';
-  return 'text-amber-700 dark:text-amber-400';
+function amountColor(type: Transaction['type']): string {
+  if (type === 'income') return 'success.main';
+  if (type === 'expense') return 'error.main';
+  return 'secondary.main';
 }
 
 function amountPrefix(type: Transaction['type'], masked: boolean, amount?: number): string {
@@ -33,37 +40,61 @@ export function TransactionList({ transactions }: TransactionListProps) {
 
   if (!items.length) {
     return (
-      <p className="rounded-xl border border-dashed border-border bg-surface-strong px-4 py-8 text-center text-sm text-text-muted transition-colors duration-200">
-        No transactions yet.
-      </p>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 4,
+          borderRadius: 3,
+          textAlign: 'center',
+          borderStyle: 'dashed',
+        }}
+      >
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          No transactions yet.
+        </Typography>
+      </Paper>
     );
   }
 
   return (
-    <ul className="divide-y divide-divider overflow-hidden rounded-2xl border border-border bg-surface-strong shadow-warm-sm transition-colors duration-200">
-      {items.map((t) => (
-        <li key={t.id} className="px-4 py-3.5">
-          <div className="flex items-start justify-between gap-3">
-            <h3 className="min-w-0 flex-1 break-words text-[15px] font-bold leading-snug text-text">
-              {t.category || '—'}
-            </h3>
-            <p
-              className={`shrink-0 pt-0.5 text-right text-[15px] font-bold tabular-nums leading-snug ${amountClass(t.type)}`}
-            >
-              {amountPrefix(t.type, masked, t.amount)}
-              {formatCurrency(t.amount)}
-            </p>
-          </div>
-          <div className="mt-1.5 space-y-1.5">
-            <p className="whitespace-normal break-words text-sm leading-relaxed text-text-secondary">
-              {t.comment?.trim() ? t.comment : 'No comment'}
-            </p>
-            <span className="inline-flex rounded-full bg-surface-muted/70 px-2 py-0.5 text-[11px] font-medium tabular-nums text-text-muted">
-              {formatDisplayDate(t.date)}
-            </span>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
+      <List disablePadding>
+        {items.map((t, idx) => (
+          <Box key={t.id}>
+            {idx > 0 && <Divider />}
+            <ListItem sx={{ py: 1.75, px: 2, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 0.75 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                  {t.category || '—'}
+                </Typography>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 800,
+                    color: amountColor(t.type),
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {amountPrefix(t.type, masked, t.amount)}
+                  {formatCurrency(t.amount)}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>
+                  {t.comment?.trim() ? t.comment : 'No comment'}
+                </Typography>
+                <Chip
+                  label={formatDisplayDate(t.date)}
+                  size="small"
+                  sx={{ height: 20, fontSize: '0.6875rem' }}
+                />
+              </Box>
+            </ListItem>
+          </Box>
+        ))}
+      </List>
+    </Paper>
   );
 }
+
