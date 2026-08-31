@@ -93,8 +93,7 @@ export function AboutModal({
             </p>
 
             <p className="mt-3 text-sm leading-relaxed text-text-secondary">
-              Eight muffin themes (Classic, Blueberry, Pistachio Matcha, Lavender
-              Berry, Double Chocolate, Red Velvet, Midnight Blueberry, Midnight Emerald),
+              Twelve cozy muffin themes across matching light and dark palettes,
               soft motion and tactile UI, amount masking, ledger add/edit, and themed drill-down charts.
             </p>
 

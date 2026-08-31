@@ -312,7 +312,7 @@ export default function App() {
         <div className="absolute bottom-12 left-1/3 h-80 w-80 rounded-full bg-primary/18 blur-3xl" />
       </motion.div>
 
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-surface/75 backdrop-blur-2xl safe-pt transition-theme">
+      <header className="sticky top-0 z-30 border-b border-border bg-canvas safe-pt transition-theme">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-2 px-4 py-2 sm:max-w-3xl lg:max-w-5xl">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">

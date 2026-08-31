@@ -3,10 +3,14 @@ export type ThemeId =
   | 'blueberry'
   | 'pistachio'
   | 'lavender'
+  | 'velvet-light'
+  | 'pure-light'
   | 'chocolate'
-  | 'velvet'
   | 'midnight'
-  | 'emerald';
+  | 'emerald'
+  | 'lavender-dark'
+  | 'velvet'
+  | 'obsidian-dark';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -30,6 +34,7 @@ export const THEME_STORAGE_KEY = 'muffinTheme';
 export const LEGACY_THEME_KEY = 'themeMode';
 
 export const THEMES: ThemeDefinition[] = [
+  // 1. Classic Muffin (Light)
   {
     id: 'classic',
     name: 'Classic Muffin',
@@ -50,6 +55,7 @@ export const THEMES: ThemeDefinition[] = [
       '#C2410C',
     ],
   },
+  // 2. Blueberry Muffin (Light)
   {
     id: 'blueberry',
     name: 'Blueberry Muffin',
@@ -70,6 +76,7 @@ export const THEMES: ThemeDefinition[] = [
       '#312E81',
     ],
   },
+  // 3. Pistachio Matcha (Light)
   {
     id: 'pistachio',
     name: 'Pistachio Matcha',
@@ -90,6 +97,7 @@ export const THEMES: ThemeDefinition[] = [
       '#365314',
     ],
   },
+  // 4. Lavender Berry (Light)
   {
     id: 'lavender',
     name: 'Lavender Berry',
@@ -110,6 +118,49 @@ export const THEMES: ThemeDefinition[] = [
       '#0284C7',
     ],
   },
+  // 5. Red Velvet (Light)
+  {
+    id: 'velvet-light',
+    name: 'Red Velvet',
+    mode: 'light',
+    background: '#FDF4F5',
+    card: '#FCE7EA',
+    accent: '#E11D48',
+    text: '#4A0D17',
+    border: '#F4B8C3',
+    chartColors: [
+      '#E11D48',
+      '#BE123C',
+      '#F43F5E',
+      '#FB7185',
+      '#047857',
+      '#F59E0B',
+      '#9F1239',
+      '#881337',
+    ],
+  },
+  // 6. Pure Light (Basic White)
+  {
+    id: 'pure-light',
+    name: 'Pure Light',
+    mode: 'light',
+    background: '#FFFFFF',
+    card: '#F4F4F5',
+    accent: '#18181B',
+    text: '#09090B',
+    border: '#E4E4E7',
+    chartColors: [
+      '#18181B',
+      '#3F3F46',
+      '#71717A',
+      '#047857',
+      '#B91C1C',
+      '#D97706',
+      '#2563EB',
+      '#A1A1AA',
+    ],
+  },
+  // 1. Double Chocolate (Dark) — counterpart to Classic
   {
     id: 'chocolate',
     name: 'Double Chocolate',
@@ -130,26 +181,7 @@ export const THEMES: ThemeDefinition[] = [
       '#EA580C',
     ],
   },
-  {
-    id: 'velvet',
-    name: 'Red Velvet',
-    mode: 'dark',
-    background: '#1A0C0E',
-    card: '#2A1417',
-    accent: '#E11D48',
-    text: '#FCE7F3',
-    border: '#4C1D24',
-    chartColors: [
-      '#E11D48',
-      '#BE123C',
-      '#F43F5E',
-      '#FB7185',
-      '#34D399',
-      '#FBBF24',
-      '#F9A8D4',
-      '#9F1239',
-    ],
-  },
+  // 2. Midnight Blueberry (Dark) — counterpart to Blueberry
   {
     id: 'midnight',
     name: 'Midnight Blueberry',
@@ -170,6 +202,7 @@ export const THEMES: ThemeDefinition[] = [
       '#A78BFA',
     ],
   },
+  // 3. Midnight Emerald (Dark) — counterpart to Pistachio Matcha
   {
     id: 'emerald',
     name: 'Midnight Emerald',
@@ -188,6 +221,69 @@ export const THEMES: ThemeDefinition[] = [
       '#F59E0B',
       '#F43F5E',
       '#A78BFA',
+    ],
+  },
+  // 4. Midnight Lavender (Dark) — counterpart to Lavender Berry
+  {
+    id: 'lavender-dark',
+    name: 'Midnight Lavender',
+    mode: 'dark',
+    background: '#110C1D',
+    card: '#1B132E',
+    accent: '#8B5CF6',
+    text: '#F5F3FF',
+    border: '#3B2C5C',
+    chartColors: [
+      '#8B5CF6',
+      '#7C3AED',
+      '#A78BFA',
+      '#C4B5FD',
+      '#34D399',
+      '#F43F5E',
+      '#FBBF24',
+      '#38BDF8',
+    ],
+  },
+  // 5. Red Velvet (Dark) — counterpart to Red Velvet (Light)
+  {
+    id: 'velvet',
+    name: 'Red Velvet',
+    mode: 'dark',
+    background: '#1A0C0E',
+    card: '#2A1417',
+    accent: '#E11D48',
+    text: '#FCE7F3',
+    border: '#4C1D24',
+    chartColors: [
+      '#E11D48',
+      '#BE123C',
+      '#F43F5E',
+      '#FB7185',
+      '#34D399',
+      '#FBBF24',
+      '#F9A8D4',
+      '#9F1239',
+    ],
+  },
+  // 6. Obsidian Dark (Basic Dark) — counterpart to Pure Light
+  {
+    id: 'obsidian-dark',
+    name: 'Obsidian Dark',
+    mode: 'dark',
+    background: '#09090B',
+    card: '#18181B',
+    accent: '#A1A1AA',
+    text: '#FAFAFA',
+    border: '#27272A',
+    chartColors: [
+      '#A1A1AA',
+      '#D4D4D8',
+      '#71717A',
+      '#34D399',
+      '#F87171',
+      '#FBBF24',
+      '#60A5FA',
+      '#52525B',
     ],
   },
 ];

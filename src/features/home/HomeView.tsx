@@ -48,6 +48,13 @@ interface CardDef {
     investRatio: number;
     hasPositive: boolean;
   };
+  avgSavingsBreakdown?: {
+    liquidAmount: number;
+    investAmount: number;
+    liquidRatio: number;
+    investRatio: number;
+    hasPositive: boolean;
+  };
 }
 
 const METRIC_LABELS: Partial<Record<MetricKey, string>> = {
@@ -61,6 +68,8 @@ const METRIC_LABELS: Partial<Record<MetricKey, string>> = {
   totalInvestment: 'Total Invested',
   providentFund: 'Provident Fund',
   avgMonthlySavings: 'Avg Monthly Savings',
+  avgMonthlyInvestment: 'Avg Monthly Investment',
+  avgMonthlyLiquid: 'Avg Monthly Liquid',
   totalIncome: 'Lifetime Income',
   totalSpends: 'Lifetime Spends',
   incomeMinusSpends: 'Income − Spends',
@@ -148,6 +157,20 @@ export function HomeView({
     };
   }, [metrics.liquidBalance, metrics.investmentBalance]);
 
+  const { avgSavingsLiquidRatio, avgSavingsInvestRatio, hasPositiveAvgSavings } = useMemo(() => {
+    const posLiquid = Math.max(0, metrics.avgMonthlyLiquid);
+    const posInvest = Math.max(0, metrics.avgMonthlyInvestment);
+    const total = posLiquid + posInvest;
+    if (total <= 0) {
+      return { avgSavingsLiquidRatio: 0, avgSavingsInvestRatio: 0, hasPositiveAvgSavings: false };
+    }
+    return {
+      avgSavingsLiquidRatio: (posLiquid / total) * 100,
+      avgSavingsInvestRatio: (posInvest / total) * 100,
+      hasPositiveAvgSavings: true,
+    };
+  }, [metrics.avgMonthlyLiquid, metrics.avgMonthlyInvestment]);
+
   const currentMonthSavings = useMemo(
     () => metrics.currentMonthLiquid + metrics.currentMonthInvestment,
     [metrics.currentMonthLiquid, metrics.currentMonthInvestment]
@@ -226,6 +249,15 @@ export function HomeView({
         key: 'netWorth',
         label: 'Net Worth',
         value: formatCurrency(metrics.netWorth),
+        subtext:
+          metrics.providentFundBalance > 0 ? (
+            <span className="text-primary-foreground/90 font-semibold">
+              With PF:{' '}
+              <span className="font-bold tabular-nums">
+                {formatCurrency(metrics.netWorth + metrics.providentFundBalance)}
+              </span>
+            </span>
+          ) : undefined,
         tone: 'hero',
         className: 'w-full',
         iconHint: 'chart',
@@ -263,6 +295,14 @@ export function HomeView({
         key: 'providentFund',
         label: 'Provident Fund',
         value: formatCurrency(metrics.providentFundBalance),
+        subtext: (
+          <span className="text-text-muted">
+            Net Worth with PF:{' '}
+            <span className="font-bold tabular-nums text-text">
+              {formatCurrency(metrics.netWorth + metrics.providentFundBalance)}
+            </span>
+          </span>
+        ),
         tone: 'teal',
         className: 'col-span-2 sm:col-span-2 md:col-span-2',
         iconHint: 'list',
@@ -279,9 +319,16 @@ export function HomeView({
         label: 'Avg Monthly Savings',
         value: formatCurrency(metrics.avgMonthlySavings),
         tone: 'hero',
-        className: 'col-span-2 sm:col-span-3 md:col-span-2',
+        className: 'col-span-full',
         iconHint: 'chart',
         interactive: true,
+        avgSavingsBreakdown: {
+          liquidAmount: metrics.avgMonthlyLiquid,
+          investAmount: metrics.avgMonthlyInvestment,
+          liquidRatio: avgSavingsLiquidRatio,
+          investRatio: avgSavingsInvestRatio,
+          hasPositive: hasPositiveAvgSavings,
+        },
       },
       {
         key: 'totalIncome',
@@ -570,19 +617,101 @@ export function HomeView({
         </div>
       )}
 
-      {card.key === 'avgMonthlySavings' && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md dark:bg-white/15">
-            <span>
-              {metrics.avgMonthlySavingsPct < 0 ? '−' : ''}
-              {Math.abs(metrics.avgMonthlySavingsPct).toFixed(1)}%
+      {card.avgSavingsBreakdown && (
+        <div className="mt-4 space-y-2.5 border-t border-white/20 pt-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md dark:bg-white/15">
+              <span>
+                {metrics.avgMonthlySavingsPct < 0 ? '−' : ''}
+                {Math.abs(metrics.avgMonthlySavingsPct).toFixed(1)}%
+              </span>
+              <span className="font-medium opacity-90">avg savings rate</span>
             </span>
-            <span className="font-medium opacity-90">avg savings rate</span>
-          </span>
-          {metrics.monthsTracked > 0 && (
-            <span className="text-[11px] font-medium text-white/80">
-              over {metrics.monthsTracked} {metrics.monthsTracked === 1 ? 'month' : 'months'}
-            </span>
+            {metrics.monthsTracked > 0 && (
+              <span className="text-[11px] font-medium text-white/80">
+                over {metrics.monthsTracked} {metrics.monthsTracked === 1 ? 'month' : 'months'}
+              </span>
+            )}
+          </div>
+
+          {/* 2-column interactive sub-tiles */}
+          <div className="grid grid-cols-2 gap-2.5 text-left">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveMetric('avgMonthlyLiquid');
+              }}
+              className="rounded-xl bg-white/10 p-2.5 backdrop-blur-xs transition-all hover:bg-white/15 active:scale-[0.98] text-left cursor-pointer group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground/80">
+                  <span className="h-2 w-2 rounded-full bg-teal-300 shadow-xs" />
+                  <span>Avg Liquid</span>
+                </span>
+                <span className="text-[10px] opacity-0 transition-opacity group-hover:opacity-100 text-white font-semibold">
+                  View →
+                </span>
+              </div>
+              <p className="mt-1 font-display text-base font-bold tabular-nums text-primary-foreground">
+                {card.avgSavingsBreakdown.liquidAmount < 0 ? '−' : ''}
+                {formatCurrency(Math.abs(card.avgSavingsBreakdown.liquidAmount))}
+              </p>
+              <p className="text-[10px] font-medium text-primary-foreground/75">
+                {card.avgSavingsBreakdown.liquidRatio.toFixed(1)}% of avg savings
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveMetric('avgMonthlyInvestment');
+              }}
+              className="rounded-xl bg-white/10 p-2.5 backdrop-blur-xs transition-all hover:bg-white/15 active:scale-[0.98] text-left cursor-pointer group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground/80">
+                  <span className="h-2 w-2 rounded-full bg-amber-200 shadow-xs" />
+                  <span>Avg Invested</span>
+                </span>
+                <span className="text-[10px] opacity-0 transition-opacity group-hover:opacity-100 text-white font-semibold">
+                  View →
+                </span>
+              </div>
+              <p className="mt-1 font-display text-base font-bold tabular-nums text-primary-foreground">
+                {formatCurrency(card.avgSavingsBreakdown.investAmount)}
+              </p>
+              <p className="text-[10px] font-medium text-primary-foreground/75">
+                {card.avgSavingsBreakdown.investRatio.toFixed(1)}% of avg savings
+              </p>
+            </button>
+          </div>
+
+          {/* Dual 100% Progress Bar */}
+          {card.avgSavingsBreakdown.hasPositive ? (
+            <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-black/20 p-0.5 shadow-inner">
+              {card.avgSavingsBreakdown.liquidRatio > 0 && (
+                <div
+                  className="rounded-full bg-teal-300 transition-all duration-500 ease-out shadow-xs"
+                  style={{
+                    width: `${card.avgSavingsBreakdown.liquidRatio}%`,
+                  }}
+                  title={`Avg Liquid: ${card.avgSavingsBreakdown.liquidRatio.toFixed(1)}%`}
+                />
+              )}
+              {card.avgSavingsBreakdown.investRatio > 0 && (
+                <div
+                  className="rounded-full bg-amber-200 transition-all duration-500 ease-out shadow-xs"
+                  style={{
+                    width: `${card.avgSavingsBreakdown.investRatio}%`,
+                  }}
+                  title={`Avg Invested: ${card.avgSavingsBreakdown.investRatio.toFixed(1)}%`}
+                />
+              )}
+            </div>
+          ) : (
+            <div className="h-2 w-full rounded-full bg-white/20" />
           )}
         </div>
       )}

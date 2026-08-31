@@ -1,7 +1,7 @@
+import { useState } from 'react';
 import {
   BookOpen,
   CalendarSync,
-  Check,
   Download,
   Eye,
   EyeOff,
@@ -21,12 +21,10 @@ import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { useRecipeConfig } from '../../hooks/useRecipeConfig';
 import { useTheme } from '../../hooks/useTheme';
 import { FONTS } from '../../lib/fonts';
-import {
-  DARK_THEMES,
-  LIGHT_THEMES,
-  type ThemeDefinition,
-} from '../../lib/themes';
+import { DARK_THEMES, LIGHT_THEMES } from '../../lib/themes';
 import { SoftButton } from '../../components/ui/SoftButton';
+import { ThemeModal } from './ThemeModal';
+import { FontModal } from './FontModal';
 
 interface SettingsViewProps {
   userName?: string;
@@ -43,57 +41,6 @@ interface SettingsViewProps {
   onChangeSheet: () => void;
   onLogout: () => void;
   onInstallGuide: () => void;
-}
-
-function ThemeCard({
-  theme,
-  selected,
-  onSelect,
-}: {
-  theme: ThemeDefinition;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`group relative flex flex-col items-start gap-2.5 rounded-2xl border p-3.5 text-left transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/60 active:scale-[0.98] ${
-        selected
-          ? 'border-primary bg-surface-strong shadow-warm-md ring-2 ring-primary/20'
-          : 'border-border/80 bg-surface/70 hover:border-border hover:bg-surface-strong/60'
-      }`}
-    >
-      <div className="flex w-full items-center justify-between">
-        <span
-          className="relative inline-flex h-6 w-12 shrink-0 overflow-hidden rounded-full border border-black/10 shadow-warm-sm dark:border-white/15"
-          aria-hidden="true"
-        >
-          <span
-            className="h-full w-[40%]"
-            style={{ backgroundColor: theme.background }}
-          />
-          <span
-            className="h-full w-[30%]"
-            style={{ backgroundColor: theme.card }}
-          />
-          <span
-            className="h-full flex-1"
-            style={{ backgroundColor: theme.accent }}
-          />
-        </span>
-        {selected && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-            <Check className="h-3 w-3" strokeWidth={3} />
-          </span>
-        )}
-      </div>
-      <div>
-        <p className="text-xs font-semibold text-text">{theme.name}</p>
-        <p className="text-[10px] capitalize text-text-muted">{theme.mode} palette</p>
-      </div>
-    </button>
-  );
 }
 
 export function SettingsView({
@@ -113,10 +60,13 @@ export function SettingsView({
   onInstallGuide,
 }: SettingsViewProps) {
   const { masked, toggleMask, formatCurrency } = useMask();
-  const { themeId, setTheme } = useTheme();
-  const { fontId, setFont } = useFont();
+  const { themeId } = useTheme();
+  const { fontId } = useFont();
   const { state: installState, install, canPrompt } = usePwaInstall();
   const { recurringRules } = useRecipeConfig();
+
+  const [themeModalOpen, setThemeModalOpen] = useState(false);
+  const [fontModalOpen, setFontModalOpen] = useState(false);
 
   const activeRecurringCount = recurringRules.filter((r) => r.active).length;
   const activeRecurringTotal = recurringRules
@@ -124,6 +74,10 @@ export function SettingsView({
     .reduce((sum, r) => sum + r.amount, 0);
 
   const userInitial = (userName || userEmail || 'U').trim().charAt(0).toUpperCase();
+
+  const currentTheme =
+    [...LIGHT_THEMES, ...DARK_THEMES].find((t) => t.id === themeId) || LIGHT_THEMES[0];
+  const currentFont = FONTS.find((f) => f.id === fontId) || FONTS[0];
 
   return (
     <div className="space-y-6 pb-12">
@@ -205,65 +159,72 @@ export function SettingsView({
             id="settings-appearance-heading"
             className="text-xs font-bold uppercase tracking-wider text-text-muted"
           >
-            Appearance & Themes
+            Appearance & Styling
           </h3>
         </div>
 
-        {/* Theme Picker */}
-        <div className="cozy-card space-y-3.5 p-4 sm:p-5">
-          <div>
-            <p className="text-xs font-semibold text-text-secondary">Light Themes</p>
-            <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {LIGHT_THEMES.map((t) => (
-                <ThemeCard
-                  key={t.id}
-                  theme={t}
-                  selected={themeId === t.id}
-                  onSelect={() => setTheme(t.id)}
-                />
-              ))}
+        <div className="cozy-card divide-y divide-border/60">
+          {/* Theme & Palette Option */}
+          <button
+            type="button"
+            onClick={() => setThemeModalOpen(true)}
+            className="flex w-full items-center justify-between p-4 text-left hover:bg-surface-strong/40 transition-colors"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Palette className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-text">Theme & Color Palette</p>
+                <div className="mt-0.5 flex items-center gap-1.5 min-w-0">
+                  <span
+                    className="relative inline-flex h-3 w-6 shrink-0 overflow-hidden rounded-full border border-black/10 dark:border-white/15"
+                    aria-hidden="true"
+                  >
+                    <span
+                      className="h-full w-[40%]"
+                      style={{ backgroundColor: currentTheme.background }}
+                    />
+                    <span
+                      className="h-full w-[30%]"
+                      style={{ backgroundColor: currentTheme.card }}
+                    />
+                    <span
+                      className="h-full flex-1"
+                      style={{ backgroundColor: currentTheme.accent }}
+                    />
+                  </span>
+                  <p className="truncate text-[11px] text-text-muted">
+                    {currentTheme.name} ({currentTheme.mode})
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+            <span className="shrink-0 text-xs text-text-muted font-medium ml-2">Change &rarr;</span>
+          </button>
 
-          <div className="pt-3 border-t border-border/60">
-            <p className="text-xs font-semibold text-text-secondary">Dark Themes</p>
-            <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {DARK_THEMES.map((t) => (
-                <ThemeCard
-                  key={t.id}
-                  theme={t}
-                  selected={themeId === t.id}
-                  onSelect={() => setTheme(t.id)}
-                />
-              ))}
+          {/* Typography Style Option */}
+          <button
+            type="button"
+            onClick={() => setFontModalOpen(true)}
+            className="flex w-full items-center justify-between p-4 text-left hover:bg-surface-strong/40 transition-colors"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Type className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-text">Typography Style</p>
+                <p
+                  className="truncate text-[11px] text-text-muted mt-0.5"
+                  style={{ fontFamily: currentFont.body }}
+                >
+                  {currentFont.name} · Aa Bb 123
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Font Picker */}
-        <div className="cozy-card space-y-3 p-4 sm:p-5">
-          <div className="flex items-center gap-2">
-            <Type className="h-4 w-4 text-primary" />
-            <p className="text-xs font-semibold text-text">Typography Style</p>
-          </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {FONTS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFont(f.id)}
-                className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/60 active:scale-[0.98] ${
-                  fontId === f.id
-                    ? 'border-primary bg-primary/10 text-primary font-semibold'
-                    : 'border-border/70 bg-surface/60 text-text-secondary hover:border-border hover:bg-surface-strong'
-                }`}
-                style={{ fontFamily: f.body }}
-              >
-                <span className="text-xs">{f.name}</span>
-                {fontId === f.id && <Check className="h-3.5 w-3.5 text-primary" />}
-              </button>
-            ))}
-          </div>
+            <span className="shrink-0 text-xs text-text-muted font-medium ml-2">Change &rarr;</span>
+          </button>
         </div>
       </section>
 
@@ -518,6 +479,9 @@ export function SettingsView({
           Muffin is an independent developer project crafted with 🧁 by Rahul Gouri.
         </p>
       </section>
+
+      <ThemeModal open={themeModalOpen} onClose={() => setThemeModalOpen(false)} />
+      <FontModal open={fontModalOpen} onClose={() => setFontModalOpen(false)} />
     </div>
   );
 }
