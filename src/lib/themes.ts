@@ -332,21 +332,23 @@ export function applyThemeToDocument(themeId: ThemeId): void {
     document.body.style.backgroundColor = theme.background;
   }
 
-  // Android Chrome / PWA status bar — mutate the EXISTING meta node in-place.
-  // Chrome's TabThemeColorHelper observes content-attribute mutations on the
-  // persistent meta[name="theme-color"] node; newly inserted nodes are NOT
-  // reliably picked up by the observer in an installed WebAPK context.
-  let themeColorMeta = document.querySelector<HTMLMetaElement>(
+  // Android Chrome / PWA status bar — mutate ALL existing meta[name="theme-color"]
+  // nodes in-place. vite-plugin-pwa injects a second tag from the manifest's
+  // theme_color at build/dev time, so we must update every one we find.
+  // Chrome's TabThemeColorHelper observes content-attribute mutations on
+  // persistent nodes; newly inserted nodes are NOT reliably picked up in a
+  // WebAPK context.
+  const themeColorMetas = document.querySelectorAll<HTMLMetaElement>(
     'meta[name="theme-color"]:not([media])'
   );
-  if (themeColorMeta) {
-    themeColorMeta.setAttribute('content', theme.background);
+  if (themeColorMetas.length > 0) {
+    themeColorMetas.forEach((m) => m.setAttribute('content', theme.background));
   } else {
     // Fallback: no pre-existing tag — create one at the very top of <head>.
-    themeColorMeta = document.createElement('meta');
-    themeColorMeta.name = 'theme-color';
-    themeColorMeta.setAttribute('content', theme.background);
-    document.head.insertBefore(themeColorMeta, document.head.firstChild);
+    const newMeta = document.createElement('meta');
+    newMeta.name = 'theme-color';
+    newMeta.setAttribute('content', theme.background);
+    document.head.insertBefore(newMeta, document.head.firstChild);
   }
 
   // iOS: control status bar icon contrast

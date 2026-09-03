@@ -83,12 +83,10 @@
           document.body.style.backgroundColor = themeColor;
         }
 
-        // Mutate the existing theme-color tag in-place — Chrome WebAPK only picks up
-        // content attribute mutations on persistent nodes, not newly appended tags.
-        var themeMeta = document.querySelector('meta[name="theme-color"]');
-        if (themeMeta) {
-          themeMeta.setAttribute('content', themeColor);
-        }
+        // Mutate ALL existing theme-color tags in-place — vite-plugin-pwa injects
+        // a second one from manifest.theme_color, and Chrome picks the first it finds.
+        var themeMetaTags = document.querySelectorAll('meta[name="theme-color"]');
+        themeMetaTags.forEach(function(m) { m.setAttribute('content', themeColor); });
         var appleStatusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
         if (appleStatusBarMeta) {
           appleStatusBarMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
