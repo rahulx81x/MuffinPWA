@@ -124,14 +124,39 @@
     document.body.style.backgroundColor = theme.background;
   }
 
-  var metas = document.querySelectorAll('meta[name="theme-color"]');
-  for (var i = 0; i < metas.length; i++) {
-    metas[i].setAttribute('content', theme.background);
+  var colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
+  if (!colorSchemeMeta) {
+    colorSchemeMeta = document.createElement('meta');
+    colorSchemeMeta.name = 'color-scheme';
+    document.head.appendChild(colorSchemeMeta);
   }
+  colorSchemeMeta.setAttribute('content', theme.dark ? 'dark light' : 'light dark');
+
+  var existingMetas = document.querySelectorAll('meta[name="theme-color"]');
+  for (var i = 0; i < existingMetas.length; i++) {
+    existingMetas[i].remove();
+  }
+
+  var configs = [
+    { media: null },
+    { media: '(prefers-color-scheme: light)' },
+    { media: '(prefers-color-scheme: dark)' },
+  ];
+  for (var j = 0; j < configs.length; j++) {
+    var meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    if (configs[j].media) meta.media = configs[j].media;
+    meta.content = theme.background;
+    document.head.appendChild(meta);
+  }
+
   var appleStatusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-  if (appleStatusBarMeta) {
-    appleStatusBarMeta.setAttribute('content', theme.dark ? 'black-translucent' : 'default');
+  if (!appleStatusBarMeta) {
+    appleStatusBarMeta = document.createElement('meta');
+    appleStatusBarMeta.name = 'apple-mobile-web-app-status-bar-style';
+    document.head.appendChild(appleStatusBarMeta);
   }
+  appleStatusBarMeta.setAttribute('content', theme.dark ? 'black-translucent' : 'default');
 
   var muffin =
     '<path d="M6.5 10.5c0-1.2.7-2.3 1.8-2.8.4-1.6 1.9-2.7 3.7-2.7s3.3 1.1 3.7 2.7c1.1.5 1.8 1.6 1.8 2.8 0 .4-.1.8-.2 1.1H6.7c-.1-.3-.2-.7-.2-1.1Z" fill="' +

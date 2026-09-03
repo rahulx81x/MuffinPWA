@@ -1,5 +1,5 @@
 import type { ThemeDefinition, ThemeId } from './themes';
-import { getTheme } from './themes';
+import { applyThemeToDocument, getTheme } from './themes';
 
 /** App-icon / favicon SVG with padded background (maskable-safe). */
 export function buildMuffinAppIconSvg(theme: ThemeDefinition): string {
@@ -94,10 +94,12 @@ export function muffinIconDataUrl(themeId: ThemeId): string {
  */
 export function applyMuffinIconsToDocument(themeId: ThemeId): void {
   if (typeof document === 'undefined') return;
-  const theme = getTheme(themeId);
   const href = muffinIconDataUrl(themeId);
 
-  // 1. Favicon SVG (tab / bookmark only — install icons stay on /icons/*.png)
+  // 1. Sync theme tokens, background, and status bar
+  applyThemeToDocument(themeId);
+
+  // 2. Favicon SVG (tab / bookmark only — install icons stay on /icons/*.png)
   let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
   if (!favicon) {
     favicon = document.createElement('link');
@@ -107,31 +109,7 @@ export function applyMuffinIconsToDocument(themeId: ThemeId): void {
   favicon.type = 'image/svg+xml';
   favicon.href = href;
 
-  // 2. Status / chrome color — must match canvas so Android status bar blends
-  document
-    .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
-    .forEach((meta) => {
-      meta.content = theme.background;
-    });
-  if (!document.querySelector('meta[name="theme-color"]')) {
-    const themeColorMeta = document.createElement('meta');
-    themeColorMeta.name = 'theme-color';
-    themeColorMeta.content = theme.background;
-    document.head.appendChild(themeColorMeta);
-  }
-
-  // 3. iOS: adapt status bar icon tone (default for light, black-translucent for dark)
-  let appleStatusBarMeta = document.querySelector<HTMLMetaElement>(
-    'meta[name="apple-mobile-web-app-status-bar-style"]'
-  );
-  if (!appleStatusBarMeta) {
-    appleStatusBarMeta = document.createElement('meta');
-    appleStatusBarMeta.name = 'apple-mobile-web-app-status-bar-style';
-    document.head.appendChild(appleStatusBarMeta);
-  }
-  appleStatusBarMeta.content = theme.mode === 'dark' ? 'black-translucent' : 'default';
-
-  // Keep the static /manifest.webmanifest link — never swap to blob:
+  // 3. Keep the static /manifest.webmanifest link — never swap to blob:
   const manifestLink = document.querySelector<HTMLLinkElement>(
     'link[rel="manifest"]'
   );

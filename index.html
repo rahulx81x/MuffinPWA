@@ -14,7 +14,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Muffin" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#FAF5EF" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF5EF" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#FAF5EF" />
     <meta
       name="description"
       content="Muffin is a personal finance dashboard PWA. Sign in with Google to connect your own Sheet, track income, expenses, and investments, and keep your data in Drive."
@@ -81,6 +84,11 @@
         root.style.backgroundColor = themeColor;
         if (document.body) {
           document.body.style.backgroundColor = themeColor;
+        }
+
+        var colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
+        if (colorSchemeMeta) {
+          colorSchemeMeta.setAttribute('content', isDark ? 'dark light' : 'light dark');
         }
 
         var metas = document.querySelectorAll('meta[name="theme-color"]');
