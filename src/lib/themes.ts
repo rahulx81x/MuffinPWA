@@ -318,9 +318,11 @@ export function resolveInitialThemeId(): ThemeId {
   return DEFAULT_LIGHT_THEME;
 }
 
-export function syncThemeColorToDocument(theme: ThemeDefinition): void {
+export function applyThemeToDocument(themeId: ThemeId): void {
   if (typeof document === 'undefined') return;
+  const theme = getTheme(themeId);
 
+  // CSS tokens & body background
   const root = document.documentElement;
   root.setAttribute('data-theme', theme.id);
   root.classList.toggle('dark', theme.mode === 'dark');
@@ -330,42 +332,24 @@ export function syncThemeColorToDocument(theme: ThemeDefinition): void {
     document.body.style.backgroundColor = theme.background;
   }
 
-  // 1. Declare color-scheme so Android/Chrome respects dynamic dark/light themes
-  let colorSchemeMeta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
-  if (!colorSchemeMeta) {
-    colorSchemeMeta = document.createElement('meta');
-    colorSchemeMeta.name = 'color-scheme';
-    document.head.appendChild(colorSchemeMeta);
+  // Android Chrome / PWA status bar — mutate the EXISTING meta node in-place.
+  // Chrome's TabThemeColorHelper observes content-attribute mutations on the
+  // persistent meta[name="theme-color"] node; newly inserted nodes are NOT
+  // reliably picked up by the observer in an installed WebAPK context.
+  let themeColorMeta = document.querySelector<HTMLMetaElement>(
+    'meta[name="theme-color"]:not([media])'
+  );
+  if (themeColorMeta) {
+    themeColorMeta.content = theme.background;
+  } else {
+    // Fallback: no pre-existing tag found — create one.
+    themeColorMeta = document.createElement('meta');
+    themeColorMeta.name = 'theme-color';
+    themeColorMeta.content = theme.background;
+    document.head.insertBefore(themeColorMeta, document.head.firstChild);
   }
-  colorSchemeMeta.content = theme.mode === 'dark' ? 'dark light' : 'light dark';
 
-  // 2. Android Chrome / PWA status bar & navigation bar theme color
-  // Chromium on Android does not reliably update the status bar when existing meta tags
-  // only have their `content` attribute mutated, especially if system dark mode is active.
-  // We resolve this by removing all existing theme-color metas and appending new tags for:
-  // - generic fallback
-  // - media="(prefers-color-scheme: light)"
-  // - media="(prefers-color-scheme: dark)"
-  // All pointing to the selected theme's background so the status bar updates immediately
-  // regardless of the Android device's system theme.
-  const existingMetas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
-  existingMetas.forEach((meta) => meta.remove());
-
-  const variants = [
-    { media: null },
-    { media: '(prefers-color-scheme: light)' },
-    { media: '(prefers-color-scheme: dark)' },
-  ];
-
-  variants.forEach(({ media }) => {
-    const meta = document.createElement('meta');
-    meta.name = 'theme-color';
-    if (media) meta.media = media;
-    meta.content = theme.background;
-    document.head.appendChild(meta);
-  });
-
-  // 3. iOS standalone status bar style: default (dark text) for light themes, black-translucent (white text) for dark themes
+  // iOS: control status bar icon contrast
   let appleStatusBarMeta = document.querySelector<HTMLMetaElement>(
     'meta[name="apple-mobile-web-app-status-bar-style"]'
   );
@@ -377,9 +361,4 @@ export function syncThemeColorToDocument(theme: ThemeDefinition): void {
   appleStatusBarMeta.content = theme.mode === 'dark' ? 'black-translucent' : 'default';
 }
 
-export function applyThemeToDocument(themeId: ThemeId): void {
-  if (typeof document === 'undefined') return;
-  const theme = getTheme(themeId);
-  syncThemeColorToDocument(theme);
-}
 
