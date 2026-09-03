@@ -367,6 +367,26 @@ body,
     border-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
+/* ── Status-bar canvas fill (edge-to-edge / viewport-fit: cover) ──────────
+ * Android 15 mandates edge-to-edge: the system status bar is transparent and
+ * whatever is visually behind it becomes the visible "status bar colour".
+ * This pseudo-element fills exactly env(safe-area-inset-top) — the status-bar
+ * region — with the active canvas colour. Driven by --color-canvas, it reacts
+ * to data-theme changes instantly, with no JS or meta-tag cooperation needed.
+ * On desktops / devices with no safe-area the height resolves to 0px (no-op). */
+html::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background-color: var(--color-canvas);
+  z-index: 9999;
+  pointer-events: none;
+  transition: background-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
 :root {
   --font-body: 'Plus Jakarta Sans', 'Outfit', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Outfit', 'Plus Jakarta Sans', sans-serif;

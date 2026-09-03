@@ -340,12 +340,12 @@ export function applyThemeToDocument(themeId: ThemeId): void {
     'meta[name="theme-color"]:not([media])'
   );
   if (themeColorMeta) {
-    themeColorMeta.content = theme.background;
+    themeColorMeta.setAttribute('content', theme.background);
   } else {
-    // Fallback: no pre-existing tag found — create one.
+    // Fallback: no pre-existing tag — create one at the very top of <head>.
     themeColorMeta = document.createElement('meta');
     themeColorMeta.name = 'theme-color';
-    themeColorMeta.content = theme.background;
+    themeColorMeta.setAttribute('content', theme.background);
     document.head.insertBefore(themeColorMeta, document.head.firstChild);
   }
 
