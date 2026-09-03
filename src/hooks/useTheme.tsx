@@ -44,6 +44,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [themeId]);
 
   const setTheme = useCallback((id: ThemeId) => {
+    applyThemeToDocument(id);
+    applyMuffinIconsToDocument(id);
+    localStorage.setItem(THEME_STORAGE_KEY, id);
     setThemeId(id);
   }, []);
 
