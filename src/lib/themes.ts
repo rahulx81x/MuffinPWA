@@ -319,12 +319,37 @@ export function resolveInitialThemeId(): ThemeId {
 }
 
 export function applyThemeToDocument(themeId: ThemeId): void {
+  if (typeof document === 'undefined') return;
   const theme = getTheme(themeId);
   const root = document.documentElement;
   root.setAttribute('data-theme', theme.id);
   root.classList.toggle('dark', theme.mode === 'dark');
+  root.style.colorScheme = theme.mode;
+  root.style.backgroundColor = theme.background;
+  if (document.body) {
+    document.body.style.backgroundColor = theme.background;
+  }
 
-  document
-    .querySelectorAll('meta[name="theme-color"]')
-    .forEach((el) => el.setAttribute('content', theme.background));
+  // 1. Android Chrome / PWA status bar & navigation bar theme color
+  const themeColorMetas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
+  if (themeColorMetas.length > 0) {
+    themeColorMetas.forEach((el) => el.setAttribute('content', theme.background));
+  } else {
+    const meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    meta.content = theme.background;
+    document.head.appendChild(meta);
+  }
+
+  // 2. iOS standalone status bar style: default (dark text) for light themes, black-translucent (white text) for dark themes
+  let appleStatusBarMeta = document.querySelector<HTMLMetaElement>(
+    'meta[name="apple-mobile-web-app-status-bar-style"]'
+  );
+  if (!appleStatusBarMeta) {
+    appleStatusBarMeta = document.createElement('meta');
+    appleStatusBarMeta.name = 'apple-mobile-web-app-status-bar-style';
+    document.head.appendChild(appleStatusBarMeta);
+  }
+  appleStatusBarMeta.content = theme.mode === 'dark' ? 'black-translucent' : 'default';
 }
+

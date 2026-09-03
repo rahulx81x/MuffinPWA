@@ -13,10 +13,14 @@
     blueberry: true,
     pistachio: true,
     lavender: true,
+    'velvet-light': true,
+    'pure-light': true,
     chocolate: true,
-    velvet: true,
     midnight: true,
     emerald: true,
+    'lavender-dark': true,
+    velvet: true,
+    'obsidian-dark': true,
   };
 
   var THEMES = {
@@ -44,16 +48,22 @@
       chip: '#f5f0fb',
       dark: false,
     },
+    'velvet-light': {
+      background: '#FDF4F5',
+      accent: '#E11D48',
+      chip: '#fff7f8',
+      dark: false,
+    },
+    'pure-light': {
+      background: '#FFFFFF',
+      accent: '#18181B',
+      chip: '#f4f4f5',
+      dark: false,
+    },
     chocolate: {
       background: '#1C130D',
       accent: '#F59E0B',
       chip: '#34261c',
-      dark: true,
-    },
-    velvet: {
-      background: '#1A0C0E',
-      accent: '#E11D48',
-      chip: '#351a1e',
       dark: true,
     },
     midnight: {
@@ -66,6 +76,24 @@
       background: '#0B1612',
       accent: '#10B981',
       chip: '#173024',
+      dark: true,
+    },
+    'lavender-dark': {
+      background: '#110C1D',
+      accent: '#8B5CF6',
+      chip: '#241b3b',
+      dark: true,
+    },
+    velvet: {
+      background: '#1A0C0E',
+      accent: '#E11D48',
+      chip: '#351a1e',
+      dark: true,
+    },
+    'obsidian-dark': {
+      background: '#09090B',
+      accent: '#A1A1AA',
+      chip: '#27272a',
       dark: true,
     },
   };
@@ -90,10 +118,19 @@
   var root = document.documentElement;
   root.setAttribute('data-theme', id);
   root.classList.toggle('dark', !!theme.dark);
+  root.style.colorScheme = theme.dark ? 'dark' : 'light';
+  root.style.backgroundColor = theme.background;
+  if (document.body) {
+    document.body.style.backgroundColor = theme.background;
+  }
 
   var metas = document.querySelectorAll('meta[name="theme-color"]');
   for (var i = 0; i < metas.length; i++) {
     metas[i].setAttribute('content', theme.background);
+  }
+  var appleStatusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (appleStatusBarMeta) {
+    appleStatusBarMeta.setAttribute('content', theme.dark ? 'black-translucent' : 'default');
   }
 
   var muffin =

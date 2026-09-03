@@ -120,7 +120,7 @@ export function applyMuffinIconsToDocument(themeId: ThemeId): void {
     document.head.appendChild(themeColorMeta);
   }
 
-  // 3. iOS: black-translucent lets the page canvas show under the status bar
+  // 3. iOS: adapt status bar icon tone (default for light, black-translucent for dark)
   let appleStatusBarMeta = document.querySelector<HTMLMetaElement>(
     'meta[name="apple-mobile-web-app-status-bar-style"]'
   );
@@ -129,7 +129,7 @@ export function applyMuffinIconsToDocument(themeId: ThemeId): void {
     appleStatusBarMeta.name = 'apple-mobile-web-app-status-bar-style';
     document.head.appendChild(appleStatusBarMeta);
   }
-  appleStatusBarMeta.content = 'black-translucent';
+  appleStatusBarMeta.content = theme.mode === 'dark' ? 'black-translucent' : 'default';
 
   // Keep the static /manifest.webmanifest link — never swap to blob:
   const manifestLink = document.querySelector<HTMLLinkElement>(
