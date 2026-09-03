@@ -14,10 +14,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Muffin" />
-    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#FAF5EF" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF5EF" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#FAF5EF" />
     <meta
       name="description"
       content="Muffin is a personal finance dashboard PWA. Sign in with Google to connect your own Sheet, track income, expenses, and investments, and keep your data in Drive."
@@ -86,14 +83,11 @@
           document.body.style.backgroundColor = themeColor;
         }
 
-        var colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
-        if (colorSchemeMeta) {
-          colorSchemeMeta.setAttribute('content', isDark ? 'dark light' : 'light dark');
-        }
-
-        var metas = document.querySelectorAll('meta[name="theme-color"]');
-        for (var i = 0; i < metas.length; i++) {
-          metas[i].setAttribute('content', themeColor);
+        // Mutate the existing theme-color tag in-place — Chrome WebAPK only picks up
+        // content attribute mutations on persistent nodes, not newly appended tags.
+        var themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) {
+          themeMeta.setAttribute('content', themeColor);
         }
         var appleStatusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
         if (appleStatusBarMeta) {

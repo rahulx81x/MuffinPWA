@@ -124,30 +124,14 @@
     document.body.style.backgroundColor = theme.background;
   }
 
-  var colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
-  if (!colorSchemeMeta) {
-    colorSchemeMeta = document.createElement('meta');
-    colorSchemeMeta.name = 'color-scheme';
-    document.head.appendChild(colorSchemeMeta);
-  }
-  colorSchemeMeta.setAttribute('content', theme.dark ? 'dark light' : 'light dark');
-
-  var existingMetas = document.querySelectorAll('meta[name="theme-color"]');
-  for (var i = 0; i < existingMetas.length; i++) {
-    existingMetas[i].remove();
-  }
-
-  var configs = [
-    { media: null },
-    { media: '(prefers-color-scheme: light)' },
-    { media: '(prefers-color-scheme: dark)' },
-  ];
-  for (var j = 0; j < configs.length; j++) {
-    var meta = document.createElement('meta');
-    meta.name = 'theme-color';
-    if (configs[j].media) meta.media = configs[j].media;
-    meta.content = theme.background;
-    document.head.appendChild(meta);
+  var themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) {
+    themeMeta.setAttribute('content', theme.background);
+  } else {
+    var newMeta = document.createElement('meta');
+    newMeta.name = 'theme-color';
+    newMeta.content = theme.background;
+    document.head.appendChild(newMeta);
   }
 
   var appleStatusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
