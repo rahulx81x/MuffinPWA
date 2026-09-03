@@ -339,10 +339,13 @@ export function applyThemeToDocument(themeId: ThemeId): void {
   // persistent nodes; newly inserted nodes are NOT reliably picked up in a
   // WebAPK context.
   const themeColorMetas = document.querySelectorAll<HTMLMetaElement>(
-    'meta[name="theme-color"]:not([media])'
+    'meta[name="theme-color"]'
   );
   if (themeColorMetas.length > 0) {
-    themeColorMetas.forEach((m) => m.setAttribute('content', theme.background));
+    themeColorMetas.forEach((m) => {
+      m.setAttribute('content', theme.background);
+      m.removeAttribute('media');
+    });
   } else {
     // Fallback: no pre-existing tag — create one at the very top of <head>.
     const newMeta = document.createElement('meta');
@@ -360,7 +363,8 @@ export function applyThemeToDocument(themeId: ThemeId): void {
     appleStatusBarMeta.name = 'apple-mobile-web-app-status-bar-style';
     document.head.appendChild(appleStatusBarMeta);
   }
-  appleStatusBarMeta.content = theme.mode === 'dark' ? 'black-translucent' : 'default';
+  // iOS: maintain black-translucent so the webview underlays the status bar cleanly
+  appleStatusBarMeta.content = 'black-translucent';
 }
 
 

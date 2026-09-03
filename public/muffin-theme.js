@@ -124,9 +124,12 @@
     document.body.style.backgroundColor = theme.background;
   }
 
-  var themeMeta = document.querySelector('meta[name="theme-color"]');
-  if (themeMeta) {
-    themeMeta.setAttribute('content', theme.background);
+  var themeMetas = document.querySelectorAll('meta[name="theme-color"]');
+  if (themeMetas.length > 0) {
+    themeMetas.forEach(function(m) {
+      m.setAttribute('content', theme.background);
+      m.removeAttribute('media');
+    });
   } else {
     var newMeta = document.createElement('meta');
     newMeta.name = 'theme-color';

@@ -89,7 +89,7 @@
         themeMetaTags.forEach(function(m) { m.setAttribute('content', themeColor); });
         var appleStatusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
         if (appleStatusBarMeta) {
-          appleStatusBarMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
+          appleStatusBarMeta.setAttribute('content', 'black-translucent');
         }
 
         var fonts = {
