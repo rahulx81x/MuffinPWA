@@ -42,20 +42,28 @@
           blueberry: '#F5F6FA',
           pistachio: '#F6F8F3',
           lavender: '#F8F6FC',
+          'velvet-light': '#FDF4F5',
+          'pure-light': '#FFFFFF',
           chocolate: '#1C130D',
-          velvet: '#1A0C0E',
           midnight: '#0B1120',
           emerald: '#0B1612',
+          'lavender-dark': '#110C1D',
+          velvet: '#1A0C0E',
+          'obsidian-dark': '#09090B',
         };
         var darkThemes = {
           classic: false,
           blueberry: false,
           pistachio: false,
           lavender: false,
+          'velvet-light': false,
+          'pure-light': false,
           chocolate: true,
-          velvet: true,
           midnight: true,
           emerald: true,
+          'lavender-dark': true,
+          velvet: true,
+          'obsidian-dark': true,
         };
         var id = localStorage.getItem('muffinTheme');
         if (id === 'caramel') id = 'midnight';
@@ -64,12 +72,24 @@
           if (legacy === 'dark') id = 'chocolate';
           else id = 'classic';
         }
-        document.documentElement.setAttribute('data-theme', id);
-        document.documentElement.classList.toggle('dark', !!darkThemes[id]);
+        var isDark = !!darkThemes[id];
         var themeColor = themes[id] || themes.classic;
+        var root = document.documentElement;
+        root.setAttribute('data-theme', id);
+        root.classList.toggle('dark', isDark);
+        root.style.colorScheme = isDark ? 'dark' : 'light';
+        root.style.backgroundColor = themeColor;
+        if (document.body) {
+          document.body.style.backgroundColor = themeColor;
+        }
+
         var metas = document.querySelectorAll('meta[name="theme-color"]');
         for (var i = 0; i < metas.length; i++) {
           metas[i].setAttribute('content', themeColor);
+        }
+        var appleStatusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+        if (appleStatusBarMeta) {
+          appleStatusBarMeta.setAttribute('content', isDark ? 'black-translucent' : 'default');
         }
 
         var fonts = {
