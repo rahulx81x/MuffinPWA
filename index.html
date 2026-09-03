@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Muffin" />
-    <meta name="theme-color" content="#FAF5EF" />
+    <meta name="theme-color" content="#000000" />
     <meta
       name="description"
       content="Muffin is a personal finance dashboard PWA. Sign in with Google to connect your own Sheet, track income, expenses, and investments, and keep your data in Drive."
@@ -83,10 +83,9 @@
           document.body.style.backgroundColor = themeColor;
         }
 
-        // Mutate ALL existing theme-color tags in-place — vite-plugin-pwa injects
-        // a second one from manifest.theme_color, and Chrome picks the first it finds.
+        // Set AMOLED black for status bar across all themes
         var themeMetaTags = document.querySelectorAll('meta[name="theme-color"]');
-        themeMetaTags.forEach(function(m) { m.setAttribute('content', themeColor); });
+        themeMetaTags.forEach(function(m) { m.setAttribute('content', '#000000'); });
         var appleStatusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
         if (appleStatusBarMeta) {
           appleStatusBarMeta.setAttribute('content', 'black-translucent');

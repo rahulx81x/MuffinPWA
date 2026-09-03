@@ -127,13 +127,13 @@
   var themeMetas = document.querySelectorAll('meta[name="theme-color"]');
   if (themeMetas.length > 0) {
     themeMetas.forEach(function(m) {
-      m.setAttribute('content', theme.background);
+      m.setAttribute('content', '#000000');
       m.removeAttribute('media');
     });
   } else {
     var newMeta = document.createElement('meta');
     newMeta.name = 'theme-color';
-    newMeta.content = theme.background;
+    newMeta.content = '#000000';
     document.head.appendChild(newMeta);
   }
 

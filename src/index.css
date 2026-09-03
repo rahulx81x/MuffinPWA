@@ -381,10 +381,9 @@ html::before {
   left: 0;
   right: 0;
   height: env(safe-area-inset-top, 0px);
-  background-color: var(--color-canvas);
+  background-color: #000000;
   z-index: 9999;
   pointer-events: none;
-  transition: background-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 :root {

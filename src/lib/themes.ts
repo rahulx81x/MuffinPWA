@@ -332,25 +332,19 @@ export function applyThemeToDocument(themeId: ThemeId): void {
     document.body.style.backgroundColor = theme.background;
   }
 
-  // Android Chrome / PWA status bar — mutate ALL existing meta[name="theme-color"]
-  // nodes in-place. vite-plugin-pwa injects a second tag from the manifest's
-  // theme_color at build/dev time, so we must update every one we find.
-  // Chrome's TabThemeColorHelper observes content-attribute mutations on
-  // persistent nodes; newly inserted nodes are NOT reliably picked up in a
-  // WebAPK context.
+  // AMOLED black status bar across all themes
   const themeColorMetas = document.querySelectorAll<HTMLMetaElement>(
     'meta[name="theme-color"]'
   );
   if (themeColorMetas.length > 0) {
     themeColorMetas.forEach((m) => {
-      m.setAttribute('content', theme.background);
+      m.setAttribute('content', '#000000');
       m.removeAttribute('media');
     });
   } else {
-    // Fallback: no pre-existing tag — create one at the very top of <head>.
     const newMeta = document.createElement('meta');
     newMeta.name = 'theme-color';
-    newMeta.setAttribute('content', theme.background);
+    newMeta.setAttribute('content', '#000000');
     document.head.insertBefore(newMeta, document.head.firstChild);
   }
 

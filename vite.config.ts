@@ -33,9 +33,9 @@ export default defineConfig({
         display: 'standalone',
         display_override: ['standalone', 'browser'],
         orientation: 'portrait',
-        // Match canvas so Android status bar + splash blend with the app shell
-        background_color: '#FAF5EF',
-        theme_color: '#FAF5EF',
+        // AMOLED black status bar & splash screen
+        background_color: '#000000',
+        theme_color: '#000000',
         icons: [
           {
             src: '/icons/icon_192.png',
