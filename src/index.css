@@ -381,7 +381,7 @@ html::before {
   left: 0;
   right: 0;
   height: env(safe-area-inset-top, 0px);
-  background-color: #000000;
+  background-color: var(--color-canvas);
   z-index: 9999;
   pointer-events: none;
 }

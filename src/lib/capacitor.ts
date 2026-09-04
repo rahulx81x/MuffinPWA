@@ -4,16 +4,25 @@ import { Keyboard } from '@capacitor/keyboard';
 
 export const isNative = (): boolean => Capacitor.isNativePlatform();
 
-export async function initNativePlugins(): Promise<void> {
+export async function syncStatusBarWithTheme(_themeId: string, background: string, isDark: boolean): Promise<void> {
   if (!isNative()) return;
 
   try {
-    // Configure Android status bar to match AMOLED theme
-    await StatusBar.setStyle({ style: Style.Dark });
-    await StatusBar.setBackgroundColor({ color: '#000000' });
+    await StatusBar.setStyle({
+      // Style.Dark has white text/icons (for dark themes)
+      // Style.Light has dark text/icons (for light themes)
+      style: isDark ? Style.Dark : Style.Light,
+    });
+    await StatusBar.setBackgroundColor({
+      color: background,
+    });
   } catch (err) {
-    console.warn('[capacitor] Could not initialize StatusBar:', err);
+    console.warn('[capacitor] Could not sync StatusBar with theme:', err);
   }
+}
+
+export async function initNativePlugins(): Promise<void> {
+  if (!isNative()) return;
 
   try {
     // Set up keyboard listeners if needed for layout shifts

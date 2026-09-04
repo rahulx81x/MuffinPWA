@@ -7,6 +7,17 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://muffin-ledger.netlify.app',
     cleartext: false,
+    allowNavigation: [
+      'accounts.google.com',
+      '*.google.com',
+      '*.googleusercontent.com',
+      '*.gstatic.com',
+      'muffin-ledger.netlify.app',
+    ],
+  },
+  android: {
+    overrideUserAgent:
+      'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36',
   },
   plugins: {
     StatusBar: {
