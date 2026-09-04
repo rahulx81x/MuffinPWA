@@ -745,10 +745,10 @@ body {
 
   .transition-theme {
     transition:
-      background-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
-      color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
-      border-color 0.4s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
-      box-shadow 0.35s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1));
+      background-color 0.22s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
+      color 0.22s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
+      border-color 0.22s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1)),
+      box-shadow 0.2s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1));
   }
 }
 
@@ -756,5 +756,15 @@ body {
 html, body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
+}
+
+/* Hardware-accelerate cards and navigation layers for 60/120fps smoothness */
+.cozy-card,
+.glass-panel,
+.nav-glass,
+main {
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
