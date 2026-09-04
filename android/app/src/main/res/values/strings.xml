@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Muffin</string>
+    <string name="title_activity_main">Muffin</string>
+    <string name="package_name">com.rahulgouri.muffin</string>
+    <string name="custom_url_scheme">com.rahulgouri.muffin</string>
+</resources>

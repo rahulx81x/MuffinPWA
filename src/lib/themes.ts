@@ -1,3 +1,5 @@
+import { syncStatusBarWithTheme } from './capacitor';
+
 export type ThemeId =
   | 'classic'
   | 'blueberry'
@@ -332,19 +334,19 @@ export function applyThemeToDocument(themeId: ThemeId): void {
     document.body.style.backgroundColor = theme.background;
   }
 
-  // AMOLED black status bar across all themes
+  // Sync theme-color meta tag with active theme background
   const themeColorMetas = document.querySelectorAll<HTMLMetaElement>(
     'meta[name="theme-color"]'
   );
   if (themeColorMetas.length > 0) {
     themeColorMetas.forEach((m) => {
-      m.setAttribute('content', '#000000');
+      m.setAttribute('content', theme.background);
       m.removeAttribute('media');
     });
   } else {
     const newMeta = document.createElement('meta');
     newMeta.name = 'theme-color';
-    newMeta.setAttribute('content', '#000000');
+    newMeta.setAttribute('content', theme.background);
     document.head.insertBefore(newMeta, document.head.firstChild);
   }
 
@@ -357,8 +359,10 @@ export function applyThemeToDocument(themeId: ThemeId): void {
     appleStatusBarMeta.name = 'apple-mobile-web-app-status-bar-style';
     document.head.appendChild(appleStatusBarMeta);
   }
-  // iOS: maintain black-translucent so the webview underlays the status bar cleanly
   appleStatusBarMeta.content = 'black-translucent';
+
+  // Android Capacitor: sync native status bar background and icons
+  void syncStatusBarWithTheme(theme.id, theme.background, theme.mode === 'dark');
 }
 
 

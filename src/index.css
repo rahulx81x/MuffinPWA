@@ -381,7 +381,7 @@ html::before {
   left: 0;
   right: 0;
   height: env(safe-area-inset-top, 0px);
-  background-color: #000000;
+  background-color: var(--color-canvas);
   z-index: 9999;
   pointer-events: none;
 }
@@ -751,3 +751,10 @@ body {
       box-shadow 0.35s var(--ease-cozy, cubic-bezier(0.22, 1, 0.36, 1));
   }
 }
+
+/* ── Native Android & Capacitor UX Tweaks ──────────────────────── */
+html, body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}

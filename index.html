@@ -7,6 +7,7 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="google-site-verification" content="p9OeMCg2FfVwJc-YaOmNJZe7ILvaxcSqK_P8Jqhf-2c" />
+    <meta name="format-detection" content="telephone=no" />
     <title>Muffin</title>
     <link rel="icon" type="image/svg+xml" href="/icons/muffin-icon.svg" />
     <link rel="apple-touch-icon" href="/icons/icon_192.png" />
@@ -83,9 +84,9 @@
           document.body.style.backgroundColor = themeColor;
         }
 
-        // Set AMOLED black for status bar across all themes
+        // Set status bar theme color
         var themeMetaTags = document.querySelectorAll('meta[name="theme-color"]');
-        themeMetaTags.forEach(function(m) { m.setAttribute('content', '#000000'); });
+        themeMetaTags.forEach(function(m) { m.setAttribute('content', themeColor); });
         var appleStatusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
         if (appleStatusBarMeta) {
           appleStatusBarMeta.setAttribute('content', 'black-translucent');

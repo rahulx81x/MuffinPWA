@@ -6,17 +6,19 @@ import type {
   Transaction,
 } from '@shared';
 
-const TRANSACTIONS = '/.netlify/functions/transactions';
-const HEALTH = '/.netlify/functions/health';
-const AUTH_ME = '/.netlify/functions/auth-me';
-const AUTH_LOGOUT = '/.netlify/functions/auth-logout';
-const SHEET_LINK = '/.netlify/functions/sheet-link';
-const SHEET_CREATE = '/.netlify/functions/sheet-create';
-const SHEET_UNLINK = '/.netlify/functions/sheet-unlink';
-const RECIPE = '/.netlify/functions/recipe';
-const TOUR_COMPLETE = '/.netlify/functions/tour-complete';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 
-export const AUTH_START_URL = '/.netlify/functions/auth-start';
+const TRANSACTIONS = `${API_BASE_URL}/.netlify/functions/transactions`;
+const HEALTH = `${API_BASE_URL}/.netlify/functions/health`;
+const AUTH_ME = `${API_BASE_URL}/.netlify/functions/auth-me`;
+const AUTH_LOGOUT = `${API_BASE_URL}/.netlify/functions/auth-logout`;
+const SHEET_LINK = `${API_BASE_URL}/.netlify/functions/sheet-link`;
+const SHEET_CREATE = `${API_BASE_URL}/.netlify/functions/sheet-create`;
+const SHEET_UNLINK = `${API_BASE_URL}/.netlify/functions/sheet-unlink`;
+const RECIPE = `${API_BASE_URL}/.netlify/functions/recipe`;
+const TOUR_COMPLETE = `${API_BASE_URL}/.netlify/functions/tour-complete`;
+
+export const AUTH_START_URL = `${API_BASE_URL}/.netlify/functions/auth-start`;
 
 export class AuthRequiredError extends Error {
   readonly code = 'unauthenticated' as const;
