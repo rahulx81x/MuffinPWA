@@ -211,6 +211,8 @@
   --code-text: #ecfdf5;
   --code-muted: #6ee7b7;
   --code-accent: #34d399;
+}
+
 [data-theme='velvet-light'] {
   color-scheme: light;
   --bg: #fdf4f5;

@@ -15,6 +15,7 @@ import {
   resolveInitialThemeId,
 } from './lib/themes';
 import { applyMuffinIconsToDocument } from './lib/muffinIcon';
+import { initNativePlugins } from './lib/capacitor';
 import './index.css';
 
 /* Apply theme + font before paint to avoid a flash. */
@@ -23,6 +24,7 @@ import './index.css';
   applyThemeToDocument(themeId);
   applyMuffinIconsToDocument(themeId);
   applyFontToDocument(resolveInitialFontId());
+  void initNativePlugins();
 })();
 
 registerSW({ immediate: true });

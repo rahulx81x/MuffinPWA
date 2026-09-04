@@ -6,11 +6,18 @@
     "dev": "netlify dev",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "cap": "cap",
+    "build:mobile": "npm run build && cap sync android",
+    "build:apk:debug": "npm run build:mobile && cd android && gradlew assembleDebug",
     "showcase:capture": "node scripts/capture-showcase.mjs",
     "showcase:ppt": "node scripts/build-showcase-ppt.mjs",
     "showcase": "node scripts/capture-showcase.mjs && node scripts/build-showcase-ppt.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/status-bar": "^8.0.3",
     "@netlify/blobs": "^10.7.12",
     "framer-motion": "^13.0.0",
     "google-auth-library": "^11.0.0",
@@ -21,6 +28,7 @@
     "react-select": "^5.10.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.1",
     "@types/node": "^26.2.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
