@@ -1000,7 +1000,7 @@ export function LedgerView({
                     <div className="space-y-2.5 rounded-2xl border border-border/70 bg-surface-strong p-4 text-xs">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-text-muted">
-                          Category
+                          Title / Category
                         </span>
                         <span className="font-bold text-text">
                           {viewingTx.category}

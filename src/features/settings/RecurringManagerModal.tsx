@@ -717,7 +717,7 @@ export function RecurringManagerModal({
                   {type === 'investment' ? (
                     <div className="space-y-3">
                       <div>
-                        <label className={labelClass}>Investment Asset / Fund Name (Category)</label>
+                        <label className={labelClass}>Investment Asset / Fund Name (Title / Category)</label>
                         <input
                           type="text"
                           value={category}
@@ -797,7 +797,7 @@ export function RecurringManagerModal({
                   ) : (
                     <div className="space-y-3">
                       <div>
-                        <label className={labelClass}>Category</label>
+                        <label className={labelClass}>Title / Category</label>
                         <input
                           type="text"
                           value={category}

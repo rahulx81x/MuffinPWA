@@ -281,7 +281,7 @@ export function TransactionForm({
       return;
     }
     if (!category.trim()) {
-      setError('Category is required.');
+      setError('Title / Category is required.');
       return;
     }
     if (type === 'investment' && !investmentType.trim()) {
@@ -427,7 +427,7 @@ export function TransactionForm({
 
       <div>
         <label className="block">
-          <span className={labelClass}>Category</span>
+          <span className={labelClass}>Title / Category</span>
           <input
             type="text"
             required
@@ -608,7 +608,7 @@ export function TransactionForm({
                   <span className="font-bold text-text">
                     {plType === 'profit' ? '📈 Will log to Income:' : '📉 Will log to Expense:'}
                   </span>{' '}
-                  Category:{' '}
+                  Title / Category:{' '}
                   <span className="font-semibold text-primary">
                     "{category.trim() || 'Investment'} - {plType === 'profit' ? 'Profit' : 'Loss'}"
                   </span>
