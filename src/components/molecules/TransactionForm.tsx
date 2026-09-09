@@ -610,13 +610,13 @@ export function TransactionForm({
                   </span>{' '}
                   Title / Category:{' '}
                   <span className="font-semibold text-primary">
-                    "{category.trim() || 'Investment'} - {plType === 'profit' ? 'Profit' : 'Loss'}"
+                    &ldquo;{category.trim() || 'Investment'} &ndash; {plType === 'profit' ? 'Profit' : 'Loss'}&rdquo;
                   </span>
                   {comment.trim() && (
                     <>
                       {' · Note: '}
                       <span className="font-semibold text-primary">
-                        "{comment.trim()} - {plType === 'profit' ? 'Profit' : 'Loss'}"
+                        &ldquo;{comment.trim()} &ndash; {plType === 'profit' ? 'Profit' : 'Loss'}&rdquo;
                       </span>
                     </>
                   )}
