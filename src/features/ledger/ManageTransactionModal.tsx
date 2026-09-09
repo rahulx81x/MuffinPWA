@@ -166,6 +166,31 @@ export function ManageTransactionModal({
         throw new Error('Missing transaction data.');
       }
 
+      if (
+        formData.type === 'investment' &&
+        formData.redemptionPL &&
+        formData.redemptionPL.amount > 0
+      ) {
+        const isProfit = formData.redemptionPL.type === 'profit';
+        const plTab = isProfit ? 'Income' : 'Expense';
+        const plType = isProfit ? 'income' : 'expense';
+        const suffix = isProfit ? 'Profit' : 'Loss';
+        const plCategory = `${formData.category.trim()} - ${suffix}`;
+        const plComment = formData.comment?.trim()
+          ? `${formData.comment.trim()} - ${suffix}`
+          : plCategory;
+
+        const plRowData = buildRowData(
+          plType,
+          formData.date,
+          plCategory,
+          formData.redemptionPL.amount,
+          plComment,
+          ''
+        );
+        result = await createTransaction(plTab, plRowData);
+      }
+
       await onSuccess(result);
       onClose();
     } catch (err) {

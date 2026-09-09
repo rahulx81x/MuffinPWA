@@ -92,15 +92,17 @@ export function getInitialInvestmentTotal(): number {
 
 export function formatCurrency(amount: number): string {
   const rounded = Math.round(amount * 100) / 100;
-  const formatted = Number.isInteger(rounded)
-    ? rounded.toLocaleString(CURRENCY.locale)
-    : rounded.toLocaleString(CURRENCY.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return CURRENCY.symbol + formatted;
+  const isNegative = rounded < 0;
+  const absVal = Math.abs(rounded);
+  const formatted = Number.isInteger(absVal)
+    ? absVal.toLocaleString(CURRENCY.locale)
+    : absVal.toLocaleString(CURRENCY.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${isNegative ? '−' : ''}${CURRENCY.symbol}${formatted}`;
 }
 
 export function formatSignedCurrency(amount: number): string {
   if (amount < 0) {
-    return `-${formatCurrency(Math.abs(amount))}`;
+    return `−${formatCurrency(Math.abs(amount))}`;
   }
   return `+${formatCurrency(amount)}`;
 }

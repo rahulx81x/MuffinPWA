@@ -109,6 +109,31 @@ export function PlannerView({
       },
       plannerMode
     );
+
+    if (
+      data.type === 'investment' &&
+      data.redemptionPL &&
+      data.redemptionPL.amount > 0
+    ) {
+      const isProfit = data.redemptionPL.type === 'profit';
+      const plType = isProfit ? 'income' : 'expense';
+      const suffix = isProfit ? 'Profit' : 'Loss';
+      const plCategory = `${data.category.trim()} - ${suffix}`;
+      const plComment = data.comment?.trim()
+        ? `${data.comment.trim()} - ${suffix}`
+        : plCategory;
+
+      onAdd(
+        {
+          date: data.date,
+          type: plType,
+          category: plCategory,
+          amount: data.redemptionPL.amount,
+          comment: plComment,
+        },
+        plannerMode
+      );
+    }
   }
 
   return (

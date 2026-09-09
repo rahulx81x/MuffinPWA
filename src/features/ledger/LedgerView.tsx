@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Trash2,
+  TrendingDown,
   TrendingUp,
   Utensils,
   X,
@@ -41,9 +42,10 @@ interface DateGroup {
   transactions: Transaction[];
 }
 
-function amountClass(type: Transaction['type']): string {
+function amountClass(type: Transaction['type'], amount?: number): string {
   if (type === 'income') return 'text-emerald-600 dark:text-emerald-400';
   if (type === 'expense') return 'text-rose-600 dark:text-rose-400';
+  if (amount != null && amount < 0) return 'text-amber-600 dark:text-amber-400';
   return 'text-violet-600 dark:text-violet-400';
 }
 
@@ -107,9 +109,11 @@ function normalizeSearch(value: string): string {
 function TransactionIcon({
   type,
   category,
+  amount,
 }: {
   type: TransactionType;
   category: string;
+  amount?: number;
 }) {
   const cat = category.toLowerCase();
   const size = 'h-4 w-4';
@@ -123,6 +127,13 @@ function TransactionIcon({
   }
 
   if (type === 'investment') {
+    if (amount != null && amount < 0) {
+      return (
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+          <TrendingDown className={size} strokeWidth={2.5} />
+        </div>
+      );
+    }
     return (
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">
         <TrendingUp className={size} strokeWidth={2.5} />
@@ -250,11 +261,18 @@ function SwipeableTransactionRow({
         className="relative z-10 flex cursor-pointer items-center justify-between gap-3 bg-surface-strong p-3.5 transition-colors hover:bg-surface-muted/30"
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <TransactionIcon type={tx.type} category={tx.category} />
+          <TransactionIcon type={tx.type} category={tx.category} amount={tx.amount} />
           <div className="min-w-0 flex-1">
-            <h4 className="truncate font-display text-sm font-bold text-text">
-              {tx.category || '—'}
-            </h4>
+            <div className="flex items-center gap-1.5">
+              <h4 className="truncate font-display text-sm font-bold text-text">
+                {tx.category || '—'}
+              </h4>
+              {tx.type === 'investment' && tx.amount < 0 && (
+                <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                  Redemption
+                </span>
+              )}
+            </div>
             {tx.comment?.trim() ? (
               <p className="truncate text-xs text-text-muted">{tx.comment}</p>
             ) : null}
@@ -263,7 +281,7 @@ function SwipeableTransactionRow({
 
         <div className="flex shrink-0 items-center gap-2.5">
           <p
-            className={`font-display text-base font-bold tabular-nums ${amountClass(tx.type)}`}
+            className={`font-display text-base font-bold tabular-nums ${amountClass(tx.type, tx.amount)}`}
           >
             {amountPrefix(tx.type, masked, tx.amount)}
             {formatCurrency(tx.amount)}
@@ -972,7 +990,7 @@ export function LedgerView({
                         Amount
                       </span>
                       <p
-                        className={`mt-1 font-display text-2xl font-bold tabular-nums ${amountClass(viewingTx.type)}`}
+                        className={`mt-1 font-display text-2xl font-bold tabular-nums ${amountClass(viewingTx.type, viewingTx.amount)}`}
                       >
                         {amountPrefix(viewingTx.type, masked, viewingTx.amount)}
                         {formatCurrency(viewingTx.amount)}
@@ -1003,7 +1021,9 @@ export function LedgerView({
                           Type
                         </span>
                         <span className="capitalize font-bold text-text">
-                          {viewingTx.type}
+                          {viewingTx.type === 'investment' && viewingTx.amount < 0
+                            ? 'Investment (Redemption)'
+                            : viewingTx.type}
                         </span>
                       </div>
 

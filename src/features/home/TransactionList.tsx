@@ -5,10 +5,11 @@ interface TransactionListProps {
   transactions: Transaction[];
 }
 
-function amountClass(type: Transaction['type']): string {
+function amountClass(type: Transaction['type'], amount?: number): string {
   if (type === 'income') return 'text-emerald-700 dark:text-emerald-400';
   if (type === 'expense') return 'text-rose-700 dark:text-rose-400';
-  return 'text-amber-700 dark:text-amber-400';
+  if (amount != null && amount < 0) return 'text-amber-700 dark:text-amber-400';
+  return 'text-violet-700 dark:text-violet-400';
 }
 
 function amountPrefix(type: Transaction['type'], masked: boolean, amount?: number): string {
@@ -44,11 +45,18 @@ export function TransactionList({ transactions }: TransactionListProps) {
       {items.map((t) => (
         <li key={t.id} className="px-4 py-3.5">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="min-w-0 flex-1 break-words text-[15px] font-bold leading-snug text-text">
-              {t.category || '—'}
-            </h3>
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <h3 className="min-w-0 truncate text-[15px] font-bold leading-snug text-text">
+                {t.category || '—'}
+              </h3>
+              {t.type === 'investment' && t.amount < 0 && (
+                <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                  Redemption
+                </span>
+              )}
+            </div>
             <p
-              className={`shrink-0 pt-0.5 text-right text-[15px] font-bold tabular-nums leading-snug ${amountClass(t.type)}`}
+              className={`shrink-0 pt-0.5 text-right text-[15px] font-bold tabular-nums leading-snug ${amountClass(t.type, t.amount)}`}
             >
               {amountPrefix(t.type, masked, t.amount)}
               {formatCurrency(t.amount)}

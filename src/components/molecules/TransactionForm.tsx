@@ -23,6 +23,10 @@ export interface TransactionFormData {
   amount: number;
   comment: string;
   investmentType: string;
+  redemptionPL?: {
+    type: 'profit' | 'loss';
+    amount: number;
+  } | null;
 }
 
 export interface TransactionFormProps {
@@ -168,13 +172,28 @@ export function TransactionForm({
   requireDate = true,
   resetOnSubmit = false,
 }: TransactionFormProps) {
+  const initialAmountRaw = initialValues?.amountText ?? '';
+  const initialIsRedeem =
+    initialValues?.type === 'investment' &&
+    (initialAmountRaw.trim().startsWith('-') ||
+      (Number(initialAmountRaw) < 0));
+
   const [date, setDate] = useState(initialValues?.date || todayIso());
   const [type, setType] = useState<TransactionType>(initialValues?.type || 'expense');
+  const [investmentAction, setInvestmentAction] = useState<'invest' | 'redeem'>(
+    initialIsRedeem ? 'redeem' : 'invest'
+  );
   const [category, setCategory] = useState(initialValues?.category || '');
-  const [amountText, setAmountText] = useState(initialValues?.amountText || '');
+  const [amountText, setAmountText] = useState(
+    initialIsRedeem
+      ? initialAmountRaw.replace(/^-+\s*/, '')
+      : initialAmountRaw
+  );
   const [comment, setComment] = useState(initialValues?.comment || '');
   const [investmentType, setInvestmentType] = useState(initialValues?.investmentType || '');
   const [investmentTypeInput, setInvestmentTypeInput] = useState('');
+  const [plType, setPlType] = useState<'none' | 'profit' | 'loss'>('none');
+  const [plAmountText, setPlAmountText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const activeCategoryChips = useMemo(() => {
@@ -237,10 +256,25 @@ export function TransactionForm({
 
     const amountValue = resolveAmountField();
     if (amountValue == null) return;
-    if (amountValue < 0) {
-      setError('Amount cannot be negative.');
-      return;
+
+    let finalAmount = amountValue;
+    if (type === 'investment') {
+      if (finalAmount === 0) {
+        setError('Amount cannot be zero.');
+        return;
+      }
+      if (investmentAction === 'redeem' || finalAmount < 0) {
+        finalAmount = -Math.abs(finalAmount);
+      } else {
+        finalAmount = Math.abs(finalAmount);
+      }
+    } else {
+      if (finalAmount <= 0) {
+        setError('Amount must be greater than zero.');
+        return;
+      }
     }
+
     const finalDate = date.trim() || todayIso();
     if (showDate && requireDate && !date.trim()) {
       setError('Date is required.');
@@ -255,14 +289,33 @@ export function TransactionForm({
       return;
     }
 
+    let redemptionPL: { type: 'profit' | 'loss'; amount: number } | null = null;
+    if (type === 'investment' && finalAmount < 0 && plType !== 'none') {
+      const plResult = evaluateAmountExpression(plAmountText);
+      if (!plResult.ok) {
+        setError(`Realized P/L: ${plResult.error}`);
+        return;
+      }
+      const plVal = Math.abs(plResult.value);
+      if (plVal <= 0) {
+        setError('Realized P/L amount must be greater than zero.');
+        return;
+      }
+      redemptionPL = {
+        type: plType,
+        amount: plVal,
+      };
+    }
+
     try {
       await onSubmit({
         date: finalDate,
         type,
         category: category.trim(),
-        amount: amountValue,
+        amount: finalAmount,
         comment: comment.trim(),
         investmentType: type === 'investment' ? investmentType.trim() : '',
+        redemptionPL,
       });
 
       if (resetOnSubmit) {
@@ -271,6 +324,9 @@ export function TransactionForm({
         setComment('');
         setInvestmentType('');
         setInvestmentTypeInput('');
+        setInvestmentAction('invest');
+        setPlType('none');
+        setPlAmountText('');
         setDate(initialValues?.date || todayIso());
         setError(null);
       }
@@ -315,6 +371,45 @@ export function TransactionForm({
           })}
         </div>
       </div>
+
+      {type === 'investment' && (
+        <div className="space-y-1.5">
+          <span className={labelClass}>Investment Action</span>
+          <div className="grid grid-cols-2 rounded-xl border border-border/80 bg-canvas/80 p-1">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setInvestmentAction('invest');
+                if (amountText.trim().startsWith('-')) {
+                  setAmountText(amountText.replace(/^-+\s*/, ''));
+                }
+              }}
+              className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition-all ${
+                investmentAction === 'invest'
+                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold shadow-warm-sm border border-emerald-500/30'
+                  : 'text-text-muted hover:text-text'
+              }`}
+            >
+              <span>+ Invest / Buy</span>
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setInvestmentAction('redeem');
+              }}
+              className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition-all ${
+                investmentAction === 'redeem'
+                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold shadow-warm-sm border border-amber-500/30'
+                  : 'text-text-muted hover:text-text'
+              }`}
+            >
+              <span>− Redeem / Sell</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {showDate && (
         <label className="block">
@@ -370,15 +465,26 @@ export function TransactionForm({
 
       <div>
         <label className="block">
-          <span className={labelClass}>Amount</span>
+          <span className={labelClass}>
+            {type === 'investment' && investmentAction === 'redeem'
+              ? 'Redeemed Amount'
+              : 'Amount'}
+          </span>
           <SmartAmountInput
             required
-            placeholder="0 or 1200 + 450 or 1000 * 18%"
+            placeholder={
+              type === 'investment' && investmentAction === 'redeem'
+                ? '0 or 50000'
+                : '0 or 1200 + 450 or 1000 * 18%'
+            }
             value={amountText}
             disabled={busy}
             onChange={(v) => {
               setAmountText(v);
               setError(null);
+              if (type === 'investment' && v.trim().startsWith('-')) {
+                setInvestmentAction('redeem');
+              }
             }}
             className={fieldClass}
           />
@@ -435,6 +541,89 @@ export function TransactionForm({
             “PF”, or “EPF” to track PF on its own card (excluded from net
             worth and investment breakup).
           </span>
+        </div>
+      )}
+
+      {type === 'investment' && investmentAction === 'redeem' && (
+        <div className="rounded-2xl border border-border/80 bg-surface-muted/50 p-3.5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-display text-xs font-bold uppercase tracking-wider text-text-muted">
+              Realized Profit / Loss (P/L)
+            </span>
+            <span className="text-[11px] text-text-muted">Auto-logs to Sheet</span>
+          </div>
+
+          <div className="grid grid-cols-3 rounded-xl border border-border/70 bg-canvas/80 p-1 gap-1">
+            {(
+              [
+                { id: 'none', label: 'No P/L / Par' },
+                { id: 'profit', label: '+ Profit' },
+                { id: 'loss', label: '− Loss' },
+              ] as const
+            ).map((tab) => {
+              const active = plType === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setPlType(tab.id)}
+                  className={`rounded-lg py-1.5 text-xs font-bold transition-all ${
+                    active
+                      ? tab.id === 'profit'
+                        ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 shadow-warm-sm border border-emerald-500/30'
+                        : tab.id === 'loss'
+                        ? 'bg-rose-500/20 text-rose-700 dark:text-rose-400 shadow-warm-sm border border-rose-500/30'
+                        : 'bg-surface text-text shadow-warm-sm border border-border/60'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {plType !== 'none' && (
+            <div className="space-y-2 pt-1">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-text-secondary">
+                  {plType === 'profit' ? 'Profit Amount' : 'Loss Amount'}
+                </span>
+                <SmartAmountInput
+                  required
+                  placeholder="e.g. 5000"
+                  value={plAmountText}
+                  disabled={busy}
+                  onChange={(v) => {
+                    setPlAmountText(v);
+                    setError(null);
+                  }}
+                  className={fieldClass}
+                />
+              </label>
+
+              <div className="rounded-xl border border-primary/25 bg-primary/5 p-2.5 text-[11px] leading-relaxed text-text-secondary">
+                <p>
+                  <span className="font-bold text-text">
+                    {plType === 'profit' ? '📈 Will log to Income:' : '📉 Will log to Expense:'}
+                  </span>{' '}
+                  Category:{' '}
+                  <span className="font-semibold text-primary">
+                    "{category.trim() || 'Investment'} - {plType === 'profit' ? 'Profit' : 'Loss'}"
+                  </span>
+                  {comment.trim() && (
+                    <>
+                      {' · Note: '}
+                      <span className="font-semibold text-primary">
+                        "{comment.trim()} - {plType === 'profit' ? 'Profit' : 'Loss'}"
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
