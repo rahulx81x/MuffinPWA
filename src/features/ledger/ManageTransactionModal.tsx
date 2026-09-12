@@ -10,7 +10,7 @@ import {
   type MutationResult,
 } from '../../api/client';
 import { backdropVariants, popoverVariants, springSoft } from '../../lib/motion';
-import { TAB_BY_TYPE } from '@shared';
+import { TAB_BY_TYPE, newRowId } from '@shared';
 import type {
   SheetRowData,
   Transaction,
@@ -23,16 +23,23 @@ import {
 } from '../../components/molecules/TransactionForm';
 import { SoftButton } from '../../components/ui/SoftButton';
 
+export interface ManageSuccessPayload {
+  result: MutationResult;
+  didLogPL: boolean;
+  plType?: 'profit' | 'loss';
+}
+
 interface ManageTransactionModalProps {
   open: boolean;
   mode: 'add' | 'edit';
   transaction?: Transaction | null;
+  linkedPlTransaction?: Transaction | null;
   /** Sheet transactions to derive top category chips. */
   transactions?: Transaction[];
   /** Existing investment-type labels from sheet transactions. */
   investmentTypeOptions?: string[];
   onClose: () => void;
-  onSuccess: (result?: MutationResult) => Promise<void> | void;
+  onSuccess: (payload: ManageSuccessPayload) => Promise<void> | void;
 }
 
 const closeBtnClass =
@@ -71,6 +78,7 @@ export function ManageTransactionModal({
   open,
   mode,
   transaction,
+  linkedPlTransaction,
   transactions = [],
   investmentTypeOptions = [],
   onClose,
@@ -78,6 +86,20 @@ export function ManageTransactionModal({
 }: ManageTransactionModalProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const resolvedLinkedPlTx = useMemo(() => {
+    if (linkedPlTransaction !== undefined) return linkedPlTransaction;
+    if (
+      mode !== 'edit' ||
+      !transaction?.rowId ||
+      transaction.type !== 'investment' ||
+      transaction.amount >= 0
+    ) {
+      return null;
+    }
+    const expectedPlId = `mfn_pl_${transaction.rowId}`;
+    return transactions.find((tx) => tx.rowId === expectedPlId) ?? null;
+  }, [linkedPlTransaction, mode, transaction, transactions]);
 
   const initialValues = useMemo(() => {
     if (mode === 'edit' && transaction) {
@@ -88,10 +110,19 @@ export function ManageTransactionModal({
         amountText: String(transaction.amount),
         comment: transaction.comment || '',
         investmentType: transaction.investmentType || '',
+        redemptionPL: resolvedLinkedPlTx
+          ? {
+              type:
+                resolvedLinkedPlTx.type === 'income'
+                  ? ('profit' as const)
+                  : ('loss' as const),
+              amount: Math.abs(resolvedLinkedPlTx.amount),
+            }
+          : null,
       };
     }
     return undefined;
-  }, [mode, transaction]);
+  }, [mode, transaction, resolvedLinkedPlTx]);
 
   useEffect(() => {
     if (!open) return;
@@ -116,25 +147,44 @@ export function ManageTransactionModal({
     setError(null);
 
     const tabName = TAB_BY_TYPE[formData.type];
-    const rowData = buildRowData(
-      formData.type,
-      formData.date,
-      formData.category,
-      formData.amount,
-      formData.comment,
-      formData.investmentType,
-      transaction?.rowId
-    );
+    const isInvestment = formData.type === 'investment';
+    const isRedemption = isInvestment && formData.amount < 0;
 
     try {
       let result: MutationResult;
+      let effectiveInvestmentRowId: string | undefined;
 
       if (mode === 'add') {
+        if (isInvestment) {
+          effectiveInvestmentRowId = newRowId();
+        }
+        const rowData = buildRowData(
+          formData.type,
+          formData.date,
+          formData.category,
+          formData.amount,
+          formData.comment,
+          formData.investmentType,
+          effectiveInvestmentRowId
+        );
         result = await createTransaction(tabName, rowData);
       } else if (transaction) {
         if (!transaction.tabName || transaction.rowIndex == null) {
           throw new Error('Missing sheet location for this transaction.');
         }
+
+        effectiveInvestmentRowId =
+          transaction.rowId || (isInvestment ? newRowId() : undefined);
+
+        const rowData = buildRowData(
+          formData.type,
+          formData.date,
+          formData.category,
+          formData.amount,
+          formData.comment,
+          formData.investmentType,
+          effectiveInvestmentRowId
+        );
 
         const expected = {
           date: transaction.date,
@@ -166,32 +216,130 @@ export function ManageTransactionModal({
         throw new Error('Missing transaction data.');
       }
 
-      if (
-        formData.type === 'investment' &&
-        formData.redemptionPL &&
-        formData.redemptionPL.amount > 0
-      ) {
-        const isProfit = formData.redemptionPL.type === 'profit';
-        const plTab = isProfit ? 'Income' : 'Expense';
-        const plType = isProfit ? 'income' : 'expense';
-        const suffix = isProfit ? 'Profit' : 'Loss';
-        const plCategory = `${formData.category.trim()} - ${suffix}`;
-        const plComment = formData.comment?.trim()
-          ? `${formData.comment.trim()} - ${suffix}`
-          : plCategory;
+      let didLogPL = false;
+      let plType: 'profit' | 'loss' | undefined;
 
-        const plRowData = buildRowData(
-          plType,
-          formData.date,
-          plCategory,
-          formData.redemptionPL.amount,
-          plComment,
-          ''
-        );
-        result = await createTransaction(plTab, plRowData);
+      if (mode === 'add') {
+        if (
+          isRedemption &&
+          effectiveInvestmentRowId &&
+          formData.redemptionPL &&
+          formData.redemptionPL.amount > 0
+        ) {
+          const isProfit = formData.redemptionPL.type === 'profit';
+          const plTab = isProfit ? 'Income' : 'Expense';
+          const plRowType = isProfit ? 'income' : 'expense';
+          const suffix = isProfit ? 'Profit' : 'Loss';
+          const plCategory = `${formData.category.trim()} - ${suffix}`;
+          const plComment = formData.comment?.trim()
+            ? `${formData.comment.trim()} - ${suffix}`
+            : plCategory;
+
+          const plRowId = `mfn_pl_${effectiveInvestmentRowId}`;
+          const plRowData = buildRowData(
+            plRowType,
+            formData.date,
+            plCategory,
+            formData.redemptionPL.amount,
+            plComment,
+            '',
+            plRowId
+          );
+          result = await createTransaction(plTab, plRowData);
+          didLogPL = true;
+          plType = formData.redemptionPL.type;
+        }
+      } else if (transaction) {
+        const expectedPlId = effectiveInvestmentRowId
+          ? `mfn_pl_${effectiveInvestmentRowId}`
+          : undefined;
+
+        const currentPlTx = expectedPlId
+          ? result.transactions.find((tx) => tx.rowId === expectedPlId) ??
+            resolvedLinkedPlTx
+          : null;
+
+        const hasNewPL =
+          isRedemption &&
+          Boolean(formData.redemptionPL && formData.redemptionPL.amount > 0);
+
+        if (hasNewPL && formData.redemptionPL) {
+          const isProfit = formData.redemptionPL.type === 'profit';
+          const newPlTab = isProfit ? 'Income' : 'Expense';
+          const newPlRowType = isProfit ? 'income' : 'expense';
+          const suffix = isProfit ? 'Profit' : 'Loss';
+          const plCategory = `${formData.category.trim()} - ${suffix}`;
+          const plComment = formData.comment?.trim()
+            ? `${formData.comment.trim()} - ${suffix}`
+            : plCategory;
+          const plRowId = expectedPlId || `mfn_pl_${newRowId()}`;
+          const plRowData = buildRowData(
+            newPlRowType,
+            formData.date,
+            plCategory,
+            formData.redemptionPL.amount,
+            plComment,
+            '',
+            plRowId
+          );
+
+          if (currentPlTx && currentPlTx.tabName && currentPlTx.rowIndex != null) {
+            if (currentPlTx.tabName === newPlTab) {
+              const plExpected = {
+                date: currentPlTx.date,
+                category: currentPlTx.category,
+                amount: currentPlTx.amount,
+              };
+              result = await updateTransaction(
+                currentPlTx.tabName,
+                currentPlTx.rowIndex,
+                plRowData,
+                plExpected,
+                currentPlTx.rowId
+              );
+            } else {
+              // Profit edited to loss or vice versa:
+              // Delete from old sheet tab, create on new sheet tab
+              const plExpected = {
+                date: currentPlTx.date,
+                category: currentPlTx.category,
+                amount: currentPlTx.amount,
+              };
+              await deleteTransaction(
+                currentPlTx.tabName,
+                currentPlTx.rowIndex,
+                plExpected,
+                currentPlTx.rowId
+              );
+              result = await createTransaction(newPlTab, plRowData);
+            }
+          } else {
+            result = await createTransaction(newPlTab, plRowData);
+          }
+
+          didLogPL = true;
+          plType = formData.redemptionPL.type;
+        } else if (
+          currentPlTx &&
+          currentPlTx.tabName &&
+          currentPlTx.rowIndex != null
+        ) {
+          // P/L entry was removed or changed to par
+          const plExpected = {
+            date: currentPlTx.date,
+            category: currentPlTx.category,
+            amount: currentPlTx.amount,
+          };
+          result = await deleteTransaction(
+            currentPlTx.tabName,
+            currentPlTx.rowIndex,
+            plExpected,
+            currentPlTx.rowId
+          );
+        }
       }
 
-      await onSuccess(result);
+      await onSuccess({ result, didLogPL, plType });
       onClose();
     } catch (err) {
       if (err instanceof AuthRequiredError) {
@@ -262,7 +410,11 @@ export function ManageTransactionModal({
 
               <div className="mt-4">
                 <TransactionForm
-                  key={transaction ? transaction.id : 'new-tx'}
+                  key={
+                    transaction
+                      ? `${transaction.id}_${resolvedLinkedPlTx?.id ?? 'nopl'}`
+                      : 'new-tx'
+                  }
                   initialValues={initialValues}
                   transactions={transactions}
                   investmentTypeOptions={investmentTypeOptions}

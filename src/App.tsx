@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { completeTour, unlinkSheet, AuthRequiredError } from './api/client';
-import type { MutationResult } from './api/client';
 import { SoftButton } from './components/ui/SoftButton';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import { FloatingNav } from './components/ui/FloatingNav';
@@ -15,7 +14,10 @@ import { SheetOnboarding } from './features/auth/SheetOnboarding';
 import { HomeView } from './features/home/HomeView';
 import { InsightsView } from './features/insights/InsightsView';
 import { LedgerView } from './features/ledger/LedgerView';
-import { ManageTransactionModal } from './features/ledger/ManageTransactionModal';
+import {
+  ManageTransactionModal,
+  type ManageSuccessPayload,
+} from './features/ledger/ManageTransactionModal';
 import { AboutModal } from './features/settings/AboutModal';
 import { HeaderMenu } from './features/settings/HeaderMenu';
 import { PrivacyModal } from './features/settings/PrivacyModal';
@@ -132,6 +134,19 @@ export default function App() {
   const pendingConfirm =
     modal?.kind === 'confirm' ? modal.pending : null;
 
+  const linkedPlTransaction = useMemo(() => {
+    if (
+      manageMode !== 'edit' ||
+      !editingTx?.rowId ||
+      editingTx.type !== 'investment' ||
+      editingTx.amount >= 0
+    ) {
+      return null;
+    }
+    const expectedId = `mfn_pl_${editingTx.rowId}`;
+    return sheetTransactions.find((tx) => tx.rowId === expectedId) ?? null;
+  }, [manageMode, editingTx, sheetTransactions]);
+
   const investmentTypeOptions = useMemo(() => {
     const labels = new Set<string>();
     for (const tx of sheetTransactions) {
@@ -166,17 +181,27 @@ export default function App() {
     openModal({ kind: 'manage', mode: 'edit', transaction: tx });
   }
 
-  async function handleManageSuccess(result?: MutationResult) {
+  async function handleManageSuccess(payload: ManageSuccessPayload) {
     setStatusMessage(null);
     try {
-      if (result?.transactions?.length) {
-        applyTransactions(result.transactions);
+      if (payload.result?.transactions?.length) {
+        applyTransactions(payload.result.transactions);
       } else {
         await refreshTransactions();
       }
-      setStatusMessage(
-        manageMode === 'add' ? 'Transaction added.' : 'Transaction updated.'
-      );
+      if (manageMode === 'add') {
+        if (payload.didLogPL) {
+          setStatusMessage(
+            payload.plType === 'profit'
+              ? 'Redemption logged — Profit entry also added. ✓'
+              : 'Redemption logged — Loss entry also added. ✓'
+          );
+        } else {
+          setStatusMessage('Transaction added.');
+        }
+      } else {
+        setStatusMessage('Transaction updated.');
+      }
     } catch (err) {
       if (err instanceof AuthRequiredError) {
         setStatusMessage('Signed out — please sign in again.');
@@ -534,6 +559,7 @@ export default function App() {
         open={modal?.kind === 'manage'}
         mode={manageMode}
         transaction={editingTx}
+        linkedPlTransaction={linkedPlTransaction}
         transactions={sheetTransactions}
         investmentTypeOptions={investmentTypeOptions}
         onClose={closeModal}

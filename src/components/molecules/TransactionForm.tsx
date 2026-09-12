@@ -37,6 +37,10 @@ export interface TransactionFormProps {
     amountText?: string;
     comment?: string;
     investmentType?: string;
+    redemptionPL?: {
+      type: 'profit' | 'loss';
+      amount: number;
+    } | null;
   };
   transactions?: Transaction[];
   categoryChips?: string[];
@@ -192,8 +196,14 @@ export function TransactionForm({
   const [comment, setComment] = useState(initialValues?.comment || '');
   const [investmentType, setInvestmentType] = useState(initialValues?.investmentType || '');
   const [investmentTypeInput, setInvestmentTypeInput] = useState('');
-  const [plType, setPlType] = useState<'none' | 'profit' | 'loss'>('none');
-  const [plAmountText, setPlAmountText] = useState('');
+  const [plType, setPlType] = useState<'none' | 'profit' | 'loss'>(
+    initialValues?.redemptionPL?.type ?? 'none'
+  );
+  const [plAmountText, setPlAmountText] = useState(
+    initialValues?.redemptionPL?.amount != null
+      ? String(initialValues.redemptionPL.amount)
+      : ''
+  );
   const [error, setError] = useState<string | null>(null);
 
   const activeCategoryChips = useMemo(() => {
