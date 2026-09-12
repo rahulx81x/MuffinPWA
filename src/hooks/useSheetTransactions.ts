@@ -182,8 +182,25 @@ export function useSheetTransactions({
                 ...(tx.rowId ? { Id: tx.rowId } : {}),
               };
 
+        const trimmed = tx.category?.trim();
+        const catLabel = trimmed
+          ? (trimmed.length > 24 ? `“${trimmed.slice(0, 23)}…”` : `“${trimmed}”`)
+          : '';
+        const isRedeem = tx.type === 'investment' && tx.amount < 0;
+        const typeName = tx.type === 'investment'
+          ? (isRedeem ? 'Redemption' : 'Investment')
+          : (tx.type === 'income' ? 'Income' : 'Expense');
+
+        const deleteText = catLabel
+          ? `${typeName} ${catLabel} deleted.`
+          : `${typeName} deleted.`;
+        const restoreText = catLabel
+          ? `${typeName} ${catLabel} restored. ✓`
+          : `${typeName} restored. ✓`;
+
         setStatusMessage({
-          text: 'Transaction deleted.',
+          text: deleteText,
+          type: 'warning',
           undoFn: async () => {
             try {
               setMutating(true);
@@ -193,7 +210,10 @@ export function useSheetTransactions({
               } else {
                 await refreshTransactions();
               }
-              setStatusMessage('Transaction restored.');
+              setStatusMessage({
+                text: restoreText,
+                type: 'success',
+              });
             } catch (err) {
               console.error('Failed to undo delete', err);
               setError('Could not restore transaction.');

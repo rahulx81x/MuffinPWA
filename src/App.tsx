@@ -1,8 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { completeTour, unlinkSheet, AuthRequiredError } from './api/client';
-import { SoftButton } from './components/ui/SoftButton';
+import { ToastNotification } from './components/ui/ToastNotification';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import { FloatingNav } from './components/ui/FloatingNav';
 import { LoadingScreen } from './components/ui/LoadingScreen';
@@ -37,7 +36,12 @@ import { useSheetTransactions } from './hooks/useSheetTransactions';
 import { useTheme } from './hooks/useTheme';
 import { buildFinancialMetrics, EMPTY_METRICS } from './domain/metrics';
 import { pageTransition, pageVariants, springSoft } from './lib/motion';
-import type { AppTab, FinancialMetrics, Transaction } from './domain/types';
+import type {
+  AppTab,
+  FinancialMetrics,
+  Transaction,
+  TransactionType,
+} from './domain/types';
 
 export default function App() {
   const { themeId } = useTheme();
@@ -181,6 +185,20 @@ export default function App() {
     openModal({ kind: 'manage', mode: 'edit', transaction: tx });
   }
 
+  function formatTxCategory(category?: string): string {
+    const trimmed = category?.trim();
+    if (!trimmed) return '';
+    return trimmed.length > 24 ? `“${trimmed.slice(0, 23)}…”` : `“${trimmed}”`;
+  }
+
+  function getTxTypeName(type: TransactionType, isRedemption?: boolean): string {
+    if (type === 'investment') {
+      return isRedemption ? 'Redemption' : 'Investment';
+    }
+    if (type === 'income') return 'Income';
+    return 'Expense';
+  }
+
   async function handleManageSuccess(payload: ManageSuccessPayload) {
     setStatusMessage(null);
     try {
@@ -189,18 +207,72 @@ export default function App() {
       } else {
         await refreshTransactions();
       }
+
+      const catLabel = formatTxCategory(payload.category);
+      const typeName = getTxTypeName(payload.txType, payload.isRedemption);
+
       if (manageMode === 'add') {
         if (payload.didLogPL) {
           setStatusMessage(
             payload.plType === 'profit'
-              ? 'Redemption logged — Profit entry also added. ✓'
-              : 'Redemption logged — Loss entry also added. ✓'
+              ? (catLabel
+                  ? `Redemption ${catLabel} logged — Profit entry also added. ✓`
+                  : 'Redemption logged — Profit entry also added. ✓')
+              : (catLabel
+                  ? `Redemption ${catLabel} logged — Loss entry also added. ✓`
+                  : 'Redemption logged — Loss entry also added. ✓')
           );
         } else {
-          setStatusMessage('Transaction added.');
+          setStatusMessage(
+            catLabel
+              ? `${typeName} ${catLabel} added. ✓`
+              : `${typeName} added. ✓`
+          );
         }
       } else {
-        setStatusMessage('Transaction updated.');
+        if (payload.plAction === 'added') {
+          setStatusMessage(
+            payload.plType === 'profit'
+              ? (catLabel
+                  ? `Redemption ${catLabel} updated — Profit entry added. ✓`
+                  : 'Redemption updated — Profit entry added. ✓')
+              : (catLabel
+                  ? `Redemption ${catLabel} updated — Loss entry added. ✓`
+                  : 'Redemption updated — Loss entry added. ✓')
+          );
+        } else if (payload.plAction === 'flipped') {
+          setStatusMessage(
+            payload.plType === 'profit'
+              ? (catLabel
+                  ? `Redemption ${catLabel} updated — switched to Profit entry. ✓`
+                  : 'Redemption updated — switched to Profit entry. ✓')
+              : (catLabel
+                  ? `Redemption ${catLabel} updated — switched to Loss entry. ✓`
+                  : 'Redemption updated — switched to Loss entry. ✓')
+          );
+        } else if (payload.plAction === 'updated') {
+          setStatusMessage(
+            payload.plType === 'profit'
+              ? (catLabel
+                  ? `Redemption ${catLabel} & Profit updated. ✓`
+                  : 'Redemption & Profit updated. ✓')
+              : (catLabel
+                  ? `Redemption ${catLabel} & Loss updated. ✓`
+                  : 'Redemption & Loss updated. ✓')
+          );
+        } else if (payload.plAction === 'removed') {
+          setStatusMessage(
+            catLabel
+              ? `Redemption ${catLabel} updated — P/L entry removed. ✓`
+              : 'Redemption updated — P/L entry removed. ✓'
+          );
+        } else {
+          setStatusMessage(
+            catLabel
+              ? `${typeName} ${catLabel} updated. ✓`
+              : `${typeName} updated. ✓`
+          );
+        }
       }
     } catch (err) {
       if (err instanceof AuthRequiredError) {
@@ -320,6 +392,10 @@ export default function App() {
   const toastUndo =
     typeof statusMessage === 'object' && statusMessage !== null
       ? statusMessage.undoFn
+      : undefined;
+  const toastType =
+    typeof statusMessage === 'object' && statusMessage !== null
+      ? statusMessage.type
       : undefined;
 
   return (
@@ -473,39 +549,14 @@ export default function App() {
 
       <AnimatePresence>
         {toastText && (
-          <motion.div
-            key="toast"
-            initial={{ opacity: 0, y: -10, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={springSoft}
-            className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[calc(env(safe-area-inset-top,0px)+3.75rem)]"
-            role="status"
-            aria-live="polite"
-          >
-            <div className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border border-primary/25 bg-surface-strong/95 px-4 py-3 text-sm text-text shadow-elevate backdrop-blur-xl">
-              <p className="min-w-0 flex-1 leading-snug">{toastText}</p>
-              {toastUndo && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    void toastUndo();
-                  }}
-                  className="shrink-0 rounded-lg bg-primary/15 px-2.5 py-1 text-xs font-bold text-primary transition-colors hover:bg-primary/25 active:scale-95"
-                >
-                  Undo
-                </button>
-              )}
-              <SoftButton
-                onClick={() => setStatusMessage(null)}
-                className="inline-flex min-h-8 min-w-8 h-8 w-8 shrink-0 items-center justify-center rounded-xl text-text-secondary outline-none hover:bg-surface-muted/70"
-                aria-label="Dismiss notification"
-                glow={false}
-              >
-                <X className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-              </SoftButton>
-            </div>
-          </motion.div>
+          <ToastNotification
+            key={toastText}
+            message={toastText}
+            type={toastType}
+            durationMs={toastUndo ? 8000 : 5000}
+            undoFn={toastUndo}
+            onDismiss={() => setStatusMessage(null)}
+          />
         )}
       </AnimatePresence>
 

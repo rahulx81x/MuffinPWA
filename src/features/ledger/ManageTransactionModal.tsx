@@ -27,6 +27,10 @@ export interface ManageSuccessPayload {
   result: MutationResult;
   didLogPL: boolean;
   plType?: 'profit' | 'loss';
+  plAction?: 'added' | 'updated' | 'flipped' | 'removed';
+  category: string;
+  txType: TransactionType;
+  isRedemption: boolean;
 }
 
 interface ManageTransactionModalProps {
@@ -218,6 +222,7 @@ export function ManageTransactionModal({
 
       let didLogPL = false;
       let plType: 'profit' | 'loss' | undefined;
+      let plAction: 'added' | 'updated' | 'flipped' | 'removed' | undefined;
 
       if (mode === 'add') {
         if (
@@ -248,6 +253,7 @@ export function ManageTransactionModal({
           result = await createTransaction(plTab, plRowData);
           didLogPL = true;
           plType = formData.redemptionPL.type;
+          plAction = 'added';
         }
       } else if (transaction) {
         const expectedPlId = effectiveInvestmentRowId
@@ -297,6 +303,7 @@ export function ManageTransactionModal({
                 plExpected,
                 currentPlTx.rowId
               );
+              plAction = 'updated';
             } else {
               // Profit edited to loss or vice versa:
               // Delete from old sheet tab, create on new sheet tab
@@ -312,9 +319,11 @@ export function ManageTransactionModal({
                 currentPlTx.rowId
               );
               result = await createTransaction(newPlTab, plRowData);
+              plAction = 'flipped';
             }
           } else {
             result = await createTransaction(newPlTab, plRowData);
+            plAction = 'added';
           }
 
           didLogPL = true;
@@ -336,10 +345,19 @@ export function ManageTransactionModal({
             plExpected,
             currentPlTx.rowId
           );
+          plAction = 'removed';
         }
       }
 
-      await onSuccess({ result, didLogPL, plType });
+      await onSuccess({
+        result,
+        didLogPL,
+        plType,
+        plAction,
+        category: formData.category.trim(),
+        txType: formData.type,
+        isRedemption,
+      });
       onClose();
     } catch (err) {
       if (err instanceof AuthRequiredError) {

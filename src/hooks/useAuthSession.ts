@@ -23,6 +23,7 @@ export type StatusMessage =
   | {
       text: string;
       undoFn?: () => void | Promise<void>;
+      type?: 'success' | 'warning' | 'error' | 'info';
     };
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
