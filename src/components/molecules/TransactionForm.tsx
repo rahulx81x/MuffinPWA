@@ -270,17 +270,15 @@ export function TransactionForm({
     let finalAmount = amountValue;
     if (type === 'investment') {
       if (finalAmount === 0) {
-        setError('Amount cannot be zero.');
-        return;
-      }
-      if (investmentAction === 'redeem' || finalAmount < 0) {
+        finalAmount = 0;
+      } else if (investmentAction === 'redeem' || finalAmount < 0) {
         finalAmount = -Math.abs(finalAmount);
       } else {
         finalAmount = Math.abs(finalAmount);
       }
     } else {
-      if (finalAmount <= 0) {
-        setError('Amount must be greater than zero.');
+      if (finalAmount < 0) {
+        setError('Amount cannot be negative.');
         return;
       }
     }
