@@ -669,6 +669,20 @@ body {
     box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25);
   }
 
+  @keyframes allowanceRainbow {
+    0%   { border-color: #f472b6; box-shadow: 0 0 5px 1px #f472b640; }
+    25%  { border-color: #a78bfa; box-shadow: 0 0 5px 1px #a78bfa40; }
+    50%  { border-color: #38bdf8; box-shadow: 0 0 5px 1px #38bdf840; }
+    75%  { border-color: #34d399; box-shadow: 0 0 5px 1px #34d39940; }
+    100% { border-color: #f472b6; box-shadow: 0 0 5px 1px #f472b640; }
+  }
+
+  .chip-allowance {
+    animation: allowanceRainbow 3s linear infinite;
+    border-width: 1.5px !important;
+    font-weight: 700 !important;
+  }
+
   .pulse-glow-btn {
     position: relative;
   }

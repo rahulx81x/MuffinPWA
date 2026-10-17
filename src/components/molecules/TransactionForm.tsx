@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import CreatableSelect from 'react-select/creatable';
 import type {
@@ -12,9 +12,30 @@ import {
   evaluateAmountExpression,
   looksLikeAmountExpression,
 } from '../../domain/evaluateAmount';
+import { monthKey } from '../../domain/metrics';
 import type { Transaction, TransactionType } from '../../domain/types';
 import { SmartAmountInput } from '../../features/ledger/SmartAmountInput';
 import { SoftButton } from '../ui/SoftButton';
+
+/** Canonical name used for allowance-deduction matching. */
+export const ALLOWANCE_SELF_CATEGORY = 'Allowance - Self';
+
+/** Returns true if category matches 'Allowance - Self' regardless of dash character (hyphen, en-dash, em-dash), spacing, or 'Allowance' shorthand. */
+export function isAllowanceSelfCategory(category?: string | null): boolean {
+  if (!category) return false;
+  const c = category.toLowerCase().trim();
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[\u2013\u2014\u2212\-]/g, '-')
+      .replace(/\s*-\s*/g, ' - ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  if (norm(c) === norm(ALLOWANCE_SELF_CATEGORY)) return true;
+  if (/^allowance\s*[-:—–(]\s*self\)?$/i.test(c)) return true;
+  if (c === 'allowance' || c === 'self allowance') return true;
+  return false;
+}
 
 export interface TransactionFormData {
   date: string;
@@ -27,6 +48,8 @@ export interface TransactionFormData {
     type: 'profit' | 'loss';
     amount: number;
   } | null;
+  /** When true, the caller should deduct this expense amount from the month's Allowance - Self expense entry. */
+  deductFromAllowance?: boolean;
 }
 
 export interface TransactionFormProps {
@@ -56,6 +79,8 @@ export interface TransactionFormProps {
   showDate?: boolean;
   requireDate?: boolean;
   resetOnSubmit?: boolean;
+  /** Show the 'Deduct from Allowance – Self' toggle (only meaningful for add-mode expense). */
+  showAllowanceDeduct?: boolean;
 }
 
 type InvestmentTypeOption = {
@@ -175,6 +200,7 @@ export function TransactionForm({
   showDate = true,
   requireDate = true,
   resetOnSubmit = false,
+  showAllowanceDeduct = false,
 }: TransactionFormProps) {
   const initialAmountRaw = initialValues?.amountText ?? '';
   const initialIsRedeem =
@@ -205,6 +231,12 @@ export function TransactionForm({
       : ''
   );
   const [error, setError] = useState<string | null>(null);
+  const [deductFromAllowance, setDeductFromAllowance] = useState(false);
+
+  // Reset deduct toggle when type changes away from expense
+  useEffect(() => {
+    if (type !== 'expense') setDeductFromAllowance(false);
+  }, [type]);
 
   const activeCategoryChips = useMemo(() => {
     if (transactions && transactions.length > 0) {
@@ -222,6 +254,40 @@ export function TransactionForm({
     }
     return categoryChips.slice(0, 4);
   }, [transactions, categoryChips, type]);
+
+  /** Chips shown: 'Allowance - Self' is always pinned first for expense, deduped from the rest. */
+  const pinnedChips = useMemo(() => {
+    if (type !== 'expense') return activeCategoryChips.slice(0, 4);
+    const rest = activeCategoryChips
+      .filter((c) => !isAllowanceSelfCategory(c))
+      .slice(0, 4);
+    return [ALLOWANCE_SELF_CATEGORY, ...rest];
+  }, [type, activeCategoryChips]);
+
+  /** Pre-computed total of all Allowance - Self expense transactions for the selected month. */
+  const allowanceTotalForMonth = useMemo(() => {
+    if (!showAllowanceDeduct || type !== 'expense') return 0;
+    const targetMonth = monthKey(date);
+    return transactions
+      .filter(
+        (tx) =>
+          tx.type === 'expense' &&
+          isAllowanceSelfCategory(tx.category) &&
+          monthKey(tx.date) === targetMonth
+      )
+      .reduce((sum, tx) => sum + tx.amount, 0);
+  }, [showAllowanceDeduct, type, date, transactions]);
+
+  /** Parsed current amount value (or 0 if invalid). */
+  const currentAmountValue = useMemo(() => {
+    const res = evaluateAmountExpression(amountText);
+    return res.ok ? Math.abs(res.value) : 0;
+  }, [amountText]);
+
+  const deductWouldOverflow =
+    deductFromAllowance &&
+    allowanceTotalForMonth > 0 &&
+    currentAmountValue > allowanceTotalForMonth;
 
   const selectStyles = useMemo(() => buildSelectStyles(), []);
 
@@ -315,6 +381,13 @@ export function TransactionForm({
       };
     }
 
+    if (deductWouldOverflow) {
+      setError(
+        `Cannot deduct ₹${currentAmountValue.toLocaleString()} from Allowance – Self: only ₹${allowanceTotalForMonth.toLocaleString()} available this month.`
+      );
+      return;
+    }
+
     try {
       await onSubmit({
         date: finalDate,
@@ -324,6 +397,7 @@ export function TransactionForm({
         comment: comment.trim(),
         investmentType: type === 'investment' ? investmentType.trim() : '',
         redemptionPL,
+        deductFromAllowance: type === 'expense' && deductFromAllowance,
       });
 
       if (resetOnSubmit) {
@@ -335,6 +409,7 @@ export function TransactionForm({
         setInvestmentAction('invest');
         setPlType('none');
         setPlAmountText('');
+        setDeductFromAllowance(false);
         setDate(initialValues?.date || todayIso());
         setError(null);
       }
@@ -447,26 +522,34 @@ export function TransactionForm({
           />
         </label>
 
-        {activeCategoryChips.length > 0 && (
+        {pinnedChips.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {activeCategoryChips.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setCategory(cat);
-                  navigator.vibrate?.(8);
-                }}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                  category.toLowerCase() === cat.toLowerCase()
-                    ? 'border border-primary/50 bg-primary/20 text-primary font-bold shadow-warm-sm'
-                    : 'border border-border/80 bg-surface text-text-secondary hover:bg-surface-muted/60'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+            {pinnedChips.map((cat) => {
+              const isAllowance = isAllowanceSelfCategory(cat);
+              const isActive = isAllowance
+                ? isAllowanceSelfCategory(category)
+                : category.toLowerCase().trim() === cat.toLowerCase().trim();
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setCategory(cat);
+                    navigator.vibrate?.(8);
+                  }}
+                  className={`rounded-full px-2.5 py-1 text-xs transition-all ${
+                    isActive
+                      ? 'border border-primary/50 bg-primary/20 text-primary font-bold shadow-warm-sm'
+                      : isAllowance
+                        ? 'chip-allowance border bg-surface/80 text-text-secondary hover:bg-surface-muted/60'
+                        : 'font-medium border border-border/80 bg-surface text-text-secondary hover:bg-surface-muted/60'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -509,6 +592,80 @@ export function TransactionForm({
           </div>
         )}
       </div>
+
+      {/* Deduct from Allowance - Self toggle (expense + add mode only) */}
+      {type === 'expense' && showAllowanceDeduct && (
+        <div
+          className={`rounded-2xl border p-3 transition-colors ${
+            deductFromAllowance
+              ? 'border-primary/40 bg-primary/10 shadow-warm-sm'
+              : 'border-border/60 bg-canvas/60'
+          }`}
+        >
+          <label className="flex cursor-pointer items-start gap-3">
+            <div className="relative mt-0.5 shrink-0">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={deductFromAllowance}
+                disabled={busy}
+                onChange={(e) => setDeductFromAllowance(e.target.checked)}
+              />
+              <div
+                className={`flex h-5 w-5 items-center justify-center rounded-md border-2 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 ${
+                  deductFromAllowance
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border bg-surface'
+                }`}
+              >
+                {deductFromAllowance && (
+                  <svg viewBox="0 0 12 10" className="h-3 w-3 stroke-current" fill="none" strokeWidth={2.5}>
+                    <path d="M1 5l3.5 3.5L11 1" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            <div className="min-w-0">
+              <p className={`text-xs font-bold transition-colors ${
+                deductFromAllowance ? 'text-primary' : 'text-text'
+              }`}>
+                Deduct from Allowance - Self
+              </p>
+              <p className="mt-0.5 text-[11px] leading-snug text-text-muted">
+                Marks this expense as paid from your monthly allowance instead of liquid cash.
+              </p>
+            </div>
+          </label>
+
+          {deductFromAllowance && (
+            <div className={`mt-2.5 rounded-xl border px-3 py-2 text-[11px] leading-relaxed transition-colors ${
+              deductWouldOverflow
+                ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                : 'border-primary/25 bg-surface text-text-secondary'
+            }`}>
+              {deductWouldOverflow ? (
+                <span>
+                  ⚠️ <strong>Exceeds allowance:</strong> ₹{currentAmountValue.toLocaleString()} &gt; ₹{allowanceTotalForMonth.toLocaleString()} available this month.
+                </span>
+              ) : allowanceTotalForMonth > 0 && currentAmountValue > 0 ? (
+                <span>
+                  Will reduce <strong>Allowance - Self</strong> for{' '}
+                  <strong>{new Date(date + 'T00:00:00').toLocaleString('default', { month: 'long', year: 'numeric' })}</strong>{' '}
+                  by{' '}
+                  <strong className="text-primary font-bold">₹{currentAmountValue.toLocaleString()}</strong>
+                  {' '}(effective: ₹{(allowanceTotalForMonth - currentAmountValue).toLocaleString()})
+                </span>
+              ) : (
+                <span>
+                  {allowanceTotalForMonth === 0
+                    ? '⚠️ No Allowance - Self transaction found for this month — will save expense normally.'
+                    : 'Enter an amount to preview the deduction.'}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {type === 'investment' && (
         <div>

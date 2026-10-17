@@ -16,9 +16,11 @@ import type {
   Transaction,
   TransactionType,
 } from '../../domain/types';
+import { monthKey } from '../../domain/metrics';
 import { FocusTrap } from '../../components/atoms/FocusTrap';
 import {
   TransactionForm,
+  isAllowanceSelfCategory,
   type TransactionFormData,
 } from '../../components/molecules/TransactionForm';
 import { SoftButton } from '../../components/ui/SoftButton';
@@ -223,6 +225,64 @@ export function ManageTransactionModal({
       let didLogPL = false;
       let plType: 'profit' | 'loss' | undefined;
       let plAction: 'added' | 'updated' | 'flipped' | 'removed' | undefined;
+
+      // ── Allowance - Self deduction (add-mode expense only) ──────────────
+      if (
+        mode === 'add' &&
+        formData.type === 'expense' &&
+        formData.deductFromAllowance
+      ) {
+        const targetMonth = monthKey(formData.date);
+        // Identify transactions that existed before this new transaction was added
+        const initialAllowanceIds = new Set(
+          transactions
+            .filter((tx) => isAllowanceSelfCategory(tx.category))
+            .map((tx) => tx.id)
+            .filter(Boolean)
+        );
+
+        // Gather all Allowance - Self expense entries for the month, sorted most-recent first
+        const allowanceTxs = result.transactions
+          .filter(
+            (tx) =>
+              (initialAllowanceIds.size === 0 || initialAllowanceIds.has(tx.id)) &&
+              tx.type === 'expense' &&
+              isAllowanceSelfCategory(tx.category) &&
+              monthKey(tx.date) === targetMonth &&
+              tx.tabName != null &&
+              tx.rowIndex != null
+          )
+          .sort((a, b) => b.date.localeCompare(a.date));
+
+        if (allowanceTxs.length > 0) {
+          let remaining = formData.amount;
+          for (const allowanceTx of allowanceTxs) {
+            if (remaining <= 0) break;
+            const deductNow = Math.min(remaining, allowanceTx.amount);
+            const newAmount = allowanceTx.amount - deductNow;
+            const deductNote = `[Deducted ₹${deductNow.toLocaleString()} for "${formData.category}" on ${formData.date}]`;
+            const newComment = allowanceTx.comment
+              ? `${allowanceTx.comment}\n${deductNote}`
+              : deductNote;
+            const patchData: SheetRowData = {
+              Date: allowanceTx.date,
+              Category: allowanceTx.category,
+              Amount: newAmount,
+              Comment: newComment,
+              ...(allowanceTx.rowId ? { Id: allowanceTx.rowId } : {}),
+            };
+            result = await updateTransaction(
+              allowanceTx.tabName!,
+              allowanceTx.rowIndex!,
+              patchData,
+              { date: allowanceTx.date, category: allowanceTx.category, amount: allowanceTx.amount },
+              allowanceTx.rowId
+            );
+            remaining -= deductNow;
+          }
+        }
+        // If no allowance entries exist the expense was already saved — nothing else to do.
+      }
 
       if (mode === 'add') {
         if (
@@ -443,6 +503,7 @@ export function ManageTransactionModal({
                   busy={saving}
                   externalError={error}
                   layout="modal"
+                  showAllowanceDeduct={mode === 'add'}
                 />
               </div>
             </motion.div>
