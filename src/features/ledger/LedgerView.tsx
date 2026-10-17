@@ -274,7 +274,7 @@ function SwipeableTransactionRow({
               )}
             </div>
             {tx.comment?.trim() ? (
-              <p className="truncate text-xs text-text-muted">{tx.comment}</p>
+              <p className="line-clamp-2 whitespace-pre-line text-xs text-text-muted">{tx.comment}</p>
             ) : null}
           </div>
         </div>
@@ -1043,7 +1043,7 @@ export function LedgerView({
                           <span className="block font-semibold text-text-muted">
                             Notes / Comment
                           </span>
-                          <p className="mt-1 leading-relaxed text-text">
+                          <p className="mt-1 leading-relaxed text-text whitespace-pre-line break-words">
                             {viewingTx.comment}
                           </p>
                         </div>

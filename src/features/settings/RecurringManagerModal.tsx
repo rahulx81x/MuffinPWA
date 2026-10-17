@@ -873,12 +873,12 @@ export function RecurringManagerModal({
                   {/* Comment / Notes */}
                   <div>
                     <label className={labelClass}>Notes / Comment (Optional)</label>
-                    <input
-                      type="text"
+                    <textarea
+                      rows={2}
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
-                      placeholder="e.g. Paid via Auto-debit"
-                      className={fieldClass}
+                      placeholder="e.g. Paid via Auto-debit (supports multiple lines)"
+                      className={`${fieldClass} leading-relaxed`}
                     />
                   </div>
 

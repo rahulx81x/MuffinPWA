@@ -63,7 +63,7 @@ export function TransactionList({ transactions }: TransactionListProps) {
             </p>
           </div>
           <div className="mt-1.5 space-y-1.5">
-            <p className="whitespace-normal break-words text-sm leading-relaxed text-text-secondary">
+            <p className="whitespace-pre-line break-words text-sm leading-relaxed text-text-secondary">
               {t.comment?.trim() ? t.comment : 'No comment'}
             </p>
             <span className="inline-flex rounded-full bg-surface-muted/70 px-2 py-0.5 text-[11px] font-medium tabular-nums text-text-muted">

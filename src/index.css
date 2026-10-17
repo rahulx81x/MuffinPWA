@@ -658,6 +658,12 @@ body {
     @apply w-full rounded-xl border border-border bg-canvas px-3.5 py-2.5 text-sm text-text outline-none disabled:opacity-60;
   }
 
+  textarea.field-cozy {
+    min-height: 3.5rem;
+    resize: vertical;
+    field-sizing: content;
+  }
+
   .field-cozy:focus-visible {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.25);

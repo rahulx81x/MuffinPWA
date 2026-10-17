@@ -637,13 +637,13 @@ export function TransactionForm({
 
       <label className="block">
         <span className={labelClass}>Comment</span>
-        <input
-          type="text"
-          placeholder="Optional note"
+        <textarea
+          rows={2}
+          placeholder="Optional note (supports multiple lines)"
           value={comment}
           disabled={busy}
           onChange={(e) => setComment(e.target.value)}
-          className={fieldClass}
+          className={`${fieldClass} leading-relaxed`}
         />
       </label>
 
