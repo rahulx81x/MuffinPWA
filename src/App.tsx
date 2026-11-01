@@ -34,7 +34,7 @@ import { useRecipeConfig } from './hooks/useRecipeConfig';
 import { useRecurringAutomation } from './hooks/useRecurringAutomation';
 import { useSheetTransactions } from './hooks/useSheetTransactions';
 import { useTheme } from './hooks/useTheme';
-import { buildFinancialMetrics, EMPTY_METRICS } from './domain/metrics';
+import { buildFinancialMetrics, currentMonthKey, EMPTY_METRICS, monthKey } from './domain/metrics';
 import { pageTransition, pageVariants, springSoft } from './lib/motion';
 import type {
   AppTab,
@@ -96,6 +96,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<AppTab>('home');
   const [ledgerMonthFilter, setLedgerMonthFilter] = useState('');
+  const [homeMonthKey, setHomeMonthKey] = useState<string>(() => currentMonthKey());
   const [metrics, setMetrics] = useState<FinancialMetrics>(EMPTY_METRICS);
 
   const {
@@ -165,6 +166,17 @@ export default function App() {
     return Array.from(labels);
   }, [sheetTransactions, recipeConfig.investments]);
 
+  const availableMonths = useMemo(() => {
+    const keys = new Set<string>();
+    keys.add(currentMonthKey());
+    sheetTransactions.forEach((tx) => {
+      if (tx.date) {
+        keys.add(monthKey(tx.date));
+      }
+    });
+    return Array.from(keys).sort().reverse();
+  }, [sheetTransactions]);
+
   useEffect(() => {
     if (!ready || !auth?.showTour) return;
     openModal({ kind: 'tour' });
@@ -174,8 +186,8 @@ export default function App() {
     setMetrics(buildFinancialMetrics(sheetTransactions, {
       openingBalance: recipeConfig.openingBalance,
       investments: recipeConfig.investments,
-    }));
-  }, [sheetTransactions, recipeConfig]);
+    }, homeMonthKey));
+  }, [sheetTransactions, recipeConfig, homeMonthKey]);
 
   function openAddModal() {
     openModal({ kind: 'manage', mode: 'add', transaction: null });
@@ -490,6 +502,9 @@ export default function App() {
                 <HomeView
                   metrics={metrics}
                   transactions={sheetTransactions}
+                  selectedMonth={homeMonthKey}
+                  availableMonths={availableMonths}
+                  onMonthChange={setHomeMonthKey}
                   userName={auth.user.name || auth.user.email}
                   onRefresh={async () => {
                     await refreshTransactions();

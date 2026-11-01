@@ -28,6 +28,7 @@ interface ChartModalProps {
   title: string;
   subtitle?: string;
   transactions: Transaction[];
+  selectedMonth?: string;
   breakup: Record<string, number>;
   onClose: () => void;
 }
@@ -931,6 +932,7 @@ export function ChartModal({
   title,
   subtitle,
   transactions,
+  selectedMonth,
   breakup,
   onClose,
 }: ChartModalProps) {
@@ -966,15 +968,15 @@ export function ChartModal({
     }
     const type = resolveListType(activeKey);
     if (!type) return [];
-    const thisMonth = currentMonthKey();
+    const targetMonth = selectedMonth || currentMonthKey();
     return transactions
       .filter((t) => {
-        if (monthKey(t.date) !== thisMonth || t.type !== type) return false;
+        if (monthKey(t.date) !== targetMonth || t.type !== type) return false;
         if (type === 'investment' && !isCountedInvestment(t)) return false;
         return true;
       })
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [activeKey, transactions]);
+  }, [activeKey, transactions, selectedMonth]);
 
   const series = useMemo(() => {
     if (!activeKey || kind !== 'line') {

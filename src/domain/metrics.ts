@@ -136,7 +136,8 @@ export function buildInvestmentBreakup(
 
 export function buildFinancialMetrics(
   transactions: Transaction[],
-  config: { openingBalance: number; investments: RecipeInvestment[] }
+  config: { openingBalance: number; investments: RecipeInvestment[] },
+  selectedMonth?: string
 ): FinancialMetrics {
   const totalIncome = transactions
     .filter((t) => t.type === 'income')
@@ -179,8 +180,8 @@ export function buildFinancialMetrics(
     ? trackedLiquid / monthsTracked
     : 0;
 
-  const thisMonth = currentMonthKey();
-  const monthTx = transactions.filter((t) => monthKey(t.date) === thisMonth);
+  const targetMonth = selectedMonth || currentMonthKey();
+  const monthTx = transactions.filter((t) => monthKey(t.date) === targetMonth);
   const currentMonthIncome = monthTx
     .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);

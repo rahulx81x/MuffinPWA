@@ -6,10 +6,15 @@ import type { FinancialMetrics, KpiIconHint, MetricKey, Transaction } from '../.
 import { ChartModal } from './ChartModal';
 import { KpiCard, type KpiTone } from './KpiCard';
 import { EmptyState } from '../../components/molecules/EmptyState';
+import { MonthPicker } from './MonthPicker';
+import { currentMonthKey } from '../../domain/metrics';
 
 interface HomeViewProps {
   metrics: FinancialMetrics;
   transactions: Transaction[];
+  selectedMonth?: string;
+  availableMonths?: string[];
+  onMonthChange?: (monthKey: string) => void;
   /** First name / display name for the home greeting. */
   userName?: string;
   onRefresh?: () => Promise<void>;
@@ -87,6 +92,9 @@ function greetingForHour(hour: number): string {
 export function HomeView({
   metrics,
   transactions,
+  selectedMonth,
+  availableMonths,
+  onMonthChange,
   userName,
   onRefresh,
   onAddTransaction,
@@ -94,6 +102,8 @@ export function HomeView({
 }: HomeViewProps) {
   const { masked, formatCurrency, formatSignedCurrency } = useMask();
   const [activeMetric, setActiveMetric] = useState<MetricKey | null>(null);
+  const currentActiveMonth = selectedMonth || currentMonthKey();
+  const effectiveAvailableMonths = availableMonths || [currentActiveMonth];
 
   const { containerRef, pullDistance, refreshing } = usePullToRefresh<HTMLDivElement>({
     onRefresh: onRefresh || (() => {}),
@@ -814,9 +824,11 @@ export function HomeView({
 
       {/* Section 2: This Month's Overview */}
       <section className="space-y-2.5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
-          This Month
-        </h3>
+        <MonthPicker
+          selectedMonth={currentActiveMonth}
+          availableMonths={effectiveAvailableMonths}
+          onMonthChange={onMonthChange || (() => {})}
+        />
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 gap-3.5">
           {monthCards.map(renderCard)}
         </div>
@@ -854,6 +866,7 @@ export function HomeView({
               : activeCard?.value
         }
         transactions={transactions}
+        selectedMonth={currentActiveMonth}
         breakup={metrics.investmentBreakup}
         onClose={() => setActiveMetric(null)}
       />
