@@ -238,31 +238,51 @@ export function TransactionForm({
     if (type !== 'expense') setDeductFromAllowance(false);
   }, [type]);
 
-  const activeCategoryChips = useMemo(() => {
+  /** All unique existing categories for the current transaction type, sorted by frequency */
+  const existingCategoriesForType = useMemo(() => {
+    const counts: Record<string, number> = {};
     if (transactions && transactions.length > 0) {
-      const counts: Record<string, number> = {};
       for (const tx of transactions) {
         if (tx.type !== type) continue;
         const cat = tx.category?.trim();
         if (!cat) continue;
         counts[cat] = (counts[cat] || 0) + 1;
       }
-      return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([cat]) => cat)
-        .slice(0, 4);
     }
-    return categoryChips.slice(0, 4);
+    for (const cat of categoryChips) {
+      const trimmed = cat.trim();
+      if (trimmed && !counts[trimmed]) {
+        counts[trimmed] = 1;
+      }
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat]) => cat);
   }, [transactions, categoryChips, type]);
 
   /** Chips shown: 'Allowance - Self' is always pinned first for expense, deduped from the rest. */
   const pinnedChips = useMemo(() => {
-    if (type !== 'expense') return activeCategoryChips.slice(0, 4);
-    const rest = activeCategoryChips
-      .filter((c) => !isAllowanceSelfCategory(c))
-      .slice(0, 4);
+    const top = existingCategoriesForType.slice(0, 6);
+    if (type !== 'expense') return top;
+    const rest = top.filter((c) => !isAllowanceSelfCategory(c)).slice(0, 5);
     return [ALLOWANCE_SELF_CATEGORY, ...rest];
-  }, [type, activeCategoryChips]);
+  }, [type, existingCategoriesForType]);
+
+  const handleCategorySelect = (newCat: string) => {
+    setCategory(newCat);
+    // If investment and investmentType is not chosen yet, infer from past matching transaction
+    if (type === 'investment' && !investmentType.trim() && newCat.trim()) {
+      const match = transactions.find(
+        (tx) =>
+          tx.type === 'investment' &&
+          tx.category?.trim().toLowerCase() === newCat.trim().toLowerCase() &&
+          tx.investmentType?.trim()
+      );
+      if (match?.investmentType) {
+        setInvestmentType(match.investmentType.trim());
+      }
+    }
+  };
 
   /** Pre-computed total of all Allowance - Self expense transactions for the selected month. */
   const allowanceTotalForMonth = useMemo(() => {
@@ -291,19 +311,73 @@ export function TransactionForm({
 
   const selectStyles = useMemo(() => buildSelectStyles(), []);
 
-  const typeOptions = useMemo<InvestmentTypeOption[]>(() => {
+  const allInvestmentTypeOptions = useMemo(() => {
     const seen = new Set<string>();
-    const ordered: InvestmentTypeOption[] = [];
+    const list: string[] = [];
+
+    // 1. From investmentTypeOptions prop
     for (const label of investmentTypeOptions) {
       const trimmed = label.trim();
       if (!trimmed) continue;
       const key = trimmed.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      ordered.push({ value: trimmed, label: trimmed });
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push(trimmed);
+      }
     }
-    return ordered.sort((a, b) => a.label.localeCompare(b.label));
-  }, [investmentTypeOptions]);
+
+    // 2. From existing investment transactions
+    if (transactions && transactions.length > 0) {
+      for (const tx of transactions) {
+        if (tx.type === 'investment') {
+          const invType = (tx.investmentType || '').trim();
+          if (invType) {
+            const key = invType.toLowerCase();
+            if (!seen.has(key)) {
+              seen.add(key);
+              list.push(invType);
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Fallback defaults if none configured
+    if (list.length === 0) {
+      ['Mutual Fund', 'Stocks', 'Fixed Deposit', 'Provident Fund', 'Gold', 'Crypto'].forEach((t) => {
+        const key = t.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push(t);
+        }
+      });
+    }
+
+    return list.sort((a, b) => a.localeCompare(b));
+  }, [investmentTypeOptions, transactions]);
+
+  const typeOptions = useMemo<InvestmentTypeOption[]>(() => {
+    return allInvestmentTypeOptions.map((label) => ({ value: label, label }));
+  }, [allInvestmentTypeOptions]);
+
+  const topInvestmentTypeChips = useMemo(() => {
+    if (transactions && transactions.length > 0) {
+      const counts: Record<string, number> = {};
+      for (const tx of transactions) {
+        if (tx.type === 'investment') {
+          const t = (tx.investmentType || '').trim();
+          if (t) counts[t] = (counts[t] || 0) + 1;
+        }
+      }
+      const sorted = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([t]) => t);
+      if (sorted.length > 0) {
+        return sorted.slice(0, 5);
+      }
+    }
+    return allInvestmentTypeOptions.slice(0, 5);
+  }, [transactions, allInvestmentTypeOptions]);
 
   const selectedOption = useMemo(() => {
     const trimmed = investmentType.trim();
@@ -514,12 +588,25 @@ export function TransactionForm({
           <input
             type="text"
             required
-            placeholder="e.g. Groceries, Rent, Salary"
+            list="category-autofill-suggestions"
+            autoComplete="on"
+            placeholder={
+              type === 'income'
+                ? 'e.g. Salary, Freelance, Dividend'
+                : type === 'investment'
+                  ? 'e.g. Mutual Fund SIP, Stocks, Gold'
+                  : 'e.g. Groceries, Rent, Utilities'
+            }
             value={category}
             disabled={busy}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => handleCategorySelect(e.target.value)}
             className={fieldClass}
           />
+          <datalist id="category-autofill-suggestions">
+            {existingCategoriesForType.map((cat) => (
+              <option key={cat} value={cat} />
+            ))}
+          </datalist>
         </label>
 
         {pinnedChips.length > 0 && (
@@ -535,7 +622,7 @@ export function TransactionForm({
                   type="button"
                   disabled={busy}
                   onClick={() => {
-                    setCategory(cat);
+                    handleCategorySelect(cat);
                     navigator.vibrate?.(8);
                   }}
                   className={`rounded-full px-2.5 py-1 text-xs transition-all ${
@@ -701,7 +788,33 @@ export function TransactionForm({
               return inputValue;
             }}
           />
-          <span className="mt-1 block text-[11px] leading-snug text-text-muted">
+
+          {topInvestmentTypeChips.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {topInvestmentTypeChips.map((invT) => {
+                const isActive = investmentType.toLowerCase().trim() === invT.toLowerCase().trim();
+                return (
+                  <button
+                    key={invT}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setInvestmentType(invT);
+                      navigator.vibrate?.(8);
+                    }}
+                    className={`rounded-full px-2.5 py-1 text-xs transition-all ${
+                      isActive
+                        ? 'border border-primary/50 bg-primary/20 text-primary font-bold shadow-warm-sm'
+                        : 'font-medium border border-border/80 bg-surface text-text-secondary hover:bg-surface-muted/60'
+                    }`}
+                  >
+                    {invT}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <span className="mt-1.5 block text-[11px] leading-snug text-text-muted">
             Pick from existing types or type a new one. Use “Provident Fund”,
             “PF”, or “EPF” to track PF on its own card (excluded from net
             worth and investment breakup).
