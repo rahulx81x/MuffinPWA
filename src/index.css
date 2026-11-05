@@ -713,6 +713,55 @@ body {
       opacity: 0.8;
     }
   }
+
+  @keyframes geminiAuraSpin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes geminiAuraPulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.75;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 1;
+    }
+  }
+
+  .gemini-aura-ring {
+    background: conic-gradient(
+      from 0deg,
+      #4285F4 0%,
+      #9B72CF 18%,
+      #D96570 36%,
+      #F2994A 55%,
+      #34A853 73%,
+      #29B6F6 90%,
+      #4285F4 100%
+    );
+    animation: geminiAuraSpin 4s linear infinite;
+  }
+
+  .gemini-aura-glow {
+    background: conic-gradient(
+      from 0deg,
+      #4285F4 0%,
+      #9B72CF 18%,
+      #D96570 36%,
+      #F2994A 55%,
+      #34A853 73%,
+      #29B6F6 90%,
+      #4285F4 100%
+    );
+    animation: geminiAuraSpin 4s linear infinite, geminiAuraPulse 3s ease-in-out infinite;
+    filter: blur(10px);
+  }
 }
 
 @layer utilities {

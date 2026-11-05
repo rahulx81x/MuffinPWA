@@ -12,6 +12,8 @@ import { SignInScreen } from './features/auth/SignInScreen';
 import { SheetOnboarding } from './features/auth/SheetOnboarding';
 import { HomeView } from './features/home/HomeView';
 import { InsightsView } from './features/insights/InsightsView';
+import { SuperDashboard } from './features/insights/SuperDashboard';
+import { SuperDashboardFAB } from './features/insights/SuperDashboardFAB';
 import { LedgerView } from './features/ledger/LedgerView';
 import {
   ManageTransactionModal,
@@ -95,6 +97,7 @@ export default function App() {
   } = useAppModals();
 
   const [activeTab, setActiveTab] = useState<AppTab>('home');
+  const [showSuperDashboard, setShowSuperDashboard] = useState(false);
   const [ledgerMonthFilter, setLedgerMonthFilter] = useState('');
   const [homeMonthKey, setHomeMonthKey] = useState<string>(() => currentMonthKey());
   const [metrics, setMetrics] = useState<FinancialMetrics>(EMPTY_METRICS);
@@ -571,6 +574,20 @@ export default function App() {
             durationMs={toastUndo ? 8000 : 5000}
             undoFn={toastUndo}
             onDismiss={() => setStatusMessage(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeTab === 'insights' && !loading && !showSuperDashboard && (
+          <SuperDashboardFAB onClick={() => setShowSuperDashboard(true)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showSuperDashboard && (
+          <SuperDashboard
+            transactions={ledgerTransactions}
+            onClose={() => setShowSuperDashboard(false)}
           />
         )}
       </AnimatePresence>
