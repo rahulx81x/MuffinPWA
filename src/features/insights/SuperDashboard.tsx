@@ -268,7 +268,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
       });
     } catch (err) {
       console.error('[SuperDashboard] PDF export failed:', err);
-      setExportError('Export failed. Please try again.');
+      setExportError(`Export failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setExporting(false);
     }
