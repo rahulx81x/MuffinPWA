@@ -479,7 +479,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
       {/* Main Content Area */}
       <main className="relative z-10 mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6">
         {/* SECTION 1: MULTI-SERIES MONTHLY CASHFLOW TRAJECTORY */}
-        <div className="cozy-card p-4 sm:p-5 shadow-warm">
+        <div data-export-chart className="cozy-card p-4 sm:p-5 shadow-warm">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between mb-4">
             <div>
               <div className="flex items-center gap-2">
@@ -559,7 +559,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
         {/* SECTION 3 & 4: MONTHLY INFLOW/OUTFLOW COMPARISON & SAVINGS RATE */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Monthly Comparison Bar Chart */}
-          <div className="cozy-card p-4 sm:p-5 shadow-warm">
+          <div data-export-chart className="cozy-card p-4 sm:p-5 shadow-warm">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
@@ -582,7 +582,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
           </div>
 
           {/* Savings Rate Trajectory */}
-          <div className="cozy-card p-4 sm:p-5 shadow-warm">
+          <div data-export-chart className="cozy-card p-4 sm:p-5 shadow-warm">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
@@ -604,7 +604,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
         </div>
 
         {/* SECTION 5: CUMULATIVE WEALTH ACCUMULATION */}
-        <div className="cozy-card p-4 sm:p-5 shadow-warm">
+        <div data-export-chart className="cozy-card p-4 sm:p-5 shadow-warm">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
@@ -631,7 +631,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
         {/* SECTION 6 & 7: CATEGORY EXPENSE & INCOME DISTRIBUTIONS */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Category Expense Breakdown */}
-          <div className="cozy-card p-4 sm:p-5 shadow-warm">
+          <div data-export-chart className="cozy-card p-4 sm:p-5 shadow-warm">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
@@ -663,7 +663,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
           </div>
 
           {/* Income Source Breakdown */}
-          <div className="cozy-card p-4 sm:p-5 shadow-warm">
+          <div data-export-chart className="cozy-card p-4 sm:p-5 shadow-warm">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
@@ -698,7 +698,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
         {/* SECTION 8 & 9: INVESTMENT ALLOCATION & MONTHLY VOLUME */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Investment Portfolio Allocation */}
-          <div className="cozy-card p-4 sm:p-5 shadow-warm">
+          <div data-export-chart className="cozy-card p-4 sm:p-5 shadow-warm">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
@@ -730,7 +730,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
           </div>
 
           {/* Monthly Investment Volume */}
-          <div className="cozy-card p-4 sm:p-5 shadow-warm">
+          <div data-export-chart className="cozy-card p-4 sm:p-5 shadow-warm">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
@@ -752,7 +752,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
         </div>
 
         {/* SECTION: FINANCIAL OVERVIEW KPIS (NON-CHART) */}
-        <div>
+        <div data-export-kpis>
           <div className="mb-2.5 px-1 flex items-center justify-between">
             <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-amber-500" />

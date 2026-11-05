@@ -114,14 +114,31 @@ function sizeSvgsForDesktop(doc: Document): void {
   });
 }
 
-async function renderDesktopCanvas(root: HTMLElement): Promise<HTMLCanvasElement> {
+interface SectionRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+interface CapturedDashboard {
+  canvas: HTMLCanvasElement;
+  /** Canvas pixels per CSS pixel. */
+  scale: number;
+  /** Each entry is one PDF page: a list of sections stacked top to bottom. */
+  pages: SectionRect[][];
+}
+
+async function renderDesktopCanvas(root: HTMLElement): Promise<CapturedDashboard> {
   const bg = getComputedStyle(root).backgroundColor || '#ffffff';
   const estimatedHeight = Math.max(root.scrollHeight, 2000) * (DESKTOP_WIDTH / Math.max(window.innerWidth, 320));
-  const scale = Math.min(1.5, MAX_CANVAS_EDGE / estimatedHeight);
+  const maxScale = Capacitor.isNativePlatform() ? 1 : 1.5;
+  const scale = Math.max(0.5, Math.min(maxScale, MAX_CANVAS_EDGE / estimatedHeight));
+  const pages: SectionRect[][] = [];
 
-  return html2canvas(root, {
+  const canvas = await html2canvas(root, {
     backgroundColor: bg,
-    scale: Math.max(0.5, scale),
+    scale,
     useCORS: true,
     logging: false,
     windowWidth: DESKTOP_WIDTH,
@@ -153,38 +170,76 @@ async function renderDesktopCanvas(root: HTMLElement): Promise<HTMLCanvasElement
       });
       sizeSvgsForDesktop(clonedDoc);
       inlineSvgStyles(clonedDoc);
+
+      // Measure sections AFTER all sizing tweaks so the rects match what gets drawn.
+      const origin = el?.getBoundingClientRect() ?? { left: 0, top: 0 };
+      const measure = (n: Element | null): SectionRect | null => {
+        if (!n) return null;
+        const r = n.getBoundingClientRect();
+        if (!r.width || !r.height) return null;
+        return { x: r.left - origin.left, y: r.top - origin.top, w: r.width, h: r.height };
+      };
+
+      // Page 1: header (title + filters) stacked above the KPI overview.
+      const intro = [measure(clonedDoc.querySelector('header')), measure(clonedDoc.querySelector('[data-export-kpis]'))]
+        .filter((r): r is SectionRect => r !== null);
+      if (intro.length) pages.push(intro);
+
+      // One chart per page.
+      clonedDoc.querySelectorAll('[data-export-chart]').forEach((n) => {
+        const r = measure(n);
+        if (r) pages.push([r]);
+      });
     },
   });
+
+  return { canvas, scale, pages };
 }
 
 /* ── PDF building ─────────────────────────────────────────────────────── */
 
-function addScreenshotPages(pdf: jsPDF, canvas: HTMLCanvasElement): void {
+function addScreenshotPages(pdf: jsPDF, cap: CapturedDashboard): void {
+  const { canvas, scale, pages } = cap;
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 18;
+  const margin = 24;
   const drawW = pageW - margin * 2;
   const drawH = pageH - margin * 2;
+  const gap = 16; // vertical gap (pt) between stacked sections on one page
+  const pad = 6; // CSS px of breathing room so card borders/shadows aren't clipped
 
-  // Source pixels per PDF point, and how many source rows fit on one page.
-  const pxPerPt = canvas.width / drawW;
-  const sliceH = Math.floor(drawH * pxPerPt);
+  const crop = (r: SectionRect) => {
+    const sx = Math.max(0, Math.floor((r.x - pad) * scale));
+    const sy = Math.max(0, Math.floor((r.y - pad) * scale));
+    const sw = Math.min(canvas.width - sx, Math.ceil((r.w + pad * 2) * scale));
+    const sh = Math.min(canvas.height - sy, Math.ceil((r.h + pad * 2) * scale));
+    const c = document.createElement('canvas');
+    c.width = sw;
+    c.height = sh;
+    c.getContext('2d')?.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+    return { c, w: sw, h: sh };
+  };
 
-  let y = 0;
-  let first = true;
-  while (y < canvas.height) {
-    const h = Math.min(sliceH, canvas.height - y);
-    const slice = document.createElement('canvas');
-    slice.width = canvas.width;
-    slice.height = h;
-    const ctx = slice.getContext('2d');
-    if (!ctx) break;
-    ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
-    if (!first) pdf.addPage();
-    pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, drawW, h / pxPerPt);
-    first = false;
-    y += h;
-  }
+  pages.forEach((sections, i) => {
+    const crops = sections.map(crop).filter((x) => x.w > 0 && x.h > 0);
+    if (!crops.length) return;
+
+    // Fit the whole stack inside the page (contain): scales by width OR height, whichever is tighter,
+    // so nothing is ever cut off.
+    const maxW = Math.max(...crops.map((x) => x.w));
+    const totalH = crops.reduce((sum, x) => sum + x.h, 0);
+    const gaps = gap * (crops.length - 1);
+    const k = Math.min(drawW / maxW, (drawH - gaps) / totalH);
+
+    if (i > 0) pdf.addPage();
+    let y = margin;
+    for (const { c, w, h } of crops) {
+      const dw = w * k;
+      const dh = h * k;
+      pdf.addImage(c.toDataURL('image/jpeg', Capacitor.isNativePlatform() ? 0.8 : 0.92), 'JPEG', margin + (drawW - dw) / 2, y, dw, dh);
+      y += dh + gap;
+    }
+  });
 }
 
 function buildTablesPdf(pdf: jsPDF, p: ExportPayload): void {
@@ -352,26 +407,38 @@ function buildTablesPdf(pdf: jsPDF, p: ExportPayload): void {
 /* ── delivery ─────────────────────────────────────────────────────────── */
 
 async function deliverPdf(pdf: jsPDF, filename: string): Promise<void> {
-  const blob = pdf.output('blob');
-
-  // Native Android app: write to cache and open the share sheet (save / send to AI app).
+  // Native Android/iOS app: write to cache and open the share sheet (save / send to AI app).
+  // No fallback to the browser path here: WebViews silently ignore blob downloads, so any
+  // failure must surface to the UI instead of "doing nothing".
   if (Capacitor.isNativePlatform()) {
+    const dataUri = pdf.output('datauristring');
+    const base64 = dataUri.slice(dataUri.indexOf('base64,') + 7);
+
+    let uri: string;
     try {
-      const dataUri = pdf.output('datauristring');
-      const base64 = dataUri.slice(dataUri.indexOf('base64,') + 7);
       const written = await Filesystem.writeFile({
         path: filename,
         data: base64,
         directory: Directory.Cache,
       });
-      await Share.share({ title: filename, files: [written.uri], dialogTitle: 'Save or share PDF' });
-      return;
+      uri = written.uri;
     } catch (err) {
-      console.warn('[export] Native share failed, falling back to download:', err);
+      throw new Error(`Could not write PDF file: ${err instanceof Error ? err.message : String(err)}`);
     }
+
+    try {
+      await Share.share({ title: filename, files: [uri], dialogTitle: 'Save or share PDF' });
+    } catch (err) {
+      // Closing the share sheet without choosing an app is not an error.
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/cancel|dismiss/i.test(msg)) return;
+      throw new Error(`Could not open share sheet: ${msg}`);
+    }
+    return;
   }
 
   // PWA / browser: Web Share with files where supported (mobile), else a normal download.
+  const blob = pdf.output('blob');
   const file = new File([blob], filename, { type: 'application/pdf' });
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
   if (nav.canShare?.({ files: [file] })) {
@@ -396,10 +463,10 @@ async function deliverPdf(pdf: jsPDF, filename: string): Promise<void> {
 /* ── public API ───────────────────────────────────────────────────────── */
 
 export async function exportDashboardPdf(payload: ExportPayload): Promise<void> {
-  const canvas = await renderDesktopCanvas(payload.root);
+  const captured = await renderDesktopCanvas(payload.root);
 
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-  addScreenshotPages(pdf, canvas);
+  addScreenshotPages(pdf, captured);
   buildTablesPdf(pdf, payload);
 
   const stamp = payload.generatedAt.toISOString().slice(0, 10);
