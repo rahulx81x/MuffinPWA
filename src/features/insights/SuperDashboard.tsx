@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ChevronDown,
+  Download,
   Eye,
   EyeOff,
   PieChart as PieChartIcon,
@@ -14,6 +15,7 @@ import {
   ShieldCheck,
   Percent,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { useMask, MASKED_VALUE } from '../../hooks/useMask';
 import { useTheme } from '../../hooks/useTheme';
@@ -28,6 +30,7 @@ import {
 } from '../../domain/metrics';
 import type { MonthlyKPI, Transaction } from '../../domain/types';
 import { springSoft } from '../../lib/motion';
+import { exportDashboardPdf } from './exportDashboardPdf';
 
 interface SuperDashboardProps {
   transactions: Transaction[];
@@ -40,6 +43,12 @@ type TimeRange = '3M' | '6M' | '1Y' | 'ALL';
 function pct(part: number, whole: number): number {
   if (!whole || whole <= 0) return 0;
   return (part / whole) * 100;
+}
+
+function fmtPdf(n: number, masked: boolean): string {
+  if (masked) return '****';
+  const r = Math.round(n * 100) / 100;
+  return `${r < 0 ? '-' : ''}Rs. ${Math.abs(r).toLocaleString('en-IN')}`;
 }
 
 export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
@@ -222,28 +231,67 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
     return 'All Time Tracked';
   }, [scope, selectedMonth, selectedYear]);
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const handleExport = async () => {
+    if (!rootRef.current || exporting) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const asRows = (
+        entries: Array<{ name: string; total: number; count?: number; share: number }>
+      ) => entries.map((e) => ({ name: e.name, total: e.total, count: e.count, share: e.share }));
+
+      await exportDashboardPdf({
+        root: rootRef.current,
+        masked,
+        scopeLabel,
+        trendRangeLabel: timeRange === 'ALL' ? 'All months' : `Last ${timeRange}`,
+        generatedAt: new Date(),
+        metrics: [
+          { label: 'Net Worth', value: fmtPdf(metrics.netWorth, masked) },
+          { label: 'Total Income', value: fmtPdf(metrics.totalIncome, masked) },
+          { label: 'Total Spends', value: fmtPdf(metrics.totalSpends, masked) },
+          { label: 'Investments', value: fmtPdf(metrics.investmentBalance, masked) },
+          { label: 'Liquid Cash', value: fmtPdf(metrics.liquidBalance, masked) },
+          { label: 'Provident Fund', value: fmtPdf(metrics.providentFundBalance, masked) },
+          { label: 'Savings Rate', value: `${metrics.savingsRate.toFixed(1)}%` },
+          { label: 'Months tracked', value: String(metrics.monthsTracked) },
+        ],
+        monthly: trendMonthlyKPIs,
+        expenses: { rows: asRows(categoryExpenses.entries), total: categoryExpenses.totalExpense },
+        income: { rows: asRows(categoryIncome.entries), total: categoryIncome.totalIncome },
+        investments: { rows: asRows(investmentBreakup.entries), total: investmentBreakup.total },
+        transactions: scopedTransactions,
+      });
+    } catch (err) {
+      console.error('[SuperDashboard] PDF export failed:', err);
+      setExportError('Export failed. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <motion.div
+      ref={rootRef}
+      data-export-root
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={springSoft}
       className="fixed inset-0 z-50 overflow-y-auto bg-canvas text-text selection:bg-primary/20 pb-20"
     >
-      {/* Background Decorative Auras */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
-        <div className="gemini-aura-glow absolute -top-32 -left-32 h-96 w-96 rounded-full opacity-20 blur-3xl" />
-        <div className="gemini-aura-glow absolute top-1/3 -right-32 h-[32rem] w-[32rem] rounded-full opacity-15 blur-3xl" />
-        <div className="gemini-aura-glow absolute bottom-10 left-1/4 h-80 w-80 rounded-full opacity-15 blur-3xl" />
-      </div>
-
       {/* Sticky Header Bar */}
-      <header className="sticky top-0 z-30 border-b border-border/80 bg-canvas/85 backdrop-blur-xl transition-theme">
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-canvas pt-[env(safe-area-inset-top,0px)] transition-theme">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           {/* Back Button */}
           <div className="flex items-center gap-3">
             <button
               type="button"
+              data-export-hide
               onClick={onClose}
               className="flex items-center gap-2 rounded-full border border-border/80 bg-white dark:bg-surface px-3.5 py-1.5 text-xs font-bold text-text transition-all duration-200 hover:border-primary/50 active:scale-95 shadow-warm-xs"
               aria-label="Exit Super Dashboard"
@@ -269,7 +317,22 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
           </div>
 
           {/* Header Action Tools */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" data-export-hide>
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-1.5 rounded-full border border-border/80 bg-white dark:bg-surface px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:border-primary/40 hover:text-text active:scale-95 shadow-warm-xs disabled:opacity-60"
+              title="Export as PDF (desktop view + data tables)"
+              aria-label="Export dashboard as PDF"
+            >
+              {exporting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+              ) : (
+                <Download className="h-3.5 w-3.5 text-primary" />
+              )}
+              <span className="hidden sm:inline">{exporting ? 'Exporting…' : 'Export PDF'}</span>
+            </button>
             <button
               type="button"
               onClick={toggleMask}
@@ -293,7 +356,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
         </div>
 
         {/* Global Filter Bar */}
-        <div className="border-t border-border/40 bg-surface-strong/50 px-4 py-2 sm:px-6">
+        <div className="border-t border-border/40 bg-canvas px-4 py-2 sm:px-6">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2.5">
             {/* Scope Switcher (All / Year / Month) */}
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -406,6 +469,12 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
           </div>
         </div>
       </header>
+
+      {exportError && (
+        <p className="mx-auto max-w-6xl px-4 pt-2 text-xs font-semibold text-rose-500 sm:px-6" data-export-hide>
+          {exportError}
+        </p>
+      )}
 
       {/* Main Content Area */}
       <main className="relative z-10 mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6">
