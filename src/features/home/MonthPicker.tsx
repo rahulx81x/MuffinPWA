@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { currentMonthKey, monthLabel } from '../../domain/metrics';
 
 interface MonthPickerProps {
@@ -77,108 +77,103 @@ export function MonthPicker({
   };
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex items-center justify-between gap-1.5 sm:gap-2">
       {/* Header Label & Badge */}
-      <div className="flex items-center gap-2">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted truncate">
           {isCurrentMonth ? 'This Month' : monthLabel(selectedMonth)}
         </h3>
         {isPast && (
-          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
-            Historical
+          <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 dark:text-amber-400 leading-none">
+            Past
           </span>
         )}
         {isFuture && (
-          <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-400">
+          <span className="shrink-0 rounded-full border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold text-sky-700 dark:text-sky-400 leading-none">
             Upcoming
           </span>
         )}
       </div>
 
-      {/* Controls Container */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {/* Quick Back to Current Month Pill (Visible only when on historical month) */}
+      {/* Controls Container — strictly single line, never wraps */}
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        {/* Quick Back to Current Month Button */}
         {!isCurrentMonth && (
           <button
             type="button"
             onClick={handleResetToCurrent}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary shadow-xs transition hover:bg-primary/20 active:scale-95"
+            className="inline-flex h-7 items-center gap-1 rounded-lg border border-primary/40 bg-primary/10 px-1.5 sm:px-2 text-[11px] font-bold text-primary shadow-xs transition hover:bg-primary/20 active:scale-95 shrink-0"
             title="Snap back to current month"
+            aria-label="Snap back to current month"
           >
-            <RotateCcw className="h-3.5 w-3.5 shrink-0" />
-            <span>Current Month</span>
+            <RotateCcw className="h-3 w-3 shrink-0" />
+            <span className="hidden sm:inline">Current</span>
           </button>
         )}
 
-        {/* Prev Month Button */}
-        <button
-          type="button"
-          onClick={handlePrev}
-          aria-label="Previous month"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-strong text-text-secondary shadow-warm-sm transition hover:bg-surface-muted hover:text-text active:scale-95"
-          title="Previous month"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-
-        {/* Month Selector */}
-        <div className="relative">
-          <select
-            value={selectedMonthNum}
-            onChange={(e) => handleMonthNumChange(e.target.value)}
-            className="h-8 rounded-xl border border-border bg-surface-strong px-2.5 py-1 pr-6 text-xs font-bold text-text shadow-warm-sm transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/40 appearance-none cursor-pointer"
-            aria-label="Select month"
+        {/* Segmented Month Navigation Capsule */}
+        <div className="inline-flex items-center rounded-xl border border-border bg-surface-strong shadow-warm-xs divide-x divide-border/60 overflow-hidden shrink-0">
+          {/* Prev Month Button */}
+          <button
+            type="button"
+            onClick={handlePrev}
+            aria-label="Previous month"
+            className="inline-flex h-7 w-6 sm:w-7 items-center justify-center text-text-muted hover:bg-surface-muted hover:text-text active:scale-95 transition-colors"
+            title="Previous month"
           >
-            {MONTHS.map((m) => {
-              const key = `${selectedYear}-${m.num}`;
-              const hasData = availableMonths.includes(key);
-              return (
-                <option key={m.num} value={m.num}>
-                  {m.name} {!hasData && '(empty)'}
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+
+          {/* Month Selector */}
+          <div className="relative">
+            <select
+              value={selectedMonthNum}
+              onChange={(e) => handleMonthNumChange(e.target.value)}
+              className="h-7 bg-transparent pl-2 pr-4 text-[11px] sm:text-xs font-bold text-text focus:outline-none cursor-pointer appearance-none transition-colors hover:bg-surface-muted"
+              aria-label="Select month"
+            >
+              {MONTHS.map((m) => {
+                const key = `${selectedYear}-${m.num}`;
+                const hasData = availableMonths.includes(key);
+                return (
+                  <option key={m.num} value={m.num} className="bg-surface text-text">
+                    {m.name} {!hasData && '(empty)'}
+                  </option>
+                );
+              })}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-1 top-1/2 h-2.5 w-2.5 -translate-y-1/2 text-text-muted" />
+          </div>
+
+          {/* Year Selector */}
+          <div className="relative">
+            <select
+              value={selectedYear}
+              onChange={(e) => handleYearChange(e.target.value)}
+              className="h-7 bg-transparent pl-2 pr-4 text-[11px] sm:text-xs font-bold text-text focus:outline-none cursor-pointer appearance-none transition-colors hover:bg-surface-muted"
+              aria-label="Select year"
+            >
+              {years.map((y) => (
+                <option key={y} value={y} className="bg-surface text-text">
+                  {y}
                 </option>
-              );
-            })}
-          </select>
-          <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-text-muted">
-            <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20">
-              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-            </svg>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-1 top-1/2 h-2.5 w-2.5 -translate-y-1/2 text-text-muted" />
           </div>
-        </div>
 
-        {/* Year Selector */}
-        <div className="relative">
-          <select
-            value={selectedYear}
-            onChange={(e) => handleYearChange(e.target.value)}
-            className="h-8 rounded-xl border border-border bg-surface-strong px-2.5 py-1 pr-6 text-xs font-bold text-text shadow-warm-sm transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/40 appearance-none cursor-pointer"
-            aria-label="Select year"
+          {/* Next Month Button */}
+          <button
+            type="button"
+            onClick={handleNext}
+            aria-label="Next month"
+            className="inline-flex h-7 w-6 sm:w-7 items-center justify-center text-text-muted hover:bg-surface-muted hover:text-text active:scale-95 transition-colors"
+            title="Next month"
           >
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-text-muted">
-            <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20">
-              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-            </svg>
-          </div>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
-
-        {/* Next Month Button */}
-        <button
-          type="button"
-          onClick={handleNext}
-          aria-label="Next month"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-strong text-text-secondary shadow-warm-sm transition hover:bg-surface-muted hover:text-text active:scale-95"
-          title="Next month"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );
 }
-
