@@ -208,10 +208,10 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
     const total = Object.values(breakup).reduce((s, v) => s + v, 0);
     const entries = Object.entries(breakup)
       .filter(([, amt]) => amt > 0)
-      .map(([name, total]) => ({
+      .map(([name, amount]) => ({
         name,
-        total,
-        share: pct(total, total),
+        total: amount,
+        share: pct(amount, total),
       }))
       .sort((a, b) => b.total - a.total);
 
@@ -834,7 +834,7 @@ function KpiMetricCard({
   tone: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/40 dark:border-white/10 bg-white/45 dark:bg-surface/35 p-3 shadow-warm-xs backdrop-blur-md transition-all hover:border-primary/40 hover:bg-white/65 dark:hover:bg-surface/55 hover:shadow-warm-sm">
+    <div data-export-kpi className="rounded-2xl border border-white/40 dark:border-white/10 bg-white/45 dark:bg-surface/35 p-3 shadow-warm-xs backdrop-blur-md transition-all hover:border-primary/40 hover:bg-white/65 dark:hover:bg-surface/55 hover:shadow-warm-sm">
       <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted truncate">
         {title}
       </p>

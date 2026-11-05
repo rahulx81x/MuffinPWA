@@ -92,6 +92,28 @@ function inlineSvgStyles(doc: Document): void {
   });
 }
 
+/**
+ * Give every chart SVG explicit pixel dimensions at desktop width. Without this the
+ * serialised SVG keeps its mobile size and only fills a third of the card. Wide charts
+ * are scaled up to the card width (height follows the viewBox ratio, capped).
+ */
+function sizeSvgsForDesktop(doc: Document): void {
+  doc.querySelectorAll<SVGSVGElement>('svg[viewBox]').forEach((svg) => {
+    const rect = svg.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    if (!rect.width || !vb || !vb.width) return;
+    const w = rect.width;
+    let h = rect.height;
+    if (svg.classList.contains('w-full')) {
+      h = Math.min((w * vb.height) / vb.width, 340);
+    }
+    svg.setAttribute('width', String(Math.round(w)));
+    svg.setAttribute('height', String(Math.round(h)));
+    svg.style.width = `${Math.round(w)}px`;
+    svg.style.height = `${Math.round(h)}px`;
+  });
+}
+
 async function renderDesktopCanvas(root: HTMLElement): Promise<HTMLCanvasElement> {
   const bg = getComputedStyle(root).backgroundColor || '#ffffff';
   const estimatedHeight = Math.max(root.scrollHeight, 2000) * (DESKTOP_WIDTH / Math.max(window.innerWidth, 320));
@@ -124,6 +146,12 @@ async function renderDesktopCanvas(root: HTMLElement): Promise<HTMLCanvasElement
         h.style.position = 'static';
         h.style.paddingTop = '0';
       });
+      // KPI cards use translucent backgrounds + backdrop blur, which flatten to grey in the capture.
+      clonedDoc.querySelectorAll<HTMLElement>('[data-export-kpi]').forEach((n) => {
+        n.style.background = 'var(--color-surface)';
+        n.style.backdropFilter = 'none';
+      });
+      sizeSvgsForDesktop(clonedDoc);
       inlineSvgStyles(clonedDoc);
     },
   });
