@@ -88,8 +88,8 @@ export function AboutModal({
 
             <p className="mt-3 text-sm leading-relaxed text-text-secondary">
               A cozy personal finance PWA that turns your Google Sheet into a live
-              dashboard — income, expenses, investments, Provident Fund tracking,
-              and net worth — baked for the phone and installable as an app.
+              dashboard — credits, debits, investments, Provident Fund tracking,
+              and net balance — baked for the phone and installable as an app.
             </p>
 
             <p className="mt-3 text-sm leading-relaxed text-text-secondary">

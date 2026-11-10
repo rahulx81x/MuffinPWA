@@ -26,7 +26,7 @@ const STEPS = [
   },
   {
     title: 'See the full picture',
-    body: 'Balances, spending, and net worth on an installable PWA dashboard that works offline.',
+    body: 'Balances, spending, and net balance on an installable PWA dashboard that works offline.',
     Icon: LayoutDashboard,
   },
 ] as const;
@@ -93,7 +93,7 @@ export function SignInScreen({ authError }: SignInScreenProps) {
               Your sheet, baked into a live dashboard
             </p>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-text-secondary sm:text-[15px]">
-              Track income, expenses, and investments with a Google Sheet you
+              Track credits, debits, and investments with a Google Sheet you
               own. Muffin turns that workbook into a cozy installable app —
               your records stay in Drive, not on our servers.
             </p>

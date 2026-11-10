@@ -321,8 +321,8 @@ type DateMode = 'all' | 'month' | 'custom';
 
 const TYPE_FILTERS: { id: TypeFilter; label: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'income', label: 'Income' },
-  { id: 'expense', label: 'Expense' },
+  { id: 'income', label: 'Credits' },
+  { id: 'expense', label: 'Debits' },
   { id: 'investment', label: 'Investment' },
 ];
 

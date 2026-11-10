@@ -420,7 +420,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
                 </h2>
               </div>
               <p className="text-xs text-text-muted mt-0.5">
-                Monthly trend of Income, Spends, Investments, and Liquid additions ({trendMonthlyKPIs.length} months)
+                Monthly trend of Credits, Debits, Investments, and Liquid additions ({trendMonthlyKPIs.length} months)
               </p>
             </div>
 
@@ -438,7 +438,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
                     : 'border-border/60 text-text-muted opacity-60'
                 }`}
               >
-                ● Income
+                ● Credits
               </button>
               <button
                 type="button"
@@ -449,7 +449,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
                     : 'border-border/60 text-text-muted opacity-60'
                 }`}
               >
-                ● Spends
+                ● Debits
               </button>
               <button
                 type="button"
@@ -498,7 +498,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
                   Monthly Inflow vs Outflow
                 </h3>
                 <p className="text-xs text-text-muted mt-0.5">
-                  Income compared directly with Outflow (Spends + Investment)
+                  Credits compared directly with Outflow (Debits + Investment)
                 </p>
               </div>
             </div>
@@ -543,7 +543,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
                 Cumulative Wealth Accumulation
               </h3>
               <p className="text-xs text-text-muted mt-0.5">
-                Progressive closing net worth and closing liquid reserve month-over-month
+                Progressive closing net balance and closing liquid reserve month-over-month
               </p>
             </div>
           </div>
@@ -567,7 +567,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
               <div>
                 <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
                   <PieChartIcon className="h-4 w-4 text-rose-500" />
-                  Expense Category Distribution
+                  Debit Category Distribution
                 </h3>
                 <p className="text-xs text-text-muted mt-0.5">
                   {scopeLabel} · Total: {masked ? MASKED_VALUE : formatCurrency(categoryExpenses.totalExpense)}
@@ -577,11 +577,11 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
 
             {categoryExpenses.entries.length === 0 ? (
               <p className="py-12 text-center text-xs text-text-muted">
-                No expense entries found for {scopeLabel}.
+                No debit entries found for {scopeLabel}.
               </p>
             ) : (
               <InteractiveDonutAndList
-                title="Expenses"
+                title="Debits"
                 entries={categoryExpenses.entries}
                 total={categoryExpenses.totalExpense}
                 colors={chartColors}
@@ -599,7 +599,7 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
               <div>
                 <h3 className="font-display text-sm font-bold text-text flex items-center gap-2">
                   <ArrowUpRight className="h-4 w-4 text-emerald-500" />
-                  Income Stream Distribution
+                  Credit Stream Distribution
                 </h3>
                 <p className="text-xs text-text-muted mt-0.5">
                   {scopeLabel} · Total: {masked ? MASKED_VALUE : formatCurrency(categoryIncome.totalIncome)}
@@ -609,11 +609,11 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
 
             {categoryIncome.entries.length === 0 ? (
               <p className="py-12 text-center text-xs text-text-muted">
-                No income entries found for {scopeLabel}.
+                No credit entries found for {scopeLabel}.
               </p>
             ) : (
               <InteractiveDonutAndList
-                title="Income"
+                title="Credits"
                 entries={categoryIncome.entries}
                 total={categoryIncome.totalIncome}
                 colors={['#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b']}
@@ -696,19 +696,19 @@ export function SuperDashboard({ transactions, onClose }: SuperDashboardProps) {
 
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-8">
             <KpiMetricCard
-              title="Net Worth"
+              title="Net Balance"
               value={masked ? MASKED_VALUE : formatCurrency(metrics.netWorth)}
               subtitle="Liquid + Invested"
               tone="text-text font-bold"
             />
             <KpiMetricCard
-              title="Total Income"
+              title="Total Credits"
               value={masked ? MASKED_VALUE : formatCurrency(metrics.totalIncome)}
               subtitle="Tracked inflow"
               tone="text-emerald-600 dark:text-emerald-400 font-bold"
             />
             <KpiMetricCard
-              title="Total Spends"
+              title="Total Debits"
               value={masked ? MASKED_VALUE : formatCurrency(metrics.totalSpends)}
               subtitle="Total outflow"
               tone="text-rose-600 dark:text-rose-400 font-bold"
@@ -856,7 +856,7 @@ function MultiLineTrendChart({
         <div className="flex items-center gap-3 text-xs sm:gap-4 flex-wrap">
           {visibleSeries.income && (
             <div>
-              <span className="text-[10px] font-semibold text-text-muted">Income:</span>
+              <span className="text-[10px] font-semibold text-text-muted">Credits:</span>
               <p className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                 {masked ? MASKED_VALUE : formatCurrency(activeMonth?.income ?? 0)}
               </p>
@@ -864,7 +864,7 @@ function MultiLineTrendChart({
           )}
           {visibleSeries.spends && (
             <div>
-              <span className="text-[10px] font-semibold text-text-muted">Spends:</span>
+              <span className="text-[10px] font-semibold text-text-muted">Debits:</span>
               <p className="font-bold tabular-nums text-rose-600 dark:text-rose-400">
                 {masked ? MASKED_VALUE : formatCurrency(activeMonth?.spends ?? 0)}
               </p>
@@ -1219,7 +1219,7 @@ function SavingsRateLineChart({
       <div className="flex items-center justify-between rounded-xl border border-border/80 bg-surface-strong/70 px-3 py-2 text-xs">
         <span className="font-bold text-text">{activeMonth?.label}</span>
         <span className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-          Saved: {activeMonth?.totalSavingsPct.toFixed(1)}% of Income
+          Saved: {activeMonth?.totalSavingsPct.toFixed(1)}% of Credits
         </span>
       </div>
 
@@ -1388,7 +1388,7 @@ function CumulativeWealthChart({
         </div>
         <div className="flex items-center gap-4">
           <div>
-            <span className="text-[10px] text-text-muted font-semibold">Net Worth:</span>
+            <span className="text-[10px] text-text-muted font-semibold">Net Balance:</span>
             <p className="font-bold tabular-nums text-primary">
               {masked ? MASKED_VALUE : formatCurrency(activePt?.netWorth ?? 0)}
             </p>
@@ -1471,7 +1471,7 @@ function CumulativeWealthChart({
         <div className="mt-1 flex items-center justify-center gap-4 text-[11px] font-semibold text-text-muted border-t border-border/40 pt-1.5">
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-primary" />
-            <span>Net Worth (Cumulative)</span>
+            <span>Net Balance (Cumulative)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-teal-600" />

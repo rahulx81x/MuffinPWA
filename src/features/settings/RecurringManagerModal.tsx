@@ -492,7 +492,7 @@ export function RecurringManagerModal({
                         No recurring rules yet
                       </h3>
                       <p className="mt-1 max-w-xs text-xs text-text-muted">
-                        Automate monthly expenses, utility bills, salary, and mutual fund SIPs with 1-tap logging.
+                        Automate monthly debits, utility bills, salary, and mutual fund SIPs with 1-tap logging.
                       </p>
                       <button
                         type="button"
@@ -662,9 +662,9 @@ export function RecurringManagerModal({
                     <div className="relative flex rounded-2xl border border-border/80 bg-canvas/90 p-1">
                       {(
                         [
-                          { id: 'expense', label: 'Expense' },
+                          { id: 'expense', label: 'Debit' },
                           { id: 'investment', label: 'Investment' },
-                          { id: 'income', label: 'Income' },
+                          { id: 'income', label: 'Credit' },
                         ] as const
                       ).map((item) => {
                         const active = type === item.id;

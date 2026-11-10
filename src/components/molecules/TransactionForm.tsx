@@ -499,8 +499,8 @@ export function TransactionForm({
         <div className="relative flex rounded-2xl border border-border/80 bg-canvas/80 p-1">
           {(
             [
-              { id: 'expense', label: 'Expense' },
-              { id: 'income', label: 'Income' },
+              { id: 'expense', label: 'Debit' },
+              { id: 'income', label: 'Credit' },
               { id: 'investment', label: 'Investment' },
             ] as const
           ).map((item) => {
@@ -719,7 +719,7 @@ export function TransactionForm({
                 Deduct from Allowance - Self
               </p>
               <p className="mt-0.5 text-[11px] leading-snug text-text-muted">
-                Marks this expense as paid from your monthly allowance instead of liquid cash.
+                Marks this debit as paid from your monthly allowance instead of liquid cash.
               </p>
             </div>
           </label>
@@ -745,7 +745,7 @@ export function TransactionForm({
               ) : (
                 <span>
                   {allowanceTotalForMonth === 0
-                    ? '⚠️ No Allowance - Self transaction found for this month — will save expense normally.'
+                    ? '⚠️ No Allowance - Self transaction found for this month — will save debit normally.'
                     : 'Enter an amount to preview the deduction.'}
                 </span>
               )}
@@ -884,7 +884,7 @@ export function TransactionForm({
               <div className="rounded-xl border border-primary/25 bg-primary/5 p-2.5 text-[11px] leading-relaxed text-text-secondary">
                 <p>
                   <span className="font-bold text-text">
-                    {plType === 'profit' ? '📈 Will log to Income:' : '📉 Will log to Expense:'}
+                    {plType === 'profit' ? '📈 Will log to Credits (Income tab):' : '📉 Will log to Debits (Expense tab):'}
                   </span>{' '}
                   Title / Category:{' '}
                   <span className="font-semibold text-primary">

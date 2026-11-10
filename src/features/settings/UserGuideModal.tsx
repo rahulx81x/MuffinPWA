@@ -186,9 +186,9 @@ export function UserGuideModal({
                       <MuffinIcon className="muffin-icon h-4 w-4 text-primary" /> Welcome to Muffin!
                     </h3>
                   <p className="text-xs text-text-secondary leading-relaxed">
-                    Muffin connects your Google Sheet to a mobile dashboard. Log income,
-                    expenses, and investments with category chips, amount math, and live
-                    net-worth tracking. Home greets you by name; Settings shows your signed-in
+                    Muffin connects your Google Sheet to a mobile dashboard. Log credits,
+                    debits, and investments with category chips, amount math, and live
+                    net-balance tracking. Home greets you by name; Settings shows your signed-in
                     Google account. Customize with 6 muffin themes and 7 display fonts.
                     Install as a full PWA (prefer Install app on Android) — balances always
                     load from your sheet over the network.
@@ -297,7 +297,7 @@ export function UserGuideModal({
                 <div className="space-y-2 text-xs font-mono">
                   <div className="rounded-xl border border-border/80 bg-surface p-3 space-y-1">
                     <div className="font-bold text-emerald-600 dark:text-emerald-400">
-                      Income Tab
+                      Income Tab (Credits)
                     </div>
                     <div className="text-text-muted">
                       Headers: Id (optional) | Date | Category | Amount | Comment
@@ -309,7 +309,7 @@ export function UserGuideModal({
 
                   <div className="rounded-xl border border-border/80 bg-surface p-3 space-y-1">
                     <div className="font-bold text-rose-600 dark:text-rose-400">
-                      Expense Tab
+                      Expense Tab (Debits)
                     </div>
                     <div className="text-text-muted">
                       Headers: Id (optional) | Date | Category | Amount | Comment
@@ -443,7 +443,7 @@ export function UserGuideModal({
                   <p className="text-xs text-text-muted leading-relaxed">
                     Investment rows tagged Provident Fund / PF / EPF / PPF appear on Home →
                     More Details. They are excluded from counted investment, the breakup
-                    pie, and net worth. Edit/delete prefers a stable sheet Id when present
+                    pie, and net balance. Edit/delete prefers a stable sheet Id when present
                     so rows stay correct if the sheet is reordered.
                   </p>
                 </div>
@@ -456,7 +456,7 @@ export function UserGuideModal({
                     Open Insights → Planner. Choose <strong className="text-text">Current Month</strong> to layer staged
                     what-if entries on top of your real Google Sheet data for the current month,
                     or <strong className="text-text">Blank</strong> for a 100% in-memory sandbox with no sheet data mixed in.
-                    KPIs (income, expenses, investment, net liquid, savings %, closing cash) update
+                    KPIs (credits, debits, investment, net liquid, savings %, closing cash) update
                     live. Planner entries never write back to your Google Sheet.
                   </p>
                 </div>

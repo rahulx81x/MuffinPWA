@@ -206,7 +206,7 @@ export function RecipeModal({
             <div className="mt-3.5 rounded-2xl border border-primary/25 bg-primary/10 p-3 text-xs text-text">
               <p className="font-semibold text-primary">🍳 Welcome to Starting Balances Setup!</p>
               <p className="mt-0.5 text-[11px] text-text-secondary leading-snug">
-                Enter your starting liquid cash balance and initial investments below to seed your Net Worth dashboard.
+                Enter your starting liquid cash balance and initial investments below to seed your Net Balance dashboard.
               </p>
             </div>
 

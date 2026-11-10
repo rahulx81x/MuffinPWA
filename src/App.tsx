@@ -210,8 +210,8 @@ export default function App() {
     if (type === 'investment') {
       return isRedemption ? 'Redemption' : 'Investment';
     }
-    if (type === 'income') return 'Income';
-    return 'Expense';
+    if (type === 'income') return 'Credit';
+    return 'Debit';
   }
 
   async function handleManageSuccess(payload: ManageSuccessPayload) {

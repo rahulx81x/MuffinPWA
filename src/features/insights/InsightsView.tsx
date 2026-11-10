@@ -360,7 +360,7 @@ export function InsightsView({
                       <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4 pt-1">
                         <div className="rounded-xl bg-surface/60 p-2">
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                            Income
+                            Credits
                           </p>
                           <p className="mt-0.5 text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                             {formatCurrency(m.income)}
@@ -368,7 +368,7 @@ export function InsightsView({
                         </div>
                         <div className="rounded-xl bg-surface/60 p-2">
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                            Spends
+                            Debits
                           </p>
                           <p className="mt-0.5 text-xs font-bold tabular-nums text-rose-600 dark:text-rose-400">
                             {formatCurrency(m.spends)}
@@ -413,7 +413,7 @@ export function InsightsView({
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between px-1">
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
-                Expense Distribution
+                Debit Distribution
               </span>
               <p className="text-xs font-bold text-text">
                 {scopeLabel}
@@ -498,8 +498,8 @@ export function InsightsView({
           {categoryData.entries.length === 0 ? (
             <EmptyState
               icon={<Layers className="h-6 w-6" />}
-              title="No expense data"
-              description={`No expenses found for ${
+              title="No debit data"
+              description={`No debits found for ${
                 categoryScope === 'month'
                   ? monthLabel(selectedMonth)
                   : categoryScope === 'year'
@@ -517,7 +517,7 @@ export function InsightsView({
               {/* Category Donut & Total Summary */}
               <div className="cozy-card flex flex-col items-center justify-center p-5 text-center lg:col-span-1">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
-                  Total Expenses ({scopeLabel})
+                  Total Debits ({scopeLabel})
                 </p>
                 <p className="mt-1 font-display text-2xl font-bold text-text tabular-nums">
                   {formatCurrency(categoryData.totalExpense)}
@@ -529,7 +529,7 @@ export function InsightsView({
                     className="h-full w-full -rotate-90"
                     viewBox="0 0 100 100"
                     role="img"
-                    aria-label="Category expense distribution"
+                    aria-label="Category debit distribution"
                   >
                     <circle
                       cx="50"
@@ -684,12 +684,12 @@ export function InsightsView({
           {/* Planner KPIs */}
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-6">
             <StatCard
-              label="Income"
+              label="Credits"
               value={formatCurrency(plannerIncome)}
               tone="text-emerald-600 dark:text-emerald-400"
             />
             <StatCard
-              label="Expenses"
+              label="Debits"
               value={formatCurrency(plannerExpenses)}
               tone="text-rose-600 dark:text-rose-400"
             />
@@ -769,8 +769,8 @@ export function InsightsView({
                 title={plannerMode === 'blank' ? 'No in-memory entries yet' : 'No planning entries yet'}
                 description={
                   plannerMode === 'blank'
-                    ? 'In Blank mode, every transaction is in-memory. Add what-if income, expenses, or investments above to build a scenario from scratch.'
-                    : 'Add what-if income, expenses, or investments above to simulate cash flow on top of your current month without altering your Google Sheet.'
+                    ? 'In Blank mode, every transaction is in-memory. Add what-if credits, debits, or investments above to build a scenario from scratch.'
+                    : 'Add what-if credits, debits, or investments above to simulate cash flow on top of your current month without altering your Google Sheet.'
                 }
               />
             ) : (
@@ -792,7 +792,7 @@ export function InsightsView({
                               : 'bg-violet-500/15 text-violet-600 dark:text-violet-400'
                           }`}
                         >
-                          {t.type}
+                          {t.type === 'income' ? 'credit' : t.type === 'expense' ? 'debit' : t.type}
                         </span>
                       </p>
                       <p className="text-xs font-bold text-text-secondary mt-0.5 tabular-nums">

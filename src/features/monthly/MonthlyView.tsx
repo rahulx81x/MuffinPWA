@@ -90,12 +90,12 @@ export function MonthlyView({
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4 pt-1">
                   <MiniStat
-                    label="Income"
+                    label="Credits"
                     value={formatCurrency(m.income)}
                     className="text-emerald-600 dark:text-emerald-400"
                   />
                   <MiniStat
-                    label="Spends"
+                    label="Debits"
                     value={formatCurrency(m.spends)}
                     className="text-rose-600 dark:text-rose-400"
                   />

@@ -185,12 +185,12 @@ export function PlannerView({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
         <Stat
-          label="Income"
+          label="Credits"
           value={formatCurrency(income)}
           tone="text-emerald-600 dark:text-emerald-400"
         />
         <Stat
-          label="Expenses"
+          label="Debits"
           value={formatCurrency(expenses)}
           tone="text-rose-600 dark:text-rose-400"
         />
@@ -229,9 +229,9 @@ export function PlannerView({
       </div>
 
       <div className="cozy-card border-border p-4">
-        <h3 className="mb-3 text-sm font-bold text-text">Expense categories</h3>
+        <h3 className="mb-3 text-sm font-bold text-text">Debit categories</h3>
         {expenseBreakdown.length === 0 ? (
-          <p className="text-sm text-text-muted">No expenses this month yet.</p>
+          <p className="text-sm text-text-muted">No debits this month yet.</p>
         ) : (
           <ul className="space-y-2">
             {expenseBreakdown.map(([name, amount]) => (
@@ -282,8 +282,8 @@ export function PlannerView({
             title={plannerMode === 'blank' ? 'No in-memory entries yet' : 'No planning entries yet'}
             description={
               plannerMode === 'blank'
-                ? 'In Blank mode, every transaction is in-memory. Add what-if income, expenses, or investments above to build a scenario from scratch.'
-                : 'Add what-if income, expenses, or investments above to simulate cash flow on top of your current month without altering your Google Sheet.'
+                ? 'In Blank mode, every transaction is in-memory. Add what-if credits, debits, or investments above to build a scenario from scratch.'
+                : 'Add what-if credits, debits, or investments above to simulate cash flow on top of your current month without altering your Google Sheet.'
             }
           />
         ) : (
@@ -297,7 +297,7 @@ export function PlannerView({
                   <p className="truncate text-sm font-semibold text-text">
                     {t.category}
                     <span className="ml-2 rounded-full bg-surface-muted/70 px-2 py-0.5 text-[10px] uppercase text-text-muted">
-                      {t.type}
+                      {t.type === 'income' ? 'credit' : t.type === 'expense' ? 'debit' : t.type}
                     </span>
                   </p>
                   <p className="text-xs text-text-secondary">

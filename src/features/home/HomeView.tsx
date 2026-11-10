@@ -63,21 +63,21 @@ interface CardDef {
 }
 
 const METRIC_LABELS: Partial<Record<MetricKey, string>> = {
-  currentMonthIncome: 'Month Income',
-  currentMonthExpense: 'Month Expense',
+  currentMonthIncome: 'Month Credits',
+  currentMonthExpense: 'Month Debits',
   currentMonthInvestment: 'Month Investment',
   currentMonthLiquid: 'Month Net Liquid',
   currentMonthSavingsPct: 'Month Savings & Allocation',
-  netWorth: 'Net Worth',
+  netWorth: 'Net Balance',
   totalLiquid: 'Total Liquid Cash',
   totalInvestment: 'Total Invested',
   providentFund: 'Provident Fund',
   avgMonthlySavings: 'Avg Monthly Savings',
   avgMonthlyInvestment: 'Avg Monthly Investment',
   avgMonthlyLiquid: 'Avg Monthly Liquid',
-  totalIncome: 'Lifetime Income',
-  totalSpends: 'Lifetime Spends',
-  incomeMinusSpends: 'Income − Spends',
+  totalIncome: 'Lifetime Credits',
+  totalSpends: 'Lifetime Debits',
+  incomeMinusSpends: 'Credits − Debits',
   growthSinceStart: 'Growth Since Start',
   growthSinceStartPct: 'Growth Since Start %',
   monthsTracked: 'Months Tracked',
@@ -190,7 +190,7 @@ export function HomeView({
     () => [
       {
         key: 'currentMonthIncome',
-        label: 'Month Income',
+        label: 'Month Credits',
         value: formatCurrency(metrics.currentMonthIncome),
         tone: 'success',
         iconHint: 'list',
@@ -199,7 +199,7 @@ export function HomeView({
       },
       {
         key: 'currentMonthExpense',
-        label: 'Month Expense',
+        label: 'Month Debits',
         value: formatCurrency(metrics.currentMonthExpense),
         tone: 'destructive',
         iconHint: 'list',
@@ -222,7 +222,7 @@ export function HomeView({
             }
           >
             {metrics.currentMonthSavingsPct < 0 ? '−' : ''}
-            {Math.abs(metrics.currentMonthSavingsPct).toFixed(1)}% of income
+            {Math.abs(metrics.currentMonthSavingsPct).toFixed(1)}% of credits
           </span>
         ),
         tone: metrics.currentMonthSavingsPct >= 0 ? 'teal' : 'destructive',
@@ -257,7 +257,7 @@ export function HomeView({
     () => [
       {
         key: 'netWorth',
-        label: 'Net Worth',
+        label: 'Net Balance',
         value: formatCurrency(metrics.netWorth),
         subtext:
           metrics.providentFundBalance > 0 ? (
@@ -307,7 +307,7 @@ export function HomeView({
         value: formatCurrency(metrics.providentFundBalance),
         subtext: (
           <span className="text-text-muted">
-            Net Worth with PF:{' '}
+            Net Balance with PF:{' '}
             <span className="font-bold tabular-nums text-text">
               {formatCurrency(metrics.netWorth + metrics.providentFundBalance)}
             </span>
@@ -342,19 +342,19 @@ export function HomeView({
       },
       {
         key: 'totalIncome',
-        label: 'Lifetime Income',
+        label: 'Lifetime Credits',
         value: formatCurrency(metrics.totalIncome),
         tone: 'success',
       },
       {
         key: 'totalSpends',
-        label: 'Lifetime Spends',
+        label: 'Lifetime Debits',
         value: formatCurrency(metrics.totalSpends),
         tone: 'destructive',
       },
       {
         key: 'incomeMinusSpends',
-        label: 'Income − Spends',
+        label: 'Credits − Debits',
         value: formatCurrency(metrics.incomeMinusSpends),
         tone: metrics.incomeMinusSpends >= 0 ? 'success' : 'destructive',
       },
@@ -484,7 +484,7 @@ export function HomeView({
       {card.incomeProgress && metrics.currentMonthIncome > 0 && (
         <div className="mt-2.5 space-y-1.5 border-t border-border/40 pt-2 text-[10px]">
           <div className="flex items-center justify-between text-text-muted">
-            <span>baseline income</span>
+            <span>baseline credits</span>
             <span className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
               100.0%
             </span>
@@ -492,7 +492,7 @@ export function HomeView({
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted/60">
             <div
               className="h-full w-full rounded-full bg-emerald-500 transition-all duration-500 ease-out"
-              title="100% of income baseline"
+              title="100% of credits baseline"
             />
           </div>
         </div>
@@ -501,7 +501,7 @@ export function HomeView({
       {card.expenseProgress && metrics.currentMonthIncome > 0 && (
         <div className="mt-2.5 space-y-1.5 border-t border-border/40 pt-2 text-[10px]">
           <div className="flex items-center justify-between text-text-muted">
-            <span>of income</span>
+            <span>of credits</span>
             <span
               className={`font-bold tabular-nums ${
                 card.expenseProgress.pctOfIncome > 80
@@ -524,7 +524,7 @@ export function HomeView({
               style={{
                 width: `${card.expenseProgress.cappedPct}%`,
               }}
-              title={`${card.expenseProgress.pctOfIncome.toFixed(1)}% of income`}
+              title={`${card.expenseProgress.pctOfIncome.toFixed(1)}% of credits`}
             />
           </div>
         </div>
@@ -562,7 +562,7 @@ export function HomeView({
                 }`}
               >
                 {card.savingsBreakdown.liquidPct < 0 ? '−' : ''}
-                {Math.abs(card.savingsBreakdown.liquidPct).toFixed(1)}% of income
+                {Math.abs(card.savingsBreakdown.liquidPct).toFixed(1)}% of credits
               </p>
             </button>
 
@@ -594,7 +594,7 @@ export function HomeView({
                 }`}
               >
                 {card.savingsBreakdown.investPct < 0 ? '−' : ''}
-                {Math.abs(card.savingsBreakdown.investPct).toFixed(1)}% of income
+                {Math.abs(card.savingsBreakdown.investPct).toFixed(1)}% of credits
               </p>
             </button>
           </div>
@@ -803,7 +803,7 @@ export function HomeView({
         <EmptyState
           icon={<Plus className="h-6 w-6" strokeWidth={2.2} />}
           title="Ready to track your money"
-          description="Log your first income, expense, or investment entry using the + button to see your live financial dashboard."
+          description="Log your first credit, debit, or investment entry using the + button to see your live financial dashboard."
           action={
             onAddTransaction
               ? { label: 'Add First Transaction', onClick: onAddTransaction }
@@ -812,10 +812,10 @@ export function HomeView({
         />
       )}
 
-      {/* Section 1: Net Worth & Balances */}
+      {/* Section 1: Net Balance & Balances */}
       <section className="space-y-2.5">
         <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted">
-          Net Worth & Balances
+          Net Balance & Balances
         </h3>
         <div className="w-full">
           {balanceCards.map(renderCard)}
@@ -860,7 +860,7 @@ export function HomeView({
         title={activeCard?.label || (activeMetric ? METRIC_LABELS[activeMetric] ?? '' : '')}
         subtitle={
           activeMetric === 'providentFund'
-            ? 'Tracked separately · not in net worth'
+            ? 'Tracked separately · not in net balance'
             : activeCard?.breakup
               ? 'All investment types'
               : activeCard?.value
