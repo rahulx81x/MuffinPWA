@@ -119,6 +119,55 @@ export function serializeRecipeToRows(config: {
   return rows;
 }
 
+function extractRowValue(
+  row: Record<string, unknown> | { get?(key: string): unknown; toObject?(): Record<string, unknown> } | null | undefined,
+  candidates: string[]
+): unknown {
+  if (!row) return undefined;
+
+  // 1. Try toObject if available (google-spreadsheet row)
+  let obj: Record<string, unknown> | null = null;
+  if (typeof (row as { toObject?: () => Record<string, unknown> }).toObject === 'function') {
+    try {
+      obj = (row as { toObject: () => Record<string, unknown> }).toObject();
+    } catch {}
+  } else if (typeof row === 'object') {
+    obj = row as Record<string, unknown>;
+  }
+
+  if (obj) {
+    const normCandidates = candidates.map((c) => c.toLowerCase().trim());
+    for (const [k, v] of Object.entries(obj)) {
+      if (normCandidates.includes(k.toLowerCase().trim())) {
+        if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+      }
+    }
+  }
+
+  // 2. Try get(candidate)
+  if (typeof (row as { get?: (k: string) => unknown }).get === 'function') {
+    for (const cand of candidates) {
+      try {
+        const v = (row as { get: (k: string) => unknown }).get(cand);
+        if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+      } catch {}
+    }
+  }
+
+  return undefined;
+}
+
+function parseNumericAmount(raw: unknown): number {
+  if (typeof raw === 'number') return raw;
+  if (!raw && raw !== 0) return NaN;
+  const str = String(raw).trim();
+  if (!str) return NaN;
+  // Clean currency symbols (₹, $, €, £, ¥), commas, and spaces
+  const cleaned = str.replace(/[^\d.-]/g, '');
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : NaN;
+}
+
 export function parseRecipeFromRows(
   rows: Array<Record<string, unknown> | { get(key: string): unknown }>
 ): {
@@ -129,27 +178,33 @@ export function parseRecipeFromRows(
   const investments: Array<{ id: string; type: string; amount: number }> = [];
 
   for (const row of rows) {
-    const getValue = (key: string): unknown => {
-      if (row && typeof (row as { get?: unknown }).get === 'function') {
-        return (row as { get(k: string): unknown }).get(key);
-      }
-      return (row as Record<string, unknown>)?.[key];
-    };
+    const type = String(
+      extractRowValue(row, ['Type', 'Investment Type', 'Category', 'Name', 'Description', 'Item']) ?? ''
+    ).trim();
+    const rawId = String(extractRowValue(row, ['Id', 'ID', 'RowId', 'Key']) ?? '').trim();
+    const amount = parseNumericAmount(
+      extractRowValue(row, ['Amount', 'Balance', 'Value', 'Total', 'Starting Balance', 'Opening Balance'])
+    );
 
-    const type = String(getValue('Type') ?? '').trim();
-    const rawId = String(getValue('Id') ?? '').trim();
-    const rawAmt = String(getValue('Amount') ?? '').replace(/,/g, '').trim();
-    const amount = Number(rawAmt);
+    const normType = type.toLowerCase().replace(/[\s_-]+/g, '');
+    const normId = rawId.toLowerCase().replace(/[\s_-]+/g, '');
 
     const isOpeningBalance =
-      rawId === 'opening_balance' ||
-      type.toLowerCase() === 'opening balance' ||
-      type.toLowerCase() === 'openingbalance';
+      normId.includes('openingbalance') ||
+      normId.includes('startingbalance') ||
+      normType === 'openingbalance' ||
+      normType === 'startingbalance' ||
+      normType === 'initialbalance' ||
+      normType === 'openingcash' ||
+      normType === 'startingcash' ||
+      normType === 'initialcash' ||
+      normType === 'bankbalance' ||
+      normType === 'liquidcash';
 
     const isRecurringRow =
       rawId.startsWith('rec_') ||
-      type.toLowerCase() === 'recurringrule' ||
-      type.toLowerCase() === 'recurring rule';
+      normType === 'recurringrule' ||
+      normType === 'recurring';
 
     if (isOpeningBalance) {
       if (Number.isFinite(amount)) {
@@ -198,30 +253,22 @@ export function parseRulesFromRows(
 ): RecurringRule[] {
   const rules: RecurringRule[] = [];
   for (const row of rows || []) {
-    const getValue = (key: string): unknown => {
-      if (row && typeof (row as { get?: unknown }).get === 'function') {
-        return (row as { get(k: string): unknown }).get(key);
-      }
-      return (row as Record<string, unknown>)?.[key];
-    };
-
-    const id = String(getValue('Id') ?? '').trim();
-    const name = String(getValue('Name') ?? '').trim();
-    const rawType = String(getValue('Type') ?? '').trim();
-    const category = String(getValue('Category') ?? '').trim();
-    const rawAmt = String(getValue('Amount') ?? '').replace(/,/g, '').trim();
-    const amount = Number(rawAmt);
-    const rawDay = Number(getValue('DayOfMonth'));
+    const id = String(extractRowValue(row, ['Id', 'ID', 'RuleId']) ?? '').trim();
+    const name = String(extractRowValue(row, ['Name', 'Title', 'RuleName']) ?? '').trim();
+    const rawType = String(extractRowValue(row, ['Type']) ?? '').trim();
+    const category = String(extractRowValue(row, ['Category']) ?? '').trim();
+    const amount = parseNumericAmount(extractRowValue(row, ['Amount', 'Value']));
+    const rawDay = Number(extractRowValue(row, ['DayOfMonth', 'Day']));
     const dayOfMonth = Math.min(31, Math.max(1, Math.round(rawDay || 1)));
-    const investmentType = String(getValue('InvestmentType') ?? '').trim();
-    const comment = String(getValue('Comment') ?? '').trim();
-    const rawActive = String(getValue('Active') ?? '').toLowerCase().trim();
+    const investmentType = String(extractRowValue(row, ['InvestmentType', 'Investment Type']) ?? '').trim();
+    const comment = String(extractRowValue(row, ['Comment', 'Notes', 'Note']) ?? '').trim();
+    const rawActive = String(extractRowValue(row, ['Active', 'Status']) ?? '').toLowerCase().trim();
     const active = rawActive !== 'false';
-    const rawAutoPrompt = String(getValue('AutoPrompt') ?? '').toLowerCase().trim();
+    const rawAutoPrompt = String(extractRowValue(row, ['AutoPrompt', 'Auto Prompt']) ?? '').toLowerCase().trim();
     const autoPrompt = rawAutoPrompt !== 'false';
-    const lastLoggedMonth = String(getValue('LastLoggedMonth') ?? '').trim();
-    const endDate = String(getValue('EndDate') ?? '').trim();
-    const createdAt = String(getValue('CreatedAt') ?? '').trim();
+    const lastLoggedMonth = String(extractRowValue(row, ['LastLoggedMonth', 'Last Logged Month']) ?? '').trim();
+    const endDate = String(extractRowValue(row, ['EndDate', 'End Date']) ?? '').trim();
+    const createdAt = String(extractRowValue(row, ['CreatedAt', 'Created At']) ?? '').trim();
 
     if (!name && !category && !(amount > 0) && !id) continue;
 
@@ -230,7 +277,7 @@ export function parseRulesFromRows(
       name,
       type: rawType,
       category,
-      amount,
+      amount: Number.isFinite(amount) ? amount : 0,
       dayOfMonth,
       investmentType: investmentType || undefined,
       comment: comment || undefined,

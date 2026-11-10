@@ -1,5 +1,7 @@
 {
   "name": "muffin",
+  "version": "2.0.0",
+  "author": "Rahul Gouri",
   "private": true,
   "type": "module",
   "scripts": {

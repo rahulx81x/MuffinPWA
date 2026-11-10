@@ -1,6 +1,7 @@
 import { oauthClientFromRefreshToken } from '../lib/googleAuth';
 import { withSession } from '../lib/handler';
 import { json, parseBody } from '../lib/http';
+import { getOrMigrateUserRecipe } from '../lib/recipeStore';
 import { createMuffinWorkbook } from '../lib/sheetBootstrap';
 import {
   getUserRecord,
@@ -41,11 +42,13 @@ export const handler = withSession(
       await purgeLegacyBlobRecipe(session.sub);
     }
 
+    const recipe = await getOrMigrateUserRecipe(session, record);
 
     return json(event, 201, {
       ok: true,
       spreadsheetId: record.spreadsheetId,
       spreadsheetTitle: record.spreadsheetTitle,
+      recipe,
     });
   },
   { methods: ['POST', 'OPTIONS'] }

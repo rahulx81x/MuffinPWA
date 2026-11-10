@@ -24,8 +24,17 @@ export async function openSpreadsheet(
   return doc;
 }
 
+export function findSheetByFuzzyTitle(doc: GoogleSpreadsheet, target: string) {
+  const direct = doc.sheetsByTitle[target];
+  if (direct) return direct;
+  const normTarget = target.trim().toLowerCase();
+  return Object.values(doc.sheetsByTitle).find(
+    (s) => s.title.trim().toLowerCase() === normTarget
+  );
+}
+
 export function assertRequiredTabs(doc: GoogleSpreadsheet) {
-  const missing = TAB_NAMES.filter((name) => !doc.sheetsByTitle[name]);
+  const missing = TAB_NAMES.filter((name) => !findSheetByFuzzyTitle(doc, name));
   if (missing.length) {
     throw Object.assign(
       new Error(
@@ -37,23 +46,23 @@ export function assertRequiredTabs(doc: GoogleSpreadsheet) {
 }
 
 export async function ensureRecipeTab(doc: GoogleSpreadsheet) {
-  let sheet = doc.sheetsByTitle[RECIPE_TAB_NAME];
+  let sheet = findSheetByFuzzyTitle(doc, RECIPE_TAB_NAME);
   if (!sheet) {
     sheet = await doc.addSheet({ title: RECIPE_TAB_NAME });
     await sheet.setHeaderRow([...RECIPE_TAB_HEADERS]);
     await doc.loadInfo();
   }
-  return doc.sheetsByTitle[RECIPE_TAB_NAME] || sheet;
+  return findSheetByFuzzyTitle(doc, RECIPE_TAB_NAME) || sheet;
 }
 
 export async function ensureRulesTab(doc: GoogleSpreadsheet) {
-  let sheet = doc.sheetsByTitle[RULES_TAB_NAME];
+  let sheet = findSheetByFuzzyTitle(doc, RULES_TAB_NAME);
   if (!sheet) {
     sheet = await doc.addSheet({ title: RULES_TAB_NAME });
     await sheet.setHeaderRow([...RULES_TAB_HEADERS]);
     await doc.loadInfo();
   }
-  return doc.sheetsByTitle[RULES_TAB_NAME] || sheet;
+  return findSheetByFuzzyTitle(doc, RULES_TAB_NAME) || sheet;
 }
 
 export async function createMuffinWorkbook(
